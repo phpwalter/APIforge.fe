@@ -31,6 +31,10 @@ function makeId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function clamp(min: number, max: number, value: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
 function defaultResponsesFor(method: HttpMethod): ResponseEntry[] {
   const ok: ResponseEntry = {
     id: makeId('res'),
@@ -60,8 +64,8 @@ function newEndpointDefaults(path: string, method: HttpMethod, summary = ''): En
 function slugify(path: string, method: HttpMethod): string {
   const parts = path
     .split('/')
-    .filter(Boolean)
-    .map((seg) => seg.replace(/[{}]/g, ''));
+    .map((seg) => seg.replace(/[{}]/g, ''))
+    .filter(Boolean);
   const verb = method.toLowerCase();
   return verb + parts.map((p) => p[0].toUpperCase() + p.slice(1)).join('');
 }
@@ -447,7 +451,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   panelWidth: EP_PANEL_DEFAULT_WIDTH,
   panelCollapsed: false,
   resizingPanel: false,
-  setPanelWidth: (w) => set({ panelWidth: Math.min(EP_PANEL_MAX_WIDTH, Math.max(EP_PANEL_MIN_WIDTH, w)) }),
+  setPanelWidth: (w) => set({ panelWidth: clamp(EP_PANEL_MIN_WIDTH, EP_PANEL_MAX_WIDTH, w) }),
   toggleePanelCollapsed: () => set((s) => ({ panelCollapsed: !s.panelCollapsed })),
   setResizingPanel: (v) => set({ resizingPanel: v }),
 
@@ -481,8 +485,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   schemaPanelWidth: SCHEMA_PANEL_DEFAULT_WIDTH,
   schemaPanelCollapsed: false,
   resizingSchemaPanel: false,
-  setSchemaPanelWidth: (w) =>
-    set({ schemaPanelWidth: Math.min(SCHEMA_PANEL_MAX_WIDTH, Math.max(SCHEMA_PANEL_MIN_WIDTH, w)) }),
+  setSchemaPanelWidth: (w) => set({ schemaPanelWidth: clamp(SCHEMA_PANEL_MIN_WIDTH, SCHEMA_PANEL_MAX_WIDTH, w) }),
   toggleSchemaPanelCollapsed: () => set((s) => ({ schemaPanelCollapsed: !s.schemaPanelCollapsed })),
   setResizingSchemaPanel: (v) => set({ resizingSchemaPanel: v }),
 }));

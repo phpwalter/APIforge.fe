@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { Braces, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
+import { usePanelResize } from '../../lib/usePanelResize';
 import styles from './SchemaPanel.module.css';
 
 export function SchemaPanel() {
@@ -25,20 +26,7 @@ export function SchemaPanel() {
   const rows = schemas.filter((s) => !q || s.name.toLowerCase().includes(q));
   const isEmpty = rows.length === 0;
 
-  useEffect(() => {
-    if (!resizing) return;
-    const onMove = (e: MouseEvent) => {
-      const left = panelRef.current?.getBoundingClientRect().left ?? 0;
-      setWidth(e.clientX - left);
-    };
-    const onUp = () => setResizing(false);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, [resizing, setWidth, setResizing]);
+  usePanelResize(panelRef, resizing, setWidth, setResizing);
 
   return (
     <div

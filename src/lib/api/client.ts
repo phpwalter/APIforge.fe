@@ -33,5 +33,11 @@ export async function apiGet<T>(path: string): Promise<T> {
   if (!res.ok) {
     throw new ApiError(`${path} responded ${res.status} ${res.statusText}`, res.status);
   }
-  return (await res.json()) as T;
+  try {
+    return (await res.json()) as T;
+  } catch (err) {
+    throw new ApiError(
+      `${path} returned a response that wasn't valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 }

@@ -93,7 +93,8 @@ function buildParamsAndHeaders(
 ): { params: Param[]; headers: HeaderParam[] } {
   // Operation-level parameters override path-level ones with the same name+location.
   const merged = new Map<string, RawParameter>();
-  [...pathParams, ...opParams].forEach((p) => {
+  const all = [...(Array.isArray(pathParams) ? pathParams : []), ...(Array.isArray(opParams) ? opParams : [])];
+  all.forEach((p) => {
     if (!p?.name || !p.in) return;
     merged.set(`${p.in}:${p.name}`, p);
   });
@@ -123,7 +124,8 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
 
   const endpoints: Endpoint[] = [];
 
-  for (const [path, pathItem] of Object.entries(doc.paths)) {
+  for (const [path, rawPathItem] of Object.entries(doc.paths)) {
+    const pathItem = rawPathItem ?? {};
     const pathParams = pathItem.parameters ?? [];
     for (const methodKey of HTTP_METHODS) {
       const raw = pathItem[methodKey.toLowerCase()] as RawOperation | undefined;

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Timeline as EndpointsIcon, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
 import { buildEndpointsPanelGroups } from '../../lib/endpointsPanelGroups';
+import { usePanelResize } from '../../lib/usePanelResize';
 import { EndpointGroupSection } from './EndpointGroupSection';
 import styles from './EndpointsPanel.module.css';
 
@@ -24,24 +25,11 @@ export function EndpointsPanel() {
 
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const groups = buildEndpointsPanelGroups(endpoints, panelSearch);
+  const groups = useMemo(() => buildEndpointsPanelGroups(endpoints, panelSearch), [endpoints, panelSearch]);
   const isEmpty = groups.length === 0;
   const selectedPath = endpoints.find((e) => e.id === selectedId)?.path;
 
-  useEffect(() => {
-    if (!resizingPanel) return;
-    const onMove = (e: MouseEvent) => {
-      const left = panelRef.current?.getBoundingClientRect().left ?? 0;
-      setPanelWidth(e.clientX - left);
-    };
-    const onUp = () => setResizingPanel(false);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, [resizingPanel, setPanelWidth, setResizingPanel]);
+  usePanelResize(panelRef, resizingPanel, setPanelWidth, setResizingPanel);
 
   return (
     <div

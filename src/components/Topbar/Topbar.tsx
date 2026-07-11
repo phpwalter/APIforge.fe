@@ -7,7 +7,7 @@ import { MoreMenu } from './MoreMenu';
 import { UserMenu } from './UserMenu';
 import styles from './Topbar.module.css';
 
-const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,application/xml,text/xml';
+const IMPORT_ACCEPT = '.yaml,.yml,.json,application/json,text/yaml';
 
 function themeTitle(themeMode: string, theme: string): string {
   if (themeMode === 'system') return `Theme: System · following OS (${theme}) — click for Light`;
