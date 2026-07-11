@@ -1,0 +1,155 @@
+/* ==========================================================================
+   APIforge design tokens
+   Ported verbatim (OKLCH values unchanged) from API_Designer_dc.html
+   Per the handoff README, only the dark (default) and light variants are
+   carried forward — the prototype's extra experimental themes
+   (hc-light, hc-dark, night-owl-*) are intentionally out of scope.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: #15151a;
+}
+
+.app {
+  /* dark = default */
+  --bg: oklch(0.205 0.005 285);
+  --surface: oklch(0.238 0.005 285);
+  --surface-2: oklch(0.272 0.006 285);
+  --border: oklch(0.32 0.006 285);
+  --border-strong: oklch(0.4 0.006 285);
+  --text: oklch(0.95 0.003 285);
+  --text-dim: oklch(0.72 0.005 285);
+  --text-faint: oklch(0.55 0.006 285);
+  --accent: oklch(0.66 0.15 264);
+  --accent-soft: oklch(0.66 0.15 264 / 0.16);
+  --accent-text: #fff;
+  --add: oklch(0.72 0.16 150);
+  --add-soft: oklch(0.72 0.16 150 / 0.16);
+  --del: oklch(0.66 0.2 22);
+  --del-soft: oklch(0.66 0.2 22 / 0.16);
+  --warn: oklch(0.77 0.15 75);
+  --warn-soft: oklch(0.77 0.15 75 / 0.16);
+  --shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.6);
+  --inset: oklch(0.18 0.005 285);
+
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+}
+
+.app[data-theme='light'] {
+  --bg: oklch(0.975 0.003 285);
+  --surface: oklch(0.995 0.001 285);
+  --surface-2: oklch(0.965 0.003 285);
+  --border: oklch(0.905 0.004 285);
+  --border-strong: oklch(0.84 0.005 285);
+  --text: oklch(0.27 0.01 285);
+  --text-dim: oklch(0.46 0.008 285);
+  --text-faint: oklch(0.62 0.006 285);
+  --accent: oklch(0.55 0.16 264);
+  --accent-soft: oklch(0.55 0.16 264 / 0.1);
+  --accent-text: #fff;
+  --add: oklch(0.5 0.15 150);
+  --add-soft: oklch(0.5 0.15 150 / 0.1);
+  --del: oklch(0.55 0.21 22);
+  --del-soft: oklch(0.55 0.21 22 / 0.1);
+  --warn: oklch(0.6 0.13 66);
+  --warn-soft: oklch(0.6 0.13 66 / 0.12);
+  --shadow: 0 16px 48px -16px rgba(0, 0, 0, 0.18);
+  --inset: oklch(0.985 0.002 285);
+}
+
+/* Type-tint colors for JSON schema types (jsonTint in the source logic block) */
+.app {
+  --json-string: #4a82d8;
+  --json-number: #3b9c6e;
+  --json-boolean: #c79a3a;
+  --json-array: #a86fd8;
+  --json-object: #7c7c8a;
+}
+
+.app *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.app *::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.app *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes savePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Reduced-motion: quality floor from the frontend-design skill */
+@media (prefers-reduced-motion: reduce) {
+  .app * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Visible keyboard focus (quality floor) */
+.app button:focus-visible,
+.app input:focus-visible,
+.app [tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

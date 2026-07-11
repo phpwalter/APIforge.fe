@@ -1,0 +1,348 @@
+.header {
+  height: 52px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandIcon {
+  display: flex;
+  color: var(--accent);
+}
+
+.brandName {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+}
+
+.pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-faint);
+}
+
+.pillMono {
+  composes: pill;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.projectPill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.projectPillDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warn);
+  flex: none;
+}
+
+.projectPillChevron {
+  display: flex;
+  color: var(--text-faint);
+}
+
+.versionGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.oasLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.saveBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-right: 2px;
+}
+
+.saveBadgeDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.saveBadgeDot[data-state='saved'] {
+  background: #3b9c6e;
+}
+
+.saveBadgeDot[data-state='saving'] {
+  background: var(--warn);
+  animation: savePulse 1s ease-in-out infinite;
+}
+
+.saveBadgeDot[data-state='unsaved'] {
+  background: var(--text-faint);
+}
+
+.iconBtn {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+}
+
+.iconBtn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.iconBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+.menuAnchor {
+  position: relative;
+  flex: none;
+}
+
+.menuAnchorTight {
+  composes: menuAnchor;
+  margin-left: 2px;
+}
+
+.menuScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  z-index: 31;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  animation: popIn 0.14s ease;
+}
+
+.moreMenu {
+  composes: menu;
+  width: 210px;
+}
+
+.userMenu {
+  composes: menu;
+  width: 250px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+}
+
+.menuItem:hover {
+  background: var(--surface-2);
+}
+
+.menuItemIcon {
+  width: 18px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+}
+
+.menuItemTrailing {
+  flex: 1;
+}
+
+.menuItemExternal {
+  flex: none;
+  color: var(--text-faint);
+  display: flex;
+}
+
+.menuDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 4px;
+}
+
+.menuDangerItem {
+  composes: menuItem;
+  color: var(--del);
+  font-weight: 600;
+}
+
+.menuDangerItem:hover {
+  background: var(--del-soft);
+}
+
+.userMenuHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 9px 11px;
+}
+
+.userMenuHeaderDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 4px 4px;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(135deg, var(--accent), oklch(0.6 0.13 320));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.avatarSm {
+  composes: avatar;
+  width: 32px;
+  height: 32px;
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.avatarSm:hover {
+  filter: brightness(1.08);
+}
+
+.avatarText {
+  flex: 1;
+  min-width: 0;
+}
+
+.avatarName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.avatarEmail {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signInBtn {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--inset);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.signInBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes savePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}

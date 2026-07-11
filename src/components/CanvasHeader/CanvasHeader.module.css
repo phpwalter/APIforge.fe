@@ -1,0 +1,118 @@
+.header {
+  height: 46px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  gap: 20px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.tab[data-active='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.badge {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+.complianceBadge {
+  composes: badge;
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+.complianceDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.complianceDot[data-level='good'] {
+  background: #3b9c6e;
+}
+
+.complianceDot[data-level='ok'] {
+  background: #c79a3a;
+}
+
+.complianceDot[data-level='bad'] {
+  background: #c75c5c;
+}
+
+.complianceValue {
+  color: var(--text);
+}
+
+.issuesBadge {
+  composes: badge;
+}
+
+.issuesBadge[data-level='error'] {
+  border-color: var(--del);
+  background: var(--del-soft);
+  color: var(--del);
+}
+
+.issuesBadge[data-level='warn'] {
+  border-color: var(--warn);
+  background: rgba(199, 154, 58, 0.14);
+  color: var(--warn);
+}
+
+.issuesBadge[data-level='clear'] {
+  border-color: var(--add);
+  background: var(--add-soft);
+  color: var(--add);
+}
+
+.issuesIcon {
+  display: flex;
+}

@@ -1,0 +1,72 @@
+.toast {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 480px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: var(--shadow);
+  animation: slideDown 0.16s ease;
+}
+
+.toast[data-type='success'] {
+  background: var(--surface);
+  border: 1px solid var(--add);
+  color: var(--text);
+}
+
+.toast[data-type='error'] {
+  background: var(--surface);
+  border: 1px solid var(--del);
+  color: var(--text);
+}
+
+.icon {
+  display: flex;
+  flex: none;
+}
+
+.toast[data-type='success'] .icon {
+  color: var(--add);
+}
+
+.toast[data-type='error'] .icon {
+  color: var(--del);
+}
+
+.closeBtn {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.closeBtn:hover {
+  background: var(--surface-2);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

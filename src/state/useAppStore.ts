@@ -1,0 +1,136 @@
+import { create } from 'zustand';
+import type { CanvasTabId, SaveState, ThemeMode, ThemeName, UserProfile } from '../types/ui';
+
+function systemPrefersDark(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)').matches
+    : true;
+}
+
+function resolveTheme(mode: ThemeMode): ThemeName {
+  if (mode === 'system') return systemPrefersDark() ? 'dark' : 'light';
+  return mode;
+}
+
+interface AppState {
+  // Theme
+  themeMode: ThemeMode;
+  theme: ThemeName;
+  toggleTheme: () => void;
+
+  // Project identity (topbar "project settings" pill)
+  apiTitle: string;
+  apiVersion: string;
+  apiOpenapiVersion: string;
+  setProjectInfo: (info: { title: string; version: string; openapiVersion: string }) => void;
+
+  // Save status badge
+  saveState: SaveState;
+  lastSavedAt: number | null;
+
+  // Undo / redo — real history wiring comes with the spec-editing panels.
+  // The stacks are modeled now so the topbar controls have real disabled state.
+  undoStack: unknown[];
+  redoStack: unknown[];
+  undo: () => void;
+  redo: () => void;
+
+  // Topbar menus
+  moreMenuOpen: boolean;
+  toggleMoreMenu: () => void;
+  closeMoreMenu: () => void;
+
+  userMenuOpen: boolean;
+  toggleUserMenu: () => void;
+  closeUserMenu: () => void;
+
+  // Account
+  signedIn: boolean;
+  userProfile: UserProfile;
+  signIn: () => void;
+  signOut: () => void;
+
+  // Auth modal (provider-only — no username/password)
+  authOpen: boolean;
+  openAuth: () => void;
+  closeAuth: () => void;
+
+  // Canvas tab
+  canvasTab: CanvasTabId;
+  setCanvasTab: (id: CanvasTabId) => void;
+
+  // Diagnostics summary — placeholder until api-policy.js compliance
+  // checking (the Diagnostics panel) is ported.
+  compliancePct: number;
+  errorCount: number;
+  warnCount: number;
+
+  // Modals (stubs — wired up as each modal panel is built)
+  settingsOpen: boolean;
+  openSettings: () => void;
+  closeSettings: () => void;
+}
+
+export const useAppStore = create<AppState>((set, get) => ({
+  themeMode: 'dark',
+  theme: resolveTheme('dark'),
+  toggleTheme: () => {
+    // Mirrors the prototype's cycle: dark -> system -> light -> dark
+    const { themeMode } = get();
+    const next: ThemeMode = themeMode === 'dark' ? 'system' : themeMode === 'system' ? 'light' : 'dark';
+    set({ themeMode: next, theme: resolveTheme(next) });
+  },
+
+  apiTitle: 'Untitled API',
+  apiVersion: '1.0.0',
+  apiOpenapiVersion: '3.1.0',
+  setProjectInfo: ({ title, version, openapiVersion }) =>
+    set({ apiTitle: title, apiVersion: version, apiOpenapiVersion: openapiVersion }),
+
+  saveState: 'saved',
+  lastSavedAt: Date.now(),
+
+  undoStack: [],
+  redoStack: [],
+  undo: () => {},
+  redo: () => {},
+
+  moreMenuOpen: false,
+  toggleMoreMenu: () => set((s) => ({ moreMenuOpen: !s.moreMenuOpen, userMenuOpen: false })),
+  closeMoreMenu: () => set({ moreMenuOpen: false }),
+
+  userMenuOpen: false,
+  toggleUserMenu: () => set((s) => ({ userMenuOpen: !s.userMenuOpen, moreMenuOpen: false })),
+  closeUserMenu: () => set({ userMenuOpen: false }),
+
+  signedIn: false,
+  userProfile: { name: 'James Taylor', email: 'james@acme-corp.com' },
+  signIn: () => set({ signedIn: true, userMenuOpen: false, authOpen: false }),
+  signOut: () => set({ signedIn: false, userMenuOpen: false }),
+
+  authOpen: false,
+  openAuth: () => set({ authOpen: true, moreMenuOpen: false, userMenuOpen: false }),
+  closeAuth: () => set({ authOpen: false }),
+
+  canvasTab: 'design',
+  setCanvasTab: (id) => set({ canvasTab: id }),
+
+  compliancePct: 100,
+  errorCount: 0,
+  warnCount: 0,
+
+  settingsOpen: false,
+  openSettings: () => set({ settingsOpen: true, moreMenuOpen: false }),
+  closeSettings: () => set({ settingsOpen: false }),
+}));
+
+/** userInitials derivation, matching the source: first letters of up to 2 words. */
+export function initialsOf(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
