@@ -28,13 +28,14 @@ function rowsForGroup(
   searchQuery: string,
   matcher: (e: Endpoint) => boolean,
 ): EndpointsPanelRow[] {
-  const tree = buildPathTree(endpoints.map((e) => e.path)).slice().sort((a, b) => a.path.localeCompare(b.path));
+  const eligible = endpoints.filter((e) => e.method !== 'HEAD');
+  const tree = buildPathTree(eligible.map((e) => e.path)).slice().sort((a, b) => a.path.localeCompare(b.path));
 
   const q = searchQuery.trim().toLowerCase();
 
   return tree
     .map((node): EndpointsPanelRow | null => {
-      const methodsForPath = endpoints
+      const methodsForPath = eligible
         .filter((e) => e.path === node.path && matcher(e))
         .slice()
         .sort((a, b) => METHOD_PRIORITY.indexOf(a.method) - METHOD_PRIORITY.indexOf(b.method));

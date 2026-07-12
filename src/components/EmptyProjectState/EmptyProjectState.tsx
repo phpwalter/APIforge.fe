@@ -4,7 +4,7 @@ import { useSpecStore } from '../../state/useSpecStore';
 import { importOpenApiFile } from '../../lib/importHandler';
 import styles from './EmptyProjectState.module.css';
 
-const IMPORT_ACCEPT = '.yaml,.yml,.json,application/json,text/yaml';
+const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,application/xml,text/xml';
 
 export function EmptyProjectState() {
   const loadSampleProject = useSpecStore((s) => s.loadSampleProject);
@@ -18,8 +18,8 @@ export function EmptyProjectState() {
         </div>
         <div className={styles.title}>No API document loaded</div>
         <div className={styles.subtitle}>
-          This workspace is empty. Import an OpenAPI document (JSON or YAML) to start designing, or load a sample
-          project to explore the interface.
+          This workspace is empty. Import an OpenAPI document (JSON, YAML, or XML) to start designing, or load a
+          sample project to explore the interface.
         </div>
         <div className={styles.actions}>
           <button type="button" className={styles.primaryBtn} onClick={() => inputRef.current?.click()}>

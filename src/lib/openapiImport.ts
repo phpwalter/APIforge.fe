@@ -59,8 +59,70 @@ function isYamlFile(filename: string): boolean {
   return /\.ya?ml$/i.test(filename);
 }
 
+function isXmlFile(filename: string): boolean {
+  return /\.xml$/i.test(filename);
+}
+
+function looksLikeXml(trimmedText: string): boolean {
+  return /^<\?xml/i.test(trimmedText) || /^<openapi[\s>]/i.test(trimmedText);
+}
+
+// Not a standard OpenAPI serialization (there isn't one) — this is APIforge's own
+// lossless object<->XML mapping, produced by this app's XML export. An element's
+// `key` attribute (when present) is its true object key — used when the key isn't
+// a valid XML name — and sibling elements sharing a key become an array.
+function coerceXmlScalar(text: string): unknown {
+  if (text === 'true') return true;
+  if (text === 'false') return false;
+  if (/^-?\d+$/.test(text)) return parseInt(text, 10);
+  if (/^-?\d*\.\d+$/.test(text)) return parseFloat(text);
+  return text;
+}
+
+function xmlElementToValue(el: Element): unknown {
+  const children = [...el.children];
+  if (!children.length) {
+    const text = el.textContent ?? '';
+    return text === '' ? null : coerceXmlScalar(text);
+  }
+  const groups = new Map<string, Element[]>();
+  const order: string[] = [];
+  children.forEach((c) => {
+    const key = c.getAttribute('key') || c.tagName;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key)!.push(c);
+  });
+  const obj: Record<string, unknown> = {};
+  order.forEach((key) => {
+    const els = groups.get(key)!;
+    obj[key] = els.length > 1 ? els.map(xmlElementToValue) : xmlElementToValue(els[0]);
+  });
+  return obj;
+}
+
+function xmlToDoc(xmlText: string): RawDocument {
+  const parsed = new DOMParser().parseFromString(xmlText, 'text/xml');
+  if (parsed.querySelector('parsererror')) {
+    throw new Error('Invalid XML document');
+  }
+  return xmlElementToValue(parsed.documentElement) as RawDocument;
+}
+
 function parseRaw(text: string, filename: string): RawDocument {
-  const looksYaml = isYamlFile(filename) || (!filename.toLowerCase().endsWith('.json') && !text.trim().startsWith('{'));
+  const trimmed = text.trim();
+  if (isXmlFile(filename) || looksLikeXml(trimmed)) {
+    try {
+      return xmlToDoc(trimmed);
+    } catch (err) {
+      throw new OpenApiImportError(
+        `Could not parse "${filename}" as XML: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+  const looksYaml = isYamlFile(filename) || (!filename.toLowerCase().endsWith('.json') && !trimmed.startsWith('{'));
   try {
     if (looksYaml) {
       const parsed = loadYaml(text);

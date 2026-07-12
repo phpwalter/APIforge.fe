@@ -30,7 +30,7 @@ export function methodIcon(method: HttpMethod): ComponentType<{ size?: number }>
 }
 
 /** Method pill sort order used throughout the endpoints panel and tree editor. */
-export const METHOD_PRIORITY: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE'];
+export const METHOD_PRIORITY: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE'];
 
 const IDEMPOTENT_METHODS: HttpMethod[] = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE', 'TRACE'];
 const UNSAFE_METHODS: HttpMethod[] = ['POST', 'PUT', 'PATCH', 'DELETE'];
