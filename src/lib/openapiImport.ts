@@ -198,6 +198,10 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         id: makeId('res'),
         code,
         description: r?.description ?? '',
+        headers: [],
+        contentTypes: ['application/json'],
+        schema: '',
+        schemaIsArray: false,
       }));
 
       endpoints.push({
@@ -212,7 +216,19 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         headers,
         requestBodyEnabled: !!raw.requestBody,
         requestBodyDescription: raw.requestBody?.description ?? '',
-        responses: responses.length ? responses : [{ id: makeId('res'), code: '200', description: 'OK' }],
+        responses: responses.length
+          ? responses
+          : [
+              {
+                id: makeId('res'),
+                code: '200',
+                description: 'OK',
+                headers: [],
+                contentTypes: ['application/json'],
+                schema: '',
+                schemaIsArray: false,
+              },
+            ],
       });
     }
   }

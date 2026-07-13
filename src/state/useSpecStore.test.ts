@@ -198,6 +198,56 @@ describe('useSpecStore', () => {
     expect(s.responseActiveClass[idB]).toBe('5xx');
   });
 
+  it('new responses default to an empty headers array and a single content-type', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+
+    useSpecStore.getState().addResponseForClass(id, '4xx');
+    const responses = useSpecStore.getState().endpoints[0].responses;
+    const added = responses[responses.length - 1];
+    expect(added.headers).toEqual([]);
+    expect(added.contentTypes).toEqual(['application/json']);
+    expect(added.schema).toBe('');
+    expect(added.schemaIsArray).toBe(false);
+  });
+
+  it('adds, updates, and removes a response header without affecting other responses', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+    const responseId = useSpecStore.getState().endpoints[0].responses[0].id;
+
+    useSpecStore.getState().addResponseHeader(id, responseId);
+    const headers = useSpecStore.getState().endpoints[0].responses[0].headers;
+    expect(headers).toHaveLength(1);
+    const headerId = headers[0].id;
+
+    useSpecStore.getState().setResponseHeader(id, responseId, headerId, { name: 'X-Request-Id', required: true });
+    const updated = useSpecStore.getState().endpoints[0].responses[0].headers[0];
+    expect(updated).toMatchObject({ name: 'X-Request-Id', required: true });
+
+    useSpecStore.getState().removeResponseHeader(id, responseId, headerId);
+    expect(useSpecStore.getState().endpoints[0].responses[0].headers).toHaveLength(0);
+  });
+
+  it('toggles response content-types, never leaving the list empty', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+    const responseId = useSpecStore.getState().endpoints[0].responses[0].id;
+
+    useSpecStore.getState().toggleResponseContentType(id, responseId, 'application/xml');
+    expect(useSpecStore.getState().endpoints[0].responses[0].contentTypes).toEqual([
+      'application/json',
+      'application/xml',
+    ]);
+
+    useSpecStore.getState().toggleResponseContentType(id, responseId, 'application/json');
+    expect(useSpecStore.getState().endpoints[0].responses[0].contentTypes).toEqual(['application/xml']);
+
+    // Removing the last remaining content-type falls back to application/json instead of leaving it empty.
+    useSpecStore.getState().toggleResponseContentType(id, responseId, 'application/xml');
+    expect(useSpecStore.getState().endpoints[0].responses[0].contentTypes).toEqual(['application/json']);
+  });
+
   it('adds and removes security schemes without duplicates', () => {
     useSpecStore.getState().pickMethod('/users', 'GET');
     const id = useSpecStore.getState().endpoints[0].id;

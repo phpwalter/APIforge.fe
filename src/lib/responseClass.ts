@@ -41,3 +41,55 @@ export function colorForCode(code: string): string {
 export function defaultActiveClass(presentClasses: Set<string>): ResponseClass {
   return CLASS_ORDER.find((c) => presentClasses.has(c)) ?? '2xx';
 }
+
+/** Standard HTTP reason phrase for a status code, e.g. '404' -> 'Not Found'. */
+const REASON_PHRASE: Record<string, string> = {
+  '100': 'Continue',
+  '101': 'Switching Protocols',
+  '102': 'Processing',
+  '103': 'Early Hints',
+  '200': 'OK',
+  '201': 'Created',
+  '202': 'Accepted',
+  '203': 'Non-Authoritative',
+  '204': 'No Content',
+  '205': 'Reset Content',
+  '206': 'Partial Content',
+  '300': 'Multiple Choices',
+  '301': 'Moved Permanently',
+  '302': 'Found',
+  '303': 'See Other',
+  '304': 'Not Modified',
+  '307': 'Temporary Redirect',
+  '308': 'Permanent Redirect',
+  '400': 'Bad Request',
+  '401': 'Unauthorized',
+  '402': 'Payment Required',
+  '403': 'Forbidden',
+  '404': 'Not Found',
+  '405': 'Method Not Allowed',
+  '406': 'Not Acceptable',
+  '408': 'Request Timeout',
+  '409': 'Conflict',
+  '410': 'Gone',
+  '422': 'Unprocessable Entity',
+  '429': 'Too Many Requests',
+  '500': 'Internal Server Error',
+  '501': 'Not Implemented',
+  '502': 'Bad Gateway',
+  '503': 'Service Unavailable',
+  '504': 'Gateway Timeout',
+};
+
+export function reasonForCode(code: string): string | undefined {
+  return REASON_PHRASE[code];
+}
+
+/** Common response content-types offered in the "add type" picker. */
+export const CONTENT_TYPE_OPTIONS = [
+  'application/json',
+  'application/xml',
+  'text/plain',
+  'multipart/form-data',
+  'application/x-www-form-urlencoded',
+];

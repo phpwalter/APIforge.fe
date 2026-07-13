@@ -41,6 +41,13 @@ export interface ResponseEntry {
   id: string;
   code: string;
   description: string;
+  headers: HeaderParam[];
+  /** MIME types this response can be returned as. Never empty — falls back to application/json. */
+  contentTypes: string[];
+  /** Name of the referenced Schema, or '' for none. */
+  schema: string;
+  /** Whether the body is an array of `schema` rather than a single instance. */
+  schemaIsArray: boolean;
 }
 
 export interface Endpoint {

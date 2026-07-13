@@ -36,13 +36,12 @@ function clamp(min: number, max: number, value: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function makeResponseEntry(id: string, code: string, description = ''): ResponseEntry {
+  return { id, code, description, headers: [], contentTypes: ['application/json'], schema: '', schemaIsArray: false };
+}
+
 function defaultResponsesFor(method: HttpMethod): ResponseEntry[] {
-  const ok: ResponseEntry = {
-    id: makeId('res'),
-    code: method === 'POST' ? '201' : '200',
-    description: method === 'POST' ? 'Created' : 'OK',
-  };
-  return [ok];
+  return [makeResponseEntry(makeId('res'), method === 'POST' ? '201' : '200', method === 'POST' ? 'Created' : 'OK')];
 }
 
 function newEndpointDefaults(path: string, method: HttpMethod, summary = ''): Endpoint {
@@ -108,6 +107,11 @@ interface SpecState {
   setResponse: (id: string, responseId: string, patch: Partial<ResponseEntry>) => void;
   removeResponse: (id: string, responseId: string) => void;
 
+  addResponseHeader: (id: string, responseId: string) => void;
+  setResponseHeader: (id: string, responseId: string, headerId: string, patch: Partial<HeaderParam>) => void;
+  removeResponseHeader: (id: string, responseId: string, headerId: string) => void;
+  toggleResponseContentType: (id: string, responseId: string, contentType: string) => void;
+
   // Response subpanel UI state — the status-class pill selected per endpoint.
   responseActiveClass: Record<string, ResponseClass>;
   setResponseActiveClass: (endpointId: string, cls: ResponseClass) => void;
@@ -157,7 +161,7 @@ const sampleEndpoints: Endpoint[] = [
     ...newEndpointDefaults('/auth/session', 'GET', 'Get the current session'),
     id: 'ep_1',
     operationId: 'getSession',
-    responses: [{ id: 'res_1a', code: '200', description: 'OK' }],
+    responses: [makeResponseEntry('res_1a', '200', 'OK')],
   },
   {
     ...newEndpointDefaults('/users', 'GET', 'List users'),
@@ -166,7 +170,7 @@ const sampleEndpoints: Endpoint[] = [
     tags: ['Users'],
     security: ['bearerAuth'],
     params: [{ id: 'pm_1', name: 'limit', in: 'query', required: false }],
-    responses: [{ id: 'res_2a', code: '200', description: 'OK' }],
+    responses: [makeResponseEntry('res_2a', '200', 'OK')],
   },
   {
     ...newEndpointDefaults('/users', 'POST', 'Create a user'),
@@ -176,10 +180,7 @@ const sampleEndpoints: Endpoint[] = [
     security: ['bearerAuth'],
     requestBodyEnabled: true,
     requestBodyDescription: 'User to create',
-    responses: [
-      { id: 'res_3a', code: '201', description: 'Created' },
-      { id: 'res_3b', code: '400', description: 'Bad Request' },
-    ],
+    responses: [makeResponseEntry('res_3a', '201', 'Created'), makeResponseEntry('res_3b', '400', 'Bad Request')],
   },
   {
     ...newEndpointDefaults('/users/{id}', 'GET', 'Get a user by id'),
@@ -188,10 +189,7 @@ const sampleEndpoints: Endpoint[] = [
     tags: ['Users'],
     security: ['bearerAuth'],
     params: [{ id: 'pm_2', name: 'id', in: 'path', required: true }],
-    responses: [
-      { id: 'res_4a', code: '200', description: 'OK' },
-      { id: 'res_4b', code: '404', description: 'Not Found' },
-    ],
+    responses: [makeResponseEntry('res_4a', '200', 'OK'), makeResponseEntry('res_4b', '404', 'Not Found')],
   },
   {
     ...newEndpointDefaults('/users/{id}', 'PATCH', 'Update a user'),
@@ -202,10 +200,7 @@ const sampleEndpoints: Endpoint[] = [
     params: [{ id: 'pm_3', name: 'id', in: 'path', required: true }],
     requestBodyEnabled: true,
     requestBodyDescription: 'Partial user fields to update',
-    responses: [
-      { id: 'res_5a', code: '200', description: 'OK' },
-      { id: 'res_5b', code: '404', description: 'Not Found' },
-    ],
+    responses: [makeResponseEntry('res_5a', '200', 'OK'), makeResponseEntry('res_5b', '404', 'Not Found')],
   },
   {
     ...newEndpointDefaults('/users/{id}', 'DELETE', 'Delete a user'),
@@ -214,7 +209,7 @@ const sampleEndpoints: Endpoint[] = [
     tags: ['Users'],
     security: ['bearerAuth'],
     params: [{ id: 'pm_4', name: 'id', in: 'path', required: true }],
-    responses: [{ id: 'res_6a', code: '204', description: 'No Content' }],
+    responses: [makeResponseEntry('res_6a', '204', 'No Content')],
   },
   {
     ...newEndpointDefaults('/users/{id}/posts', 'GET', "List a user's posts"),
@@ -223,14 +218,14 @@ const sampleEndpoints: Endpoint[] = [
     tags: ['Users', 'Posts'],
     security: ['bearerAuth'],
     params: [{ id: 'pm_5', name: 'id', in: 'path', required: true }],
-    responses: [{ id: 'res_7a', code: '200', description: 'OK' }],
+    responses: [makeResponseEntry('res_7a', '200', 'OK')],
   },
   {
     ...newEndpointDefaults('/posts', 'GET', 'List posts'),
     id: 'ep_8',
     operationId: 'listPosts',
     tags: ['Posts'],
-    responses: [{ id: 'res_8a', code: '200', description: 'OK' }],
+    responses: [makeResponseEntry('res_8a', '200', 'OK')],
   },
   {
     ...newEndpointDefaults('/posts', 'POST', 'Create a post'),
@@ -240,7 +235,7 @@ const sampleEndpoints: Endpoint[] = [
     security: ['bearerAuth'],
     requestBodyEnabled: true,
     requestBodyDescription: 'Post to create',
-    responses: [{ id: 'res_9a', code: '201', description: 'Created' }],
+    responses: [makeResponseEntry('res_9a', '201', 'Created')],
   },
   {
     ...newEndpointDefaults('/posts/{id}', 'GET', 'Get a post by id'),
@@ -248,10 +243,7 @@ const sampleEndpoints: Endpoint[] = [
     operationId: 'getPost',
     tags: ['Posts'],
     params: [{ id: 'pm_6', name: 'id', in: 'path', required: true }],
-    responses: [
-      { id: 'res_10a', code: '200', description: 'OK' },
-      { id: 'res_10b', code: '404', description: 'Not Found' },
-    ],
+    responses: [makeResponseEntry('res_10a', '200', 'OK'), makeResponseEntry('res_10b', '404', 'Not Found')],
   },
 ];
 
@@ -396,19 +388,14 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   addResponse: (id) =>
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
-        e.id === id
-          ? { ...e, responses: [...e.responses, { id: makeId('res'), code: '200', description: '' }] }
-          : e,
+        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(makeId('res'), '200')] } : e,
       ),
     })),
   addResponseForClass: (id, cls) =>
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
         e.id === id
-          ? {
-              ...e,
-              responses: [...e.responses, { id: makeId('res'), code: DEFAULT_CODE_FOR_CLASS[cls], description: '' }],
-            }
+          ? { ...e, responses: [...e.responses, makeResponseEntry(makeId('res'), DEFAULT_CODE_FOR_CLASS[cls])] }
           : e,
       ),
     })),
@@ -424,6 +411,68 @@ export const useSpecStore = create<SpecState>((set, get) => ({
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
         e.id === id ? { ...e, responses: e.responses.filter((r) => r.id !== responseId) } : e,
+      ),
+    })),
+
+  addResponseHeader: (id, responseId) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              responses: e.responses.map((r) =>
+                r.id === responseId
+                  ? { ...r, headers: [...r.headers, { id: makeId('hd'), name: '', required: false }] }
+                  : r,
+              ),
+            }
+          : e,
+      ),
+    })),
+  setResponseHeader: (id, responseId, headerId, patch) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              responses: e.responses.map((r) =>
+                r.id === responseId
+                  ? { ...r, headers: r.headers.map((h) => (h.id === headerId ? { ...h, ...patch } : h)) }
+                  : r,
+              ),
+            }
+          : e,
+      ),
+    })),
+  removeResponseHeader: (id, responseId, headerId) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              responses: e.responses.map((r) =>
+                r.id === responseId ? { ...r, headers: r.headers.filter((h) => h.id !== headerId) } : r,
+              ),
+            }
+          : e,
+      ),
+    })),
+  toggleResponseContentType: (id, responseId, contentType) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              responses: e.responses.map((r) => {
+                if (r.id !== responseId) return r;
+                const has = r.contentTypes.includes(contentType);
+                const next = has
+                  ? r.contentTypes.filter((ct) => ct !== contentType)
+                  : [...r.contentTypes, contentType];
+                return { ...r, contentTypes: next.length ? next : ['application/json'] };
+              }),
+            }
+          : e,
       ),
     })),
 

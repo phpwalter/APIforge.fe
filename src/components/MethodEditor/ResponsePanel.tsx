@@ -5,9 +5,11 @@ import {
   CLASS_COLOR,
   CLASS_ORDER,
   CODES_BY_CLASS,
+  CONTENT_TYPE_OPTIONS,
   classOf,
   colorForCode,
   defaultActiveClass,
+  reasonForCode,
 } from '../../lib/responseClass';
 import styles from './MethodEditor.module.css';
 
@@ -16,9 +18,14 @@ interface ResponsePanelProps {
 }
 
 export function ResponsePanel({ endpoint }: ResponsePanelProps) {
+  const schemas = useSpecStore((s) => s.schemas);
   const addResponseForClass = useSpecStore((s) => s.addResponseForClass);
   const setResponse = useSpecStore((s) => s.setResponse);
   const removeResponse = useSpecStore((s) => s.removeResponse);
+  const addResponseHeader = useSpecStore((s) => s.addResponseHeader);
+  const setResponseHeader = useSpecStore((s) => s.setResponseHeader);
+  const removeResponseHeader = useSpecStore((s) => s.removeResponseHeader);
+  const toggleResponseContentType = useSpecStore((s) => s.toggleResponseContentType);
   const responseActiveClass = useSpecStore((s) => s.responseActiveClass);
   const setResponseActiveClass = useSpecStore((s) => s.setResponseActiveClass);
 
@@ -73,45 +80,181 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
 
       <div className={styles.colBody}>
         <div className={styles.rowsList}>
+          {visible.length === 0 && (
+            <div className={styles.emptyResponses}>
+              <div className={styles.emptyResponsesTitle}>
+                No <span className={styles.emptyResponsesClass}>{activeClass}</span> responses defined
+              </div>
+              <div className={styles.emptyResponsesHint}>
+                Add one with + Response, or pick another status class above.
+              </div>
+            </div>
+          )}
           {visible.map((r) => {
             const color = colorForCode(r.code);
             const codeOptions = Array.from(new Set([r.code, ...CODES_BY_CLASS[activeClass]])).sort();
+            const noBody = r.code === '204';
+            const schemaValue = r.schema ? `${r.schemaIsArray ? 'array' : 'schema'}:${r.schema}` : '';
+            const availableContentTypes = CONTENT_TYPE_OPTIONS.filter((ct) => !r.contentTypes.includes(ct));
+
             return (
-              <div key={r.id} className={styles.responseRow}>
-                <select
-                  className={styles.codeSelect}
-                  style={{ background: color, borderColor: color }}
-                  value={r.code}
-                  onChange={(e) => setResponse(endpoint.id, r.id, { code: e.target.value })}
-                >
-                  {codeOptions.map((code) => (
-                    <option key={code} value={code}>
-                      {code}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  className={styles.descInput}
-                  value={r.description}
-                  placeholder="Description"
-                  onChange={(e) => setResponse(endpoint.id, r.id, { description: e.target.value })}
-                />
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  title="Remove response"
-                  onClick={() => removeResponse(endpoint.id, r.id)}
-                >
-                  <X size={13} />
-                </button>
+              <div key={r.id} className={styles.responseCard}>
+                <div className={styles.responseTopRow}>
+                  <select
+                    className={styles.codeSelect}
+                    style={{ background: color, borderColor: color }}
+                    value={r.code}
+                    onChange={(e) => setResponse(endpoint.id, r.id, { code: e.target.value })}
+                  >
+                    {codeOptions.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className={styles.descInput}
+                    value={r.description}
+                    placeholder={reasonForCode(r.code) ?? 'Description'}
+                    onChange={(e) => setResponse(endpoint.id, r.id, { description: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className={styles.removeBtn}
+                    title="Remove response"
+                    onClick={() => removeResponse(endpoint.id, r.id)}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+
+                {/* Headers */}
+                <div className={`${styles.box} ${styles.responseSubBox}`}>
+                  <div className={styles.boxHeader}>
+                    <span className={styles.boxTitle}>Headers</span>
+                    <button
+                      type="button"
+                      className={styles.addBtn}
+                      title="Add"
+                      disabled={noBody}
+                      onClick={() => addResponseHeader(endpoint.id, r.id)}
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                  {noBody ? (
+                    <div className={styles.bodyNone}>
+                      None required — 204 responses carry no message body or content headers
+                    </div>
+                  ) : (
+                    <div className={styles.rowsList}>
+                      {r.headers.map((h) => (
+                        <div key={h.id} className={styles.fieldRow}>
+                          <button
+                            type="button"
+                            className={styles.reqToggle}
+                            data-required={h.required}
+                            title="Toggle required"
+                            onClick={() => setResponseHeader(endpoint.id, r.id, h.id, { required: !h.required })}
+                          >
+                            {h.required ? '*' : '?'}
+                          </button>
+                          <input
+                            className={styles.nameInput}
+                            value={h.name}
+                            placeholder="Header-Name"
+                            onChange={(e) => setResponseHeader(endpoint.id, r.id, h.id, { name: e.target.value })}
+                          />
+                          <button
+                            type="button"
+                            className={styles.removeBtn}
+                            title="Remove header"
+                            onClick={() => removeResponseHeader(endpoint.id, r.id, h.id)}
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ))}
+                      {r.headers.length === 0 && <div className={styles.bodyNone}>No headers</div>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Response body */}
+                <div className={`${styles.box} ${styles.responseSubBox}`}>
+                  <div className={styles.boxHeader}>
+                    <span className={styles.boxTitle}>Response body</span>
+                  </div>
+                  {noBody ? (
+                    <div className={styles.bodyNone}>None required — 204 responses carry no message body</div>
+                  ) : (
+                    <div className={styles.bodyFieldsCol}>
+                      <div className={styles.bodyFieldRow}>
+                        <span className={styles.bodyFieldLabel}>schema</span>
+                        <select
+                          className={styles.schemaSelect}
+                          value={schemaValue}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            const schemaIsArray = v.startsWith('array:');
+                            const schema = v ? v.slice(v.indexOf(':') + 1) : '';
+                            setResponse(endpoint.id, r.id, { schema, schemaIsArray });
+                          }}
+                        >
+                          <option value="">— none —</option>
+                          {schemas.map((s) => (
+                            <option key={`schema:${s.name}`} value={`schema:${s.name}`}>
+                              {s.name}
+                            </option>
+                          ))}
+                          {schemas.map((s) => (
+                            <option key={`array:${s.name}`} value={`array:${s.name}`}>
+                              {`array of ${s.name}`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={styles.bodyFieldRowTop}>
+                        <span className={styles.bodyFieldLabelTop}>type</span>
+                        <div className={styles.ctChipsWrap}>
+                          {r.contentTypes.map((ct) => (
+                            <span key={ct} className={styles.ctChip}>
+                              {ct}
+                              <button
+                                type="button"
+                                className={styles.ctChipRemove}
+                                title="Remove content-type"
+                                onClick={() => toggleResponseContentType(endpoint.id, r.id, ct)}
+                              >
+                                <X size={10} />
+                              </button>
+                            </span>
+                          ))}
+                          {availableContentTypes.length > 0 && (
+                            <select
+                              className={styles.ctAddSelect}
+                              value=""
+                              title="Add a response content-type"
+                              onChange={(e) => {
+                                if (e.target.value) toggleResponseContentType(endpoint.id, r.id, e.target.value);
+                              }}
+                            >
+                              <option value="">+ Add type</option>
+                              {availableContentTypes.map((ct) => (
+                                <option key={ct} value={ct}>
+                                  {ct}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
-          {visible.length === 0 && (
-            <div style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>
-              No {activeClass} responses defined — click + to add one.
-            </div>
-          )}
         </div>
       </div>
     </div>
