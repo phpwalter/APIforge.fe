@@ -13,12 +13,15 @@ import {
 } from '../../lib/responseClass';
 import styles from './MethodEditor.module.css';
 
+const NEW_SCHEMA_VALUE = '__new__';
+
 interface ResponsePanelProps {
   endpoint: Endpoint;
 }
 
 export function ResponsePanel({ endpoint }: ResponsePanelProps) {
   const schemas = useSpecStore((s) => s.schemas);
+  const addSchemaReturningName = useSpecStore((s) => s.addSchemaReturningName);
   const addResponseForClass = useSpecStore((s) => s.addResponseForClass);
   const setResponse = useSpecStore((s) => s.setResponse);
   const removeResponse = useSpecStore((s) => s.removeResponse);
@@ -196,12 +199,18 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
                           value={schemaValue}
                           onChange={(e) => {
                             const v = e.target.value;
+                            if (v === NEW_SCHEMA_VALUE) {
+                              const name = addSchemaReturningName();
+                              setResponse(endpoint.id, r.id, { schema: name, schemaIsArray: false });
+                              return;
+                            }
                             const schemaIsArray = v.startsWith('array:');
                             const schema = v ? v.slice(v.indexOf(':') + 1) : '';
                             setResponse(endpoint.id, r.id, { schema, schemaIsArray });
                           }}
                         >
                           <option value="">— none —</option>
+                          <option value={NEW_SCHEMA_VALUE}>— New Schema —</option>
                           {schemas.map((s) => (
                             <option key={`schema:${s.name}`} value={`schema:${s.name}`}>
                               {s.name}
@@ -214,41 +223,43 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
                           ))}
                         </select>
                       </div>
-                      <div className={styles.bodyFieldRowTop}>
-                        <span className={styles.bodyFieldLabelTop}>type</span>
-                        <div className={styles.ctChipsWrap}>
-                          {r.contentTypes.map((ct) => (
-                            <span key={ct} className={styles.ctChip}>
-                              {ct}
-                              <button
-                                type="button"
-                                className={styles.ctChipRemove}
-                                title="Remove content-type"
-                                onClick={() => toggleResponseContentType(endpoint.id, r.id, ct)}
+                      {r.schema && (
+                        <div className={styles.bodyFieldRowTop}>
+                          <span className={styles.bodyFieldLabelTop}>type</span>
+                          <div className={styles.ctChipsWrap}>
+                            {r.contentTypes.map((ct) => (
+                              <span key={ct} className={styles.ctChip}>
+                                {ct}
+                                <button
+                                  type="button"
+                                  className={styles.ctChipRemove}
+                                  title="Remove content-type"
+                                  onClick={() => toggleResponseContentType(endpoint.id, r.id, ct)}
+                                >
+                                  <X size={10} />
+                                </button>
+                              </span>
+                            ))}
+                            {availableContentTypes.length > 0 && (
+                              <select
+                                className={styles.ctAddSelect}
+                                value=""
+                                title="Add a response content-type"
+                                onChange={(e) => {
+                                  if (e.target.value) toggleResponseContentType(endpoint.id, r.id, e.target.value);
+                                }}
                               >
-                                <X size={10} />
-                              </button>
-                            </span>
-                          ))}
-                          {availableContentTypes.length > 0 && (
-                            <select
-                              className={styles.ctAddSelect}
-                              value=""
-                              title="Add a response content-type"
-                              onChange={(e) => {
-                                if (e.target.value) toggleResponseContentType(endpoint.id, r.id, e.target.value);
-                              }}
-                            >
-                              <option value="">+ Add type</option>
-                              {availableContentTypes.map((ct) => (
-                                <option key={ct} value={ct}>
-                                  {ct}
-                                </option>
-                              ))}
-                            </select>
-                          )}
+                                <option value="">+ Add type</option>
+                                {availableContentTypes.map((ct) => (
+                                  <option key={ct} value={ct}>
+                                    {ct}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>

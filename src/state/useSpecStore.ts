@@ -144,6 +144,8 @@ interface SpecState {
   // Schemas
   schemas: Schema[];
   addSchema: () => void;
+  /** Creates a uniquely-named schema without changing the current selection — for inline "create new" pickers. Returns the new schema's name. */
+  addSchemaReturningName: () => string;
 
   // Schema designer panel UI state
   schemaPanelSearch: string;
@@ -549,6 +551,16 @@ export const useSpecStore = create<SpecState>((set, get) => ({
     );
     const newSchema: Schema = { id: makeId('sc'), name, fieldCount: 0 };
     set({ schemas: [...schemas, newSchema], selectedId: newSchema.id });
+  },
+  addSchemaReturningName: () => {
+    const { schemas } = get();
+    const name = uniqueSchemaName(
+      schemas.map((s) => s.name),
+      'NewSchema',
+    );
+    const newSchema: Schema = { id: makeId('sc'), name, fieldCount: 0 };
+    set({ schemas: [...schemas, newSchema] });
+    return name;
   },
 
   schemaPanelSearch: '',

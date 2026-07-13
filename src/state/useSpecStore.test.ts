@@ -287,6 +287,15 @@ describe('useSpecStore', () => {
     expect(s.selectedId).toBe(s.schemas[1].id);
   });
 
+  it('adds a schema without changing selection, returning its name', () => {
+    useSpecStore.setState({ selectedId: 'ep_x' });
+    const name = useSpecStore.getState().addSchemaReturningName();
+    const s = useSpecStore.getState();
+    expect(name).toBe('NewSchema');
+    expect(s.schemas.map((sc) => sc.name)).toEqual(['NewSchema']);
+    expect(s.selectedId).toBe('ep_x');
+  });
+
   it('drops a dragged method onto a tag it does not already have', () => {
     useSpecStore.getState().pickMethod('/posts', 'GET');
     const id = useSpecStore.getState().endpoints[0].id;
