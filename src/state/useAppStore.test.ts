@@ -67,6 +67,31 @@ describe('useAppStore', () => {
     expect(s.apiLicense).toEqual({ name: 'Apache 2.0', url: '' });
   });
 
+  it('adds, updates, and removes servers', () => {
+    useAppStore.getState().addApiServer();
+    useAppStore.getState().addApiServer();
+    expect(useAppStore.getState().apiServers).toEqual(['', '']);
+
+    useAppStore.getState().setApiServerUrl(0, 'https://api.example.com');
+    useAppStore.getState().setApiServerUrl(1, 'https://staging.example.com');
+    expect(useAppStore.getState().apiServers).toEqual([
+      'https://api.example.com',
+      'https://staging.example.com',
+    ]);
+
+    useAppStore.getState().removeApiServer(0);
+    expect(useAppStore.getState().apiServers).toEqual(['https://staging.example.com']);
+  });
+
+  it('updates external docs fields without clobbering the others', () => {
+    useAppStore.getState().setApiExternalDocsField('description', 'Full API guide');
+    useAppStore.getState().setApiExternalDocsField('url', 'https://docs.example.com');
+    expect(useAppStore.getState().apiExternalDocs).toEqual({
+      description: 'Full API guide',
+      url: 'https://docs.example.com',
+    });
+  });
+
   it('toggles the more-menu and closes the user-menu', () => {
     useAppStore.setState({ userMenuOpen: true });
     useAppStore.getState().toggleMoreMenu();

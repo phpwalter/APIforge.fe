@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CanvasTabId, SaveState, ThemeMode, ThemeName, UserProfile } from '../types/ui';
-import type { ApiContact, ApiLicense } from '../types/spec';
+import type { ApiContact, ApiExternalDocs, ApiLicense } from '../types/spec';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -34,6 +34,14 @@ interface AppState {
   setApiField: (field: 'title' | 'version' | 'description' | 'termsOfService', value: string) => void;
   setApiContactField: (field: keyof ApiContact, value: string) => void;
   setApiLicenseField: (field: keyof ApiLicense, value: string) => void;
+
+  // Settings :: Servers & External Docs
+  apiServers: string[];
+  apiExternalDocs: ApiExternalDocs;
+  addApiServer: () => void;
+  removeApiServer: (index: number) => void;
+  setApiServerUrl: (index: number, url: string) => void;
+  setApiExternalDocsField: (field: keyof ApiExternalDocs, value: string) => void;
 
   // Save status badge
   saveState: SaveState;
@@ -117,6 +125,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setApiContactField: (field, value) => set((s) => ({ apiContact: { ...s.apiContact, [field]: value } })),
   setApiLicenseField: (field, value) => set((s) => ({ apiLicense: { ...s.apiLicense, [field]: value } })),
+
+  apiServers: [],
+  apiExternalDocs: { description: '', url: '' },
+  addApiServer: () => set((s) => ({ apiServers: [...s.apiServers, ''] })),
+  removeApiServer: (index) => set((s) => ({ apiServers: s.apiServers.filter((_, i) => i !== index) })),
+  setApiServerUrl: (index, url) =>
+    set((s) => ({ apiServers: s.apiServers.map((u, i) => (i === index ? url : u)) })),
+  setApiExternalDocsField: (field, value) =>
+    set((s) => ({ apiExternalDocs: { ...s.apiExternalDocs, [field]: value } })),
 
   saveState: 'saved',
   lastSavedAt: Date.now(),

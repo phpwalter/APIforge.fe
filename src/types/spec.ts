@@ -13,6 +13,12 @@ export interface ApiLicense {
   url: string;
 }
 
+/** OpenAPI root-level `externalDocs` object. */
+export interface ApiExternalDocs {
+  description: string;
+  url: string;
+}
+
 export type ParamLocation = 'query' | 'path' | 'header' | 'cookie';
 
 export interface Param {

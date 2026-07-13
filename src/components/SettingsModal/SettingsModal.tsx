@@ -3,12 +3,14 @@ import { Search, X, CircleHelp } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { SETTINGS_CATEGORIES } from './settingsCategories';
 import { GeneralSettingsPanel } from './GeneralSettingsPanel';
+import { ServersSettingsPanel } from './ServersSettingsPanel';
 import { SecuritySettingsPanel } from './SecuritySettingsPanel';
 import { AboutSettingsPanel } from './AboutSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   general: GeneralSettingsPanel,
+  servers: ServersSettingsPanel,
   security: SecuritySettingsPanel,
   about: AboutSettingsPanel,
 };

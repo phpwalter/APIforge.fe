@@ -1,0 +1,117 @@
+.sectionLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.addBtn {
+  width: 26px;
+  height: 18px;
+  flex: none;
+  color: var(--add);
+  background: var(--add-soft);
+  border: 1px solid var(--add);
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyText {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  padding: 2px;
+}
+
+.serverList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.serverRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.serverInput {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  background: var(--inset);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.serverInput:focus {
+  border-color: var(--accent);
+}
+
+.removeBtn {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: 1px solid var(--del);
+  background: var(--del-soft);
+  color: var(--del);
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeBtn:hover {
+  background: var(--del);
+  color: #fff;
+}
+
+.extDocsFields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.textInputSmall,
+.monoInputSmall {
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  background: var(--inset);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12.5px;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.textInputSmall {
+  font-family: inherit;
+}
+
+.monoInputSmall {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.textInputSmall:focus,
+.monoInputSmall:focus {
+  border-color: var(--accent);
+}
