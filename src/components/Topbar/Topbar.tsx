@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Layers, ChevronDown, Undo2, Redo2, Monitor, Moon, Sun, Ellipsis } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { importOpenApiFile } from '../../lib/importHandler';
+import { APP_VERSION } from '../../lib/appInfo';
 import { SaveBadge } from './SaveBadge';
 import { MoreMenu } from './MoreMenu';
 import { UserMenu } from './UserMenu';
@@ -44,7 +45,7 @@ export function Topbar() {
           <Layers size={19} />
         </span>
         <span className={styles.brandName}>APIforge</span>
-        <span className={styles.pill}>2.0 MVP</span>
+        <span className={styles.pill}>{APP_VERSION}</span>
       </div>
 
       <button type="button" className={styles.projectPill} title="Project settings" onClick={openSettings}>

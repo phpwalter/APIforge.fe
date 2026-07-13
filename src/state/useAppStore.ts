@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { CanvasTabId, SaveState, ThemeMode, ThemeName, UserProfile } from '../types/ui';
+import type { ApiContact, ApiLicense } from '../types/spec';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -23,6 +24,16 @@ interface AppState {
   apiVersion: string;
   apiOpenapiVersion: string;
   setProjectInfo: (info: { title: string; version: string; openapiVersion: string }) => void;
+  setApiOpenapiVersion: (version: string) => void;
+
+  // Settings :: General — the rest of the OpenAPI `info` object.
+  apiDescription: string;
+  apiTermsOfService: string;
+  apiContact: ApiContact;
+  apiLicense: ApiLicense;
+  setApiField: (field: 'title' | 'version' | 'description' | 'termsOfService', value: string) => void;
+  setApiContactField: (field: keyof ApiContact, value: string) => void;
+  setApiLicenseField: (field: keyof ApiLicense, value: string) => void;
 
   // Save status badge
   saveState: SaveState;
@@ -86,6 +97,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   apiOpenapiVersion: '3.1.0',
   setProjectInfo: ({ title, version, openapiVersion }) =>
     set({ apiTitle: title, apiVersion: version, apiOpenapiVersion: openapiVersion }),
+  setApiOpenapiVersion: (version) => set({ apiOpenapiVersion: version }),
+
+  apiDescription: '',
+  apiTermsOfService: '',
+  apiContact: { name: '', email: '', url: '' },
+  apiLicense: { name: '', url: '' },
+  setApiField: (field, value) => {
+    switch (field) {
+      case 'title':
+        return set({ apiTitle: value });
+      case 'version':
+        return set({ apiVersion: value });
+      case 'description':
+        return set({ apiDescription: value });
+      case 'termsOfService':
+        return set({ apiTermsOfService: value });
+    }
+  },
+  setApiContactField: (field, value) => set((s) => ({ apiContact: { ...s.apiContact, [field]: value } })),
+  setApiLicenseField: (field, value) => set((s) => ({ apiLicense: { ...s.apiLicense, [field]: value } })),
 
   saveState: 'saved',
   lastSavedAt: Date.now(),

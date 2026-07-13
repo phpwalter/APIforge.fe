@@ -1,5 +1,18 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'TRACE';
 
+/** OpenAPI `info.contact` object. */
+export interface ApiContact {
+  name: string;
+  email: string;
+  url: string;
+}
+
+/** OpenAPI `info.license` object. */
+export interface ApiLicense {
+  name: string;
+  url: string;
+}
+
 export type ParamLocation = 'query' | 'path' | 'header' | 'cookie';
 
 export interface Param {

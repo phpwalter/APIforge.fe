@@ -37,6 +37,36 @@ describe('useAppStore', () => {
     expect(s.apiOpenapiVersion).toBe('3.0.0');
   });
 
+  it('sets the OpenAPI version independently of setProjectInfo', () => {
+    useAppStore.getState().setApiOpenapiVersion('3.0.3');
+    expect(useAppStore.getState().apiOpenapiVersion).toBe('3.0.3');
+  });
+
+  it('sets individual General settings fields', () => {
+    useAppStore.getState().setApiField('title', 'Widgets API');
+    useAppStore.getState().setApiField('version', '2.1.0');
+    useAppStore.getState().setApiField('description', 'Manage widgets.');
+    useAppStore.getState().setApiField('termsOfService', 'https://example.com/terms');
+    const s = useAppStore.getState();
+    expect(s.apiTitle).toBe('Widgets API');
+    expect(s.apiVersion).toBe('2.1.0');
+    expect(s.apiDescription).toBe('Manage widgets.');
+    expect(s.apiTermsOfService).toBe('https://example.com/terms');
+  });
+
+  it('updates contact fields without clobbering the others', () => {
+    useAppStore.getState().setApiContactField('name', 'Jane Doe');
+    useAppStore.getState().setApiContactField('email', 'jane@example.com');
+    const s = useAppStore.getState();
+    expect(s.apiContact).toEqual({ name: 'Jane Doe', email: 'jane@example.com', url: '' });
+  });
+
+  it('updates license fields without clobbering the others', () => {
+    useAppStore.getState().setApiLicenseField('name', 'Apache 2.0');
+    const s = useAppStore.getState();
+    expect(s.apiLicense).toEqual({ name: 'Apache 2.0', url: '' });
+  });
+
   it('toggles the more-menu and closes the user-menu', () => {
     useAppStore.setState({ userMenuOpen: true });
     useAppStore.getState().toggleMoreMenu();

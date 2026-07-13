@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState, type ComponentType } from 'react';
 import { Search, X, CircleHelp } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { SETTINGS_CATEGORIES } from './settingsCategories';
+import { GeneralSettingsPanel } from './GeneralSettingsPanel';
 import { SecuritySettingsPanel } from './SecuritySettingsPanel';
+import { AboutSettingsPanel } from './AboutSettingsPanel';
 import styles from './SettingsModal.module.css';
+
+const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
+  general: GeneralSettingsPanel,
+  security: SecuritySettingsPanel,
+  about: AboutSettingsPanel,
+};
 
 export function SettingsModal() {
   const closeSettings = useAppStore((s) => s.closeSettings);
@@ -70,18 +78,20 @@ export function SettingsModal() {
               </button>
             </div>
             <div className={styles.paneBody}>
-              {active?.key === 'security' ? (
-                <SecuritySettingsPanel />
-              ) : (
-                <div className={styles.comingSoonWrap}>
-                  <div className={styles.comingSoon}>
-                    <div className={styles.comingSoonTitle}>Coming Soon</div>
-                    <div className={styles.comingSoonHint}>
-                      {active ? `${active.label} settings aren't built yet.` : 'Select a category from the left.'}
+              {(() => {
+                const Panel = active && SETTINGS_PANELS[active.key];
+                if (Panel) return <Panel />;
+                return (
+                  <div className={styles.comingSoonWrap}>
+                    <div className={styles.comingSoon}>
+                      <div className={styles.comingSoonTitle}>Coming Soon</div>
+                      <div className={styles.comingSoonHint}>
+                        {active ? `${active.label} settings aren't built yet.` : 'Select a category from the left.'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </div>

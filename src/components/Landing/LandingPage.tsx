@@ -1,6 +1,7 @@
 import { Layers, Terminal, Sparkles } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { AuthModal } from '../Auth/AuthModal';
+import { APP_VERSION } from '../../lib/appInfo';
 import styles from './LandingPage.module.css';
 
 const FOOTER_LINKS = [
@@ -29,7 +30,7 @@ export function LandingPage() {
             <Layers size={19} />
           </span>
           <span className={styles.brandName}>APIforge</span>
-          <span className={styles.pill}>2.0 MVP</span>
+          <span className={styles.pill}>{APP_VERSION}</span>
           <div className={styles.headerSpacer} />
           <button type="button" className={styles.signInBtn} onClick={openAuth}>
             Sign In
