@@ -1,0 +1,80 @@
+.headerRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.headerTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.namespaceBadge {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  color: var(--text-faint);
+}
+
+.description {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.fieldLabel {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-bottom: 5px;
+}
+
+.select,
+.monoSelect {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--inset);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12.5px;
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.select {
+  font-family: inherit;
+}
+
+.monoSelect {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.select:focus,
+.monoSelect:focus {
+  border-color: var(--accent);
+}
+
+.fieldHint {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-top: 5px;
+  line-height: 1.4;
+}

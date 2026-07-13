@@ -4,6 +4,7 @@ import { useAppStore } from '../../state/useAppStore';
 import { SETTINGS_CATEGORIES } from './settingsCategories';
 import { GeneralSettingsPanel } from './GeneralSettingsPanel';
 import { ServersSettingsPanel } from './ServersSettingsPanel';
+import { EditorPreferencesSettingsPanel } from './EditorPreferencesSettingsPanel';
 import { SecuritySettingsPanel } from './SecuritySettingsPanel';
 import { AboutSettingsPanel } from './AboutSettingsPanel';
 import styles from './SettingsModal.module.css';
@@ -11,6 +12,7 @@ import styles from './SettingsModal.module.css';
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   general: GeneralSettingsPanel,
   servers: ServersSettingsPanel,
+  preferences: EditorPreferencesSettingsPanel,
   security: SecuritySettingsPanel,
   about: AboutSettingsPanel,
 };

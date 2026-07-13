@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CanvasTabId, SaveState, ThemeMode, ThemeName, UserProfile } from '../types/ui';
+import type { ApiforgePreferences, CanvasTabId, SaveState, ThemeMode, ThemeName, UserProfile } from '../types/ui';
 import type { ApiContact, ApiExternalDocs, ApiLicense } from '../types/spec';
 
 function systemPrefersDark(): boolean {
@@ -42,6 +42,10 @@ interface AppState {
   removeApiServer: (index: number) => void;
   setApiServerUrl: (index: number, url: string) => void;
   setApiExternalDocsField: (field: keyof ApiExternalDocs, value: string) => void;
+
+  // Settings :: Editor Preferences (x-apiforge.preferences)
+  apiforgePreferences: ApiforgePreferences;
+  setApiforgePreference: <K extends keyof ApiforgePreferences>(key: K, value: ApiforgePreferences[K]) => void;
 
   // Save status badge
   saveState: SaveState;
@@ -134,6 +138,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({ apiServers: s.apiServers.map((u, i) => (i === index ? url : u)) })),
   setApiExternalDocsField: (field, value) =>
     set((s) => ({ apiExternalDocs: { ...s.apiExternalDocs, [field]: value } })),
+
+  apiforgePreferences: {
+    operationIdStyle: 'lowerCamelCase',
+    tagMode: 'operation',
+    resourceNamingStyle: 'singularResource',
+    defaultResponseView: 'structured',
+  },
+  setApiforgePreference: (key, value) =>
+    set((s) => ({ apiforgePreferences: { ...s.apiforgePreferences, [key]: value } })),
 
   saveState: 'saved',
   lastSavedAt: Date.now(),

@@ -92,6 +92,26 @@ describe('useAppStore', () => {
     });
   });
 
+  it('starts with the default editor preferences', () => {
+    expect(useAppStore.getState().apiforgePreferences).toEqual({
+      operationIdStyle: 'lowerCamelCase',
+      tagMode: 'operation',
+      resourceNamingStyle: 'singularResource',
+      defaultResponseView: 'structured',
+    });
+  });
+
+  it('updates individual editor preferences without clobbering the others', () => {
+    useAppStore.getState().setApiforgePreference('tagMode', 'resource');
+    useAppStore.getState().setApiforgePreference('defaultResponseView', 'raw');
+    expect(useAppStore.getState().apiforgePreferences).toEqual({
+      operationIdStyle: 'lowerCamelCase',
+      tagMode: 'resource',
+      resourceNamingStyle: 'singularResource',
+      defaultResponseView: 'raw',
+    });
+  });
+
   it('toggles the more-menu and closes the user-menu', () => {
     useAppStore.setState({ userMenuOpen: true });
     useAppStore.getState().toggleMoreMenu();
