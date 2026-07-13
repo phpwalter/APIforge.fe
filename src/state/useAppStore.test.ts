@@ -42,6 +42,24 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().themeMode).toBe('system');
   });
 
+  it('starts with the default notification preferences', () => {
+    expect(useAppStore.getState().notificationPreferences).toEqual({
+      importExportStatus: true,
+      diagnosticsAlerts: true,
+      autosaveConfirmations: false,
+    });
+  });
+
+  it('updates individual notification preferences without clobbering the others', () => {
+    useAppStore.getState().setNotificationPreference('autosaveConfirmations', true);
+    useAppStore.getState().setNotificationPreference('diagnosticsAlerts', false);
+    expect(useAppStore.getState().notificationPreferences).toEqual({
+      importExportStatus: true,
+      diagnosticsAlerts: false,
+      autosaveConfirmations: true,
+    });
+  });
+
   it('defaults syntax highlighting on and can be toggled off', () => {
     expect(useAppStore.getState().highlightingEnabled).toBe(true);
     useAppStore.getState().setHighlightingEnabled(false);

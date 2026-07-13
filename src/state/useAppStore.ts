@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import type { ApiforgePreferences, CanvasTabId, SaveState, ThemeMode, ThemeName, UserProfile } from '../types/ui';
+import type {
+  ApiforgePreferences,
+  CanvasTabId,
+  NotificationPreferences,
+  SaveState,
+  ThemeMode,
+  ThemeName,
+  UserProfile,
+} from '../types/ui';
 import type { ApiContact, ApiExternalDocs, ApiLicense } from '../types/spec';
 
 function systemPrefersDark(): boolean {
@@ -51,6 +59,13 @@ interface AppState {
   // Settings :: Editor Preferences (x-apiforge.preferences)
   apiforgePreferences: ApiforgePreferences;
   setApiforgePreference: <K extends keyof ApiforgePreferences>(key: K, value: ApiforgePreferences[K]) => void;
+
+  // Settings :: Notifications
+  notificationPreferences: NotificationPreferences;
+  setNotificationPreference: <K extends keyof NotificationPreferences>(
+    key: K,
+    value: NotificationPreferences[K],
+  ) => void;
 
   // Save status badge
   saveState: SaveState;
@@ -156,6 +171,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setApiforgePreference: (key, value) =>
     set((s) => ({ apiforgePreferences: { ...s.apiforgePreferences, [key]: value } })),
+
+  notificationPreferences: {
+    importExportStatus: true,
+    diagnosticsAlerts: true,
+    autosaveConfirmations: false,
+  },
+  setNotificationPreference: (key, value) =>
+    set((s) => ({ notificationPreferences: { ...s.notificationPreferences, [key]: value } })),
 
   saveState: 'saved',
   lastSavedAt: Date.now(),

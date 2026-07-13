@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { CircleCheck, CircleAlert, X } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
+import { useAppStore } from '../../state/useAppStore';
 import styles from './ImportStatusToast.module.css';
 
 export function ImportStatusToast() {
   const importStatus = useSpecStore((s) => s.importStatus);
   const setImportStatus = useSpecStore((s) => s.setImportStatus);
+  const notificationsEnabled = useAppStore((s) => s.notificationPreferences.importExportStatus);
 
   useEffect(() => {
     if (!importStatus) return;
@@ -13,7 +15,7 @@ export function ImportStatusToast() {
     return () => clearTimeout(t);
   }, [importStatus, setImportStatus]);
 
-  if (!importStatus) return null;
+  if (!importStatus || !notificationsEnabled) return null;
 
   const Icon = importStatus.type === 'success' ? CircleCheck : CircleAlert;
 

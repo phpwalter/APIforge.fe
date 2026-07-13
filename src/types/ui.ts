@@ -29,3 +29,13 @@ export interface ApiforgePreferences {
   resourceNamingStyle: 'singularResource' | 'pluralResource';
   defaultResponseView: 'structured' | 'raw';
 }
+
+/**
+ * Local, in-browser notification preferences. APIforge has no backend/email —
+ * these only control what's shown while working in this browser.
+ */
+export interface NotificationPreferences {
+  importExportStatus: boolean;
+  diagnosticsAlerts: boolean;
+  autosaveConfirmations: boolean;
+}
