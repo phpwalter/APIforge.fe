@@ -171,6 +171,33 @@ describe('useSpecStore', () => {
     expect(useSpecStore.getState().endpoints[0].responses).toHaveLength(initialCount);
   });
 
+  it('adds a response with the default code for a given status class', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+
+    useSpecStore.getState().addResponseForClass(id, '4xx');
+    const responses = useSpecStore.getState().endpoints[0].responses;
+    expect(responses[responses.length - 1].code).toBe('400');
+
+    useSpecStore.getState().addResponseForClass(id, '5xx');
+    const updated = useSpecStore.getState().endpoints[0].responses;
+    expect(updated[updated.length - 1].code).toBe('500');
+  });
+
+  it('tracks the active response status class per endpoint', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    const idA = useSpecStore.getState().endpoints[0].id;
+    useSpecStore.getState().pickMethod('/posts', 'GET');
+    const idB = useSpecStore.getState().endpoints[1].id;
+
+    useSpecStore.getState().setResponseActiveClass(idA, '4xx');
+    useSpecStore.getState().setResponseActiveClass(idB, '5xx');
+
+    const s = useSpecStore.getState();
+    expect(s.responseActiveClass[idA]).toBe('4xx');
+    expect(s.responseActiveClass[idB]).toBe('5xx');
+  });
+
   it('adds and removes security schemes without duplicates', () => {
     useSpecStore.getState().pickMethod('/users', 'GET');
     const id = useSpecStore.getState().endpoints[0].id;

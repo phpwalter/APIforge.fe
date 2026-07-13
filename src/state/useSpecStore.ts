@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Endpoint, HeaderParam, HttpMethod, Param, ResponseEntry, Schema } from '../types/spec';
 import { METHOD_PRIORITY } from '../lib/methodStyle';
+import { DEFAULT_CODE_FOR_CLASS, type ResponseClass } from '../lib/responseClass';
 
 const EP_PANEL_MIN_WIDTH = 220;
 const EP_PANEL_MAX_WIDTH = 480;
@@ -103,8 +104,13 @@ interface SpecState {
   setRequestBodyDescription: (id: string, description: string) => void;
 
   addResponse: (id: string) => void;
+  addResponseForClass: (id: string, cls: ResponseClass) => void;
   setResponse: (id: string, responseId: string, patch: Partial<ResponseEntry>) => void;
   removeResponse: (id: string, responseId: string) => void;
+
+  // Response subpanel UI state — the status-class pill selected per endpoint.
+  responseActiveClass: Record<string, ResponseClass>;
+  setResponseActiveClass: (endpointId: string, cls: ResponseClass) => void;
 
   addSecurity: (id: string, scheme: string) => void;
   removeSecurity: (id: string, scheme: string) => void;
@@ -268,6 +274,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       panelSearch: '',
       schemaPanelSearch: '',
       expandedTags: {},
+      responseActiveClass: {},
     }),
   loadSampleProject: () =>
     set({
@@ -394,6 +401,17 @@ export const useSpecStore = create<SpecState>((set, get) => ({
           : e,
       ),
     })),
+  addResponseForClass: (id, cls) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              responses: [...e.responses, { id: makeId('res'), code: DEFAULT_CODE_FOR_CLASS[cls], description: '' }],
+            }
+          : e,
+      ),
+    })),
   setResponse: (id, responseId, patch) =>
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
@@ -408,6 +426,10 @@ export const useSpecStore = create<SpecState>((set, get) => ({
         e.id === id ? { ...e, responses: e.responses.filter((r) => r.id !== responseId) } : e,
       ),
     })),
+
+  responseActiveClass: {},
+  setResponseActiveClass: (endpointId, cls) =>
+    set((s) => ({ responseActiveClass: { ...s.responseActiveClass, [endpointId]: cls } })),
 
   addSecurity: (id, scheme) =>
     set((s) => ({

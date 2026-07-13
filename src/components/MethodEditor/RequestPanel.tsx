@@ -31,58 +31,60 @@ export function RequestPanel({ endpoint }: RequestPanelProps) {
         Request
       </div>
       <div className={styles.colBody}>
-        {/* Parameters */}
-        <div className={styles.box}>
-          <div className={styles.boxHeader}>
-            <span className={styles.boxTitle}>Parameters</span>
-            <button type="button" className={styles.addBtn} title="Add" onClick={() => addParam(endpoint.id)}>
-              <Plus size={12} />
-            </button>
+        {/* Parameters — GET only, per the demo UI */}
+        {endpoint.method === 'GET' && (
+          <div className={styles.box}>
+            <div className={styles.boxHeader}>
+              <span className={styles.boxTitle}>Parameters</span>
+              <button type="button" className={styles.addBtn} title="Add" onClick={() => addParam(endpoint.id)}>
+                <Plus size={12} />
+              </button>
+            </div>
+            <div className={styles.rowsList}>
+              {endpoint.params.map((p) => (
+                <div key={p.id} className={styles.fieldRow}>
+                  <button
+                    type="button"
+                    className={styles.reqToggle}
+                    data-required={p.required}
+                    title="Toggle required"
+                    onClick={() => setParam(endpoint.id, p.id, { required: !p.required })}
+                  >
+                    {p.required ? '*' : '?'}
+                  </button>
+                  <input
+                    className={styles.nameInput}
+                    value={p.name}
+                    placeholder="name"
+                    onChange={(e) => setParam(endpoint.id, p.id, { name: e.target.value })}
+                  />
+                  <select
+                    className={styles.locSelect}
+                    value={p.in}
+                    onChange={(e) => setParam(endpoint.id, p.id, { in: e.target.value as ParamLocation })}
+                  >
+                    {LOCATIONS.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={styles.removeBtn}
+                    title="Remove parameter"
+                    onClick={() => removeParam(endpoint.id, p.id)}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+              {endpoint.params.length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>No parameters</div>
+              )}
+            </div>
           </div>
-          <div className={styles.rowsList}>
-            {endpoint.params.map((p) => (
-              <div key={p.id} className={styles.fieldRow}>
-                <button
-                  type="button"
-                  className={styles.reqToggle}
-                  data-required={p.required}
-                  title="Toggle required"
-                  onClick={() => setParam(endpoint.id, p.id, { required: !p.required })}
-                >
-                  {p.required ? '*' : '?'}
-                </button>
-                <input
-                  className={styles.nameInput}
-                  value={p.name}
-                  placeholder="name"
-                  onChange={(e) => setParam(endpoint.id, p.id, { name: e.target.value })}
-                />
-                <select
-                  className={styles.locSelect}
-                  value={p.in}
-                  onChange={(e) => setParam(endpoint.id, p.id, { in: e.target.value as ParamLocation })}
-                >
-                  {LOCATIONS.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {loc}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  title="Remove parameter"
-                  onClick={() => removeParam(endpoint.id, p.id)}
-                >
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
-            {endpoint.params.length === 0 && (
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>No parameters</div>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* Headers */}
         <div className={styles.box}>

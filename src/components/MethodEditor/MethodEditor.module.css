@@ -530,10 +530,28 @@
 }
 
 /* responses */
+.responseHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 13px;
+}
+
+.responseHeadLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.responseHeadTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .classPills {
   display: flex;
   gap: 6px;
-  margin-bottom: 11px;
 }
 
 .classPill {
@@ -553,18 +571,18 @@
   gap: 6px;
 }
 
-.codeInput {
+.codeSelect {
   flex: none;
-  width: 52px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   text-align: center;
   border-radius: 6px;
-  padding: 5px 4px;
-  border: 1px solid var(--border);
+  padding: 4px 9px;
+  border: 1px solid transparent;
   outline: none;
   color: #fff;
+  cursor: pointer;
 }
 
 .descInput {
