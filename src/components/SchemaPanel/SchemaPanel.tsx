@@ -29,62 +29,64 @@ export function SchemaPanel() {
   usePanelResize(panelRef, resizing, setWidth, setResizing);
 
   return (
-    <div
-      ref={panelRef}
-      className={styles.panel}
-      data-resizing={resizing}
-      style={{ width: collapsed ? 0 : width }}
-    >
-      <div className={styles.panelInner} style={{ width }}>
-        <div className={styles.header}>
-          <span className={styles.headerIcon}>
-            <Braces size={17} />
-          </span>
-          <span className={styles.headerTitle}>Object Schemas</span>
-          <button type="button" className={styles.newBtn} onClick={addSchema}>
-            <Plus size={13} /> New
-          </button>
-        </div>
-
-        <div className={styles.searchWrap}>
-          <span className={styles.searchIcon}>
-            <Search size={14} />
-          </span>
-          <input
-            className={styles.searchInput}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search schemas…"
-          />
-        </div>
-
-        <div className={styles.list}>
-          {rows.map((schema) => (
-            <div
-              key={schema.id}
-              className={styles.row}
-              data-selected={selectedId === schema.id}
-              onClick={() => selectBlock(schema.id)}
-            >
-              <span className={styles.rowIcon}>
-                <Braces size={15} />
-              </span>
-              <span className={styles.rowName}>{schema.name}</span>
-              <span className={styles.rowCount}>{schema.scalar ? 1 : schema.fieldCount}</span>
-            </div>
-          ))}
-          {isEmpty && <div className={styles.emptyState}>No schemas match your search.</div>}
-        </div>
-      </div>
-
+    <>
       <div
-        className={styles.resizeHandle}
-        title="Drag to resize"
-        onMouseDown={(e) => {
-          e.preventDefault();
-          setResizing(true);
-        }}
-      />
+        ref={panelRef}
+        className={styles.panel}
+        data-resizing={resizing}
+        style={{ width: collapsed ? 0 : width }}
+      >
+        <div className={styles.panelInner} style={{ width }}>
+          <div className={styles.header}>
+            <span className={styles.headerIcon}>
+              <Braces size={17} />
+            </span>
+            <span className={styles.headerTitle}>Object Schemas</span>
+            <button type="button" className={styles.newBtn} onClick={addSchema}>
+              <Plus size={13} /> New
+            </button>
+          </div>
+
+          <div className={styles.searchWrap}>
+            <span className={styles.searchIcon}>
+              <Search size={14} />
+            </span>
+            <input
+              className={styles.searchInput}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search schemas…"
+            />
+          </div>
+
+          <div className={styles.list}>
+            {rows.map((schema) => (
+              <div
+                key={schema.id}
+                className={styles.row}
+                data-selected={selectedId === schema.id}
+                onClick={() => selectBlock(schema.id)}
+              >
+                <span className={styles.rowIcon}>
+                  <Braces size={15} />
+                </span>
+                <span className={styles.rowName}>{schema.name}</span>
+                <span className={styles.rowCount}>{schema.scalar ? 1 : schema.fieldCount}</span>
+              </div>
+            ))}
+            {isEmpty && <div className={styles.emptyState}>No schemas match your search.</div>}
+          </div>
+        </div>
+
+        <div
+          className={styles.resizeHandle}
+          title="Drag to resize"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setResizing(true);
+          }}
+        />
+      </div>
 
       <button
         type="button"
@@ -96,6 +98,6 @@ export function SchemaPanel() {
       >
         {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </button>
-    </div>
+    </>
   );
 }

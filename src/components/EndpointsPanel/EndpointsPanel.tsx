@@ -32,69 +32,71 @@ export function EndpointsPanel() {
   usePanelResize(panelRef, resizingPanel, setPanelWidth, setResizingPanel);
 
   return (
-    <div
-      ref={panelRef}
-      className={styles.panel}
-      data-resizing={resizingPanel}
-      style={{ width: panelCollapsed ? 0 : panelWidth }}
-    >
-      <div className={styles.panelInner} style={{ width: panelWidth }}>
-        <div className={styles.header}>
-          <span className={styles.headerIcon}>
-            <EndpointsIcon size={17} style={{ transform: 'scaleX(-1)' }} />
-          </span>
-          <span className={styles.headerTitle}>Endpoints</span>
-          <button type="button" className={styles.newBtn} onClick={addEndpoint}>
-            <Plus size={13} /> New
-          </button>
-        </div>
-
-        <div className={styles.searchWrap}>
-          <span className={styles.searchIcon}>
-            <Search size={14} />
-          </span>
-          <input
-            className={styles.searchInput}
-            value={panelSearch}
-            onChange={(e) => setPanelSearch(e.target.value)}
-            placeholder="Search endpoints…"
-          />
-        </div>
-
-        <div className={styles.expandRow}>
-          <button
-            type="button"
-            className={styles.expandBtn}
-            onClick={() => expandAllTags(groups.map((g) => g.key))}
-          >
-            Expand all
-          </button>
-          <span className={styles.expandDot}>·</span>
-          <button
-            type="button"
-            className={styles.expandBtn}
-            onClick={() => collapseAllTags(groups.map((g) => g.key))}
-          >
-            Collapse all
-          </button>
-        </div>
-
-        <div className={styles.groupList}>
-          {groups.map((group) => (
-            <EndpointGroupSection key={group.key} group={group} selectedPath={selectedPath} />
-          ))}
-          {isEmpty && <div className={styles.emptyState}>No endpoints match your search.</div>}
-        </div>
-      </div>
-
+    <>
       <div
-        className={styles.resizeHandle}
-        title="Drag to resize"
-        onMouseDown={(e) => {
-          e.preventDefault();
-          setResizingPanel(true);
-        }}
-      />
+        ref={panelRef}
+        className={styles.panel}
+        data-resizing={resizingPanel}
+        style={{ width: panelCollapsed ? 0 : panelWidth }}
+      >
+        <div className={styles.panelInner} style={{ width: panelWidth }}>
+          <div className={styles.header}>
+            <span className={styles.headerIcon}>
+              <EndpointsIcon size={17} style={{ transform: 'scaleX(-1)' }} />
+            </span>
+            <span className={styles.headerTitle}>Endpoints</span>
+            <button type="button" className={styles.newBtn} onClick={addEndpoint}>
+              <Plus size={13} /> New
+            </button>
+          </div>
+
+          <div className={styles.searchWrap}>
+            <span className={styles.searchIcon}>
+              <Search size={14} />
+            </span>
+            <input
+              className={styles.searchInput}
+              value={panelSearch}
+              onChange={(e) => setPanelSearch(e.target.value)}
+              placeholder="Search endpoints…"
+            />
+          </div>
+
+          <div className={styles.expandRow}>
+            <button
+              type="button"
+              className={styles.expandBtn}
+              onClick={() => expandAllTags(groups.map((g) => g.key))}
+            >
+              Expand all
+            </button>
+            <span className={styles.expandDot}>·</span>
+            <button
+              type="button"
+              className={styles.expandBtn}
+              onClick={() => collapseAllTags(groups.map((g) => g.key))}
+            >
+              Collapse all
+            </button>
+          </div>
+
+          <div className={styles.groupList}>
+            {groups.map((group) => (
+              <EndpointGroupSection key={group.key} group={group} selectedPath={selectedPath} />
+            ))}
+            {isEmpty && <div className={styles.emptyState}>No endpoints match your search.</div>}
+          </div>
+        </div>
+
+        <div
+          className={styles.resizeHandle}
+          title="Drag to resize"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setResizingPanel(true);
+          }}
+        />
+      </div>
 
       <button
         type="button"
@@ -106,6 +108,6 @@ export function EndpointsPanel() {
       >
         {panelCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </button>
-    </div>
+    </>
   );
 }
