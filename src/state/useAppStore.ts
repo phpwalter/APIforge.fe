@@ -18,6 +18,11 @@ interface AppState {
   themeMode: ThemeMode;
   theme: ThemeName;
   toggleTheme: () => void;
+  setThemeMode: (mode: ThemeMode) => void;
+
+  // Settings :: Appearance — syntax highlighting in the REST Projection views (not yet built).
+  highlightingEnabled: boolean;
+  setHighlightingEnabled: (v: boolean) => void;
 
   // Project identity (topbar "project settings" pill)
   apiTitle: string;
@@ -103,6 +108,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     const next: ThemeMode = themeMode === 'dark' ? 'system' : themeMode === 'system' ? 'light' : 'dark';
     set({ themeMode: next, theme: resolveTheme(next) });
   },
+  setThemeMode: (mode) => set({ themeMode: mode, theme: resolveTheme(mode) }),
+
+  highlightingEnabled: true,
+  setHighlightingEnabled: (v) => set({ highlightingEnabled: v }),
 
   apiTitle: 'Untitled API',
   apiVersion: '1.0.0',

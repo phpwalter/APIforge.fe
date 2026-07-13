@@ -29,6 +29,27 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().theme).toBe('dark');
   });
 
+  it('sets the theme mode directly, resolving the visible theme', () => {
+    useAppStore.getState().setThemeMode('light');
+    expect(useAppStore.getState().themeMode).toBe('light');
+    expect(useAppStore.getState().theme).toBe('light');
+
+    useAppStore.getState().setThemeMode('dark');
+    expect(useAppStore.getState().themeMode).toBe('dark');
+    expect(useAppStore.getState().theme).toBe('dark');
+
+    useAppStore.getState().setThemeMode('system');
+    expect(useAppStore.getState().themeMode).toBe('system');
+  });
+
+  it('defaults syntax highlighting on and can be toggled off', () => {
+    expect(useAppStore.getState().highlightingEnabled).toBe(true);
+    useAppStore.getState().setHighlightingEnabled(false);
+    expect(useAppStore.getState().highlightingEnabled).toBe(false);
+    useAppStore.getState().setHighlightingEnabled(true);
+    expect(useAppStore.getState().highlightingEnabled).toBe(true);
+  });
+
   it('updates project info', () => {
     useAppStore.getState().setProjectInfo({ title: 'Acme API', version: '2.0.0', openapiVersion: '3.0.0' });
     const s = useAppStore.getState();

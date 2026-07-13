@@ -6,6 +6,7 @@ import { GeneralSettingsPanel } from './GeneralSettingsPanel';
 import { ServersSettingsPanel } from './ServersSettingsPanel';
 import { EditorPreferencesSettingsPanel } from './EditorPreferencesSettingsPanel';
 import { SecuritySettingsPanel } from './SecuritySettingsPanel';
+import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { AboutSettingsPanel } from './AboutSettingsPanel';
 import styles from './SettingsModal.module.css';
 
@@ -14,6 +15,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   servers: ServersSettingsPanel,
   preferences: EditorPreferencesSettingsPanel,
   security: SecuritySettingsPanel,
+  appearance: AppearanceSettingsPanel,
   about: AboutSettingsPanel,
 };
 
