@@ -74,19 +74,27 @@ function legacySecuritySchemeObject(): Record<string, unknown> {
   return { type: 'apiKey', in: 'header', name: 'Authorization' };
 }
 
+function paramSchema(nullable: boolean, example: string): Record<string, unknown> {
+  return {
+    type: 'string',
+    ...(nullable ? { nullable: true } : {}),
+    ...(example ? { example } : {}),
+  };
+}
+
 function buildParameters(params: Param[], headers: HeaderParam[]): Record<string, unknown>[] {
   return [
     ...params.map((p) => ({
       name: p.name,
       in: p.in,
       required: p.in === 'path' ? true : p.required,
-      schema: { type: 'string' },
+      schema: paramSchema(p.nullable, p.example),
     })),
     ...headers.map((h) => ({
       name: h.name,
       in: 'header',
       required: h.required,
-      schema: { type: 'string' },
+      schema: paramSchema(h.nullable, h.example),
     })),
   ];
 }
@@ -99,7 +107,7 @@ function buildResponses(endpoint: Endpoint, schemaNames: Set<string>): Record<st
     };
     if (r.headers.length) {
       response.headers = Object.fromEntries(
-        r.headers.map((h) => [h.name, { required: h.required, schema: { type: 'string' } }]),
+        r.headers.map((h) => [h.name, { required: h.required, schema: paramSchema(h.nullable, h.example) }]),
       );
     }
     if (r.schema && schemaNames.has(r.schema)) {

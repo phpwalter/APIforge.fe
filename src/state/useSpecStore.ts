@@ -60,6 +60,14 @@ function makeResponseEntry(id: string, code: string, description = ''): Response
   return { id, code, description, headers: [], contentTypes: ['application/json'], schema: '', schemaIsArray: false };
 }
 
+function makeParam(id: string, name: string, extra: Partial<Param> = {}): Param {
+  return { id, name, in: 'query', required: false, nullable: false, example: '', ...extra };
+}
+
+function makeHeaderParam(id: string, name: string, extra: Partial<HeaderParam> = {}): HeaderParam {
+  return { id, name, required: false, nullable: false, example: '', ...extra };
+}
+
 function makeCustomField(
   id: string,
   name: string,
@@ -142,8 +150,9 @@ interface SpecState {
   setImportStatus: (status: { type: 'success' | 'error'; message: string } | null) => void;
 
   endpoints: Endpoint[];
-  selectedId: string | null;
-  selectBlock: (id: string) => void;
+  /** Design Canvas's last-selected endpoint — kept separate from selectedSchemaId so each tab remembers its own selection. */
+  selectedEndpointId: string | null;
+  selectEndpoint: (id: string) => void;
   addEndpoint: () => void;
   toggleEndpointTag: (endpointId: string, tag: string) => void;
 
@@ -174,6 +183,11 @@ interface SpecState {
   setResponseHeader: (id: string, responseId: string, headerId: string, patch: Partial<HeaderParam>) => void;
   removeResponseHeader: (id: string, responseId: string, headerId: string) => void;
   toggleResponseContentType: (id: string, responseId: string, contentType: string) => void;
+
+  // Which param/header row (by its own id, unique across params/headers/response-headers) has its
+  // example-editing panel expanded — mirrors Schema Designer's expandedSchemaFieldKey.
+  expandedParamKey: string | null;
+  toggleParamExpanded: (id: string) => void;
 
   // Response subpanel UI state — the status-class pill selected per endpoint.
   responseActiveClass: Record<string, ResponseClass>;
@@ -215,6 +229,9 @@ interface SpecState {
 
   // Schemas
   schemas: Schema[];
+  /** Schema Designer's last-selected schema — kept separate from selectedEndpointId so each tab remembers its own selection. */
+  selectedSchemaId: string | null;
+  selectSchema: (id: string) => void;
   addSchema: () => void;
   /** Creates a uniquely-named schema without changing the current selection — for inline "create new" pickers. Returns the new schema's name. */
   addSchemaReturningName: () => string;
@@ -308,7 +325,7 @@ const sampleEndpoints: Endpoint[] = [
     operationId: 'listUsers',
     tags: ['Users'],
     security: ['bearerAuth'],
-    params: [{ id: 'pm_1', name: 'limit', in: 'query', required: false }],
+    params: [makeParam('pm_1', 'limit', { in: 'query', required: false })],
     responses: [makeResponseEntry('res_2a', '200', 'OK')],
   },
   {
@@ -327,7 +344,7 @@ const sampleEndpoints: Endpoint[] = [
     operationId: 'getUser',
     tags: ['Users'],
     security: ['bearerAuth'],
-    params: [{ id: 'pm_2', name: 'id', in: 'path', required: true }],
+    params: [makeParam('pm_2', 'id', { in: 'path', required: true })],
     responses: [makeResponseEntry('res_4a', '200', 'OK'), makeResponseEntry('res_4b', '404', 'Not Found')],
   },
   {
@@ -336,7 +353,7 @@ const sampleEndpoints: Endpoint[] = [
     operationId: 'updateUser',
     tags: ['Users'],
     security: ['bearerAuth'],
-    params: [{ id: 'pm_3', name: 'id', in: 'path', required: true }],
+    params: [makeParam('pm_3', 'id', { in: 'path', required: true })],
     requestBodyEnabled: true,
     requestBodyDescription: 'Partial user fields to update',
     responses: [makeResponseEntry('res_5a', '200', 'OK'), makeResponseEntry('res_5b', '404', 'Not Found')],
@@ -347,7 +364,7 @@ const sampleEndpoints: Endpoint[] = [
     operationId: 'deleteUser',
     tags: ['Users'],
     security: ['bearerAuth'],
-    params: [{ id: 'pm_4', name: 'id', in: 'path', required: true }],
+    params: [makeParam('pm_4', 'id', { in: 'path', required: true })],
     responses: [makeResponseEntry('res_6a', '204', 'No Content')],
   },
   {
@@ -356,7 +373,7 @@ const sampleEndpoints: Endpoint[] = [
     operationId: 'listUserPosts',
     tags: ['Users', 'Posts'],
     security: ['bearerAuth'],
-    params: [{ id: 'pm_5', name: 'id', in: 'path', required: true }],
+    params: [makeParam('pm_5', 'id', { in: 'path', required: true })],
     responses: [makeResponseEntry('res_7a', '200', 'OK')],
   },
   {
@@ -381,7 +398,7 @@ const sampleEndpoints: Endpoint[] = [
     id: 'ep_10',
     operationId: 'getPost',
     tags: ['Posts'],
-    params: [{ id: 'pm_6', name: 'id', in: 'path', required: true }],
+    params: [makeParam('pm_6', 'id', { in: 'path', required: true })],
     responses: [makeResponseEntry('res_10a', '200', 'OK'), makeResponseEntry('res_10b', '404', 'Not Found')],
   },
 ];
@@ -438,11 +455,13 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       endpoints,
       schemas,
       hasDocument: true,
-      selectedId: endpoints[0]?.id ?? schemas[0]?.id ?? null,
+      selectedEndpointId: endpoints[0]?.id ?? null,
+      selectedSchemaId: schemas[0]?.id ?? null,
       // Reset panel/editor UI state left over from any previous document.
       panelSearch: '',
       schemaPanelSearch: '',
       expandedTags: {},
+      expandedParamKey: null,
       responseActiveClass: {},
       enabledSecuritySchemes: [],
       securityScopes: {},
@@ -452,7 +471,8 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       endpoints: sampleEndpoints,
       schemas: sampleSchemas,
       hasDocument: true,
-      selectedId: sampleEndpoints[0].id,
+      selectedEndpointId: sampleEndpoints[0].id,
+      selectedSchemaId: sampleSchemas[0]?.id ?? null,
       enabledSecuritySchemes: ['bearerAuth'],
     }),
 
@@ -460,8 +480,8 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   setImportStatus: (importStatus) => set({ importStatus }),
 
   endpoints: [],
-  selectedId: null,
-  selectBlock: (id) => set({ selectedId: id }),
+  selectedEndpointId: null,
+  selectEndpoint: (id) => set({ selectedEndpointId: id }),
 
   addEndpoint: () => {
     const { endpoints } = get();
@@ -470,7 +490,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       '/new-endpoint',
     );
     const newEndpoint = newEndpointDefaults(path, 'GET');
-    set({ endpoints: [...endpoints, newEndpoint], selectedId: newEndpoint.id });
+    set({ endpoints: [...endpoints, newEndpoint], selectedEndpointId: newEndpoint.id });
   },
 
   toggleEndpointTag: (endpointId, tag) =>
@@ -486,20 +506,20 @@ export const useSpecStore = create<SpecState>((set, get) => ({
     const { endpoints } = get();
     const existing = endpoints.find((e) => e.path === path && e.method === method);
     if (existing) {
-      set({ selectedId: existing.id });
+      set({ selectedEndpointId: existing.id });
       return;
     }
     const newEndpoint = newEndpointDefaults(path, method);
-    set({ endpoints: [...endpoints, newEndpoint], selectedId: newEndpoint.id });
+    set({ endpoints: [...endpoints, newEndpoint], selectedEndpointId: newEndpoint.id });
   },
 
   deleteMethod: (id) =>
     set((s) => {
       const remaining = s.endpoints.filter((e) => e.id !== id);
-      const wasSelected = s.selectedId === id;
+      const wasSelected = s.selectedEndpointId === id;
       return {
         endpoints: remaining,
-        selectedId: wasSelected ? (remaining[0]?.id ?? null) : s.selectedId,
+        selectedEndpointId: wasSelected ? (remaining[0]?.id ?? null) : s.selectedEndpointId,
       };
     }),
 
@@ -516,7 +536,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
         e.id === id
-          ? { ...e, params: [...e.params, { id: makeId('pm'), name: '', in: 'query', required: false }] }
+          ? { ...e, params: [...e.params, makeParam(makeId('pm'), '')] }
           : e,
       ),
     })),
@@ -536,7 +556,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   addHeader: (id) =>
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
-        e.id === id ? { ...e, headers: [...e.headers, { id: makeId('hd'), name: '', required: false }] } : e,
+        e.id === id ? { ...e, headers: [...e.headers, makeHeaderParam(makeId('hd'), '')] } : e,
       ),
     })),
   setHeader: (id, headerId, patch) =>
@@ -602,7 +622,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
               ...e,
               responses: e.responses.map((r) =>
                 r.id === responseId
-                  ? { ...r, headers: [...r.headers, { id: makeId('hd'), name: '', required: false }] }
+                  ? { ...r, headers: [...r.headers, makeHeaderParam(makeId('hd'), '')] }
                   : r,
               ),
             }
@@ -655,6 +675,10 @@ export const useSpecStore = create<SpecState>((set, get) => ({
           : e,
       ),
     })),
+
+  expandedParamKey: null,
+  toggleParamExpanded: (id) =>
+    set((s) => ({ expandedParamKey: s.expandedParamKey === id ? null : id })),
 
   responseActiveClass: {},
   setResponseActiveClass: (endpointId, cls) =>
@@ -741,6 +765,8 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   },
 
   schemas: [],
+  selectedSchemaId: null,
+  selectSchema: (id) => set({ selectedSchemaId: id }),
   addSchema: () => {
     const { schemas } = get();
     const name = uniqueSchemaName(
@@ -748,7 +774,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       'NewSchema',
     );
     const newSchema: Schema = { id: makeId('sc'), name, fields: [], contentTypes: ['application/json'] };
-    set({ schemas: [...schemas, newSchema], selectedId: newSchema.id });
+    set({ schemas: [...schemas, newSchema], selectedSchemaId: newSchema.id });
   },
   addSchemaReturningName: () => {
     const { schemas } = get();
@@ -765,8 +791,8 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   deleteSchema: (schemaId) =>
     set((s) => {
       const remaining = s.schemas.filter((sc) => sc.id !== schemaId);
-      const wasSelected = s.selectedId === schemaId;
-      return { schemas: remaining, selectedId: wasSelected ? (remaining[0]?.id ?? null) : s.selectedId };
+      const wasSelected = s.selectedSchemaId === schemaId;
+      return { schemas: remaining, selectedSchemaId: wasSelected ? (remaining[0]?.id ?? null) : s.selectedSchemaId };
     }),
   setScalarDescription: (schemaId, description) =>
     set((s) => ({
@@ -797,8 +823,13 @@ export const useSpecStore = create<SpecState>((set, get) => ({
           fields: sc.fields.map((f, i) => {
             if (i !== index) return f;
             if (f.kind === 'custom') return { ...f, ...patch };
-            if (patch.name !== undefined) return { ...f, name: patch.name };
-            return f;
+            // ref/primitive kinds only expose name + example generically — other patch keys
+            // (format, pattern, etc.) don't apply to them since their type/format are locked.
+            return {
+              ...f,
+              ...(patch.name !== undefined ? { name: patch.name } : {}),
+              ...(patch.example !== undefined ? { example: patch.example } : {}),
+            };
           }),
         };
       }),

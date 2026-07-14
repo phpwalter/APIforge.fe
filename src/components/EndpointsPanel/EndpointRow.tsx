@@ -9,7 +9,7 @@ interface EndpointRowProps {
 }
 
 export function EndpointRow({ row, selected }: EndpointRowProps) {
-  const selectBlock = useSpecStore((s) => s.selectBlock);
+  const selectEndpoint = useSpecStore((s) => s.selectEndpoint);
   const startDragMethod = useSpecStore((s) => s.startDragMethod);
   const endDragMethod = useSpecStore((s) => s.endDragMethod);
 
@@ -18,7 +18,7 @@ export function EndpointRow({ row, selected }: EndpointRowProps) {
       className={styles.row}
       data-selected={selected}
       style={{ marginLeft: row.depth * 14 }}
-      onClick={() => selectBlock(row.id)}
+      onClick={() => selectEndpoint(row.id)}
     >
       <div className={styles.rowPath}>{row.path}</div>
       <div className={styles.rowMethods}>
@@ -38,7 +38,7 @@ export function EndpointRow({ row, selected }: EndpointRowProps) {
             onDragEnd={endDragMethod}
             onClick={(e) => {
               e.stopPropagation();
-              selectBlock(m.id);
+              selectEndpoint(m.id);
             }}
             title={`Open ${m.method} ${row.path} — drag onto a tag to assign it`}
           >

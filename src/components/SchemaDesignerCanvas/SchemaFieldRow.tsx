@@ -48,7 +48,9 @@ export function SchemaFieldRow({ schema, fields, index, schemas }: Props) {
   const canIndent = !!prevF && (prevF.depth || 0) >= depth;
   const canOutdent = depth > 0;
   const expandKey = `${schema.id}:${index}`;
-  const isExpanded = f.kind === 'custom' && expandedSchemaFieldKey === expandKey;
+  const refSchema = f.kind === 'ref' ? schemas.find((sc) => sc.name === f.ref) : undefined;
+  const isPrimitiveBackedRef = !!(refSchema?.scalar && refSchema.scalarPrimitiveKey);
+  const isExpanded = (f.kind === 'custom' || isPrimitiveBackedRef) && expandedSchemaFieldKey === expandKey;
   const isStringType = f.type === 'string';
   const isNumType = f.type === 'integer' || f.type === 'number';
   const isArrType = f.type === 'array';
@@ -59,9 +61,10 @@ export function SchemaFieldRow({ schema, fields, index, schemas }: Props) {
     dragOverSchemaFieldIndex === index &&
     draggingSchemaFieldIndex !== index;
   const showTypeSelect = f.kind === 'custom' && !hasChildren;
-  const showExpandToggle = f.kind === 'custom' && !hasChildren;
+  const showExpandToggle = (f.kind === 'custom' || isPrimitiveBackedRef) && !hasChildren;
   const showExampleField = !isArrType && !hasChildren;
   const exampleHint = resolveFieldExampleHint(f, schemas);
+  const nameInputOffset = 58;
   const arraySchemaOptions = schemas.filter((sc) => sc.id !== schema.id).map((sc) => ({ value: `ref:${sc.name}`, label: `→ ${sc.name}` }));
   const arrayItemsValue = f.kind === 'custom' && f.itemsRef ? `ref:${f.itemsRef}` : `prim:${f.kind === 'custom' ? f.itemsType || 'string' : 'string'}`;
 
@@ -187,7 +190,7 @@ export function SchemaFieldRow({ schema, fields, index, schemas }: Props) {
             type="button"
             className={styles.expandBtn}
             data-on={isExpanded}
-            title="More validation options"
+            title={f.kind === 'custom' ? 'More validation options' : 'Edit example'}
             onClick={() => toggleSchemaFieldExpanded(schema.id, index)}
           >
             {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -205,8 +208,22 @@ export function SchemaFieldRow({ schema, fields, index, schemas }: Props) {
       </div>
 
       {exampleHint && !isExpanded && (
-        <div className={styles.exampleHint} style={{ paddingLeft: depth * 20 + 22 }}>
+        <div className={styles.exampleHint} style={{ paddingLeft: depth * 20 + nameInputOffset }}>
           e.g. {exampleHint}
+        </div>
+      )}
+
+      {isExpanded && isPrimitiveBackedRef && (
+        <div className={styles.advanced} style={{ marginLeft: depth * 20 }}>
+          <div className={styles.advField} style={{ minWidth: 140, flex: 2 }}>
+            <div className={styles.advLabel}>EXAMPLE</div>
+            <input
+              className={styles.advInput}
+              value={f.example ?? ''}
+              onChange={(e) => setSchemaField(schema.id, index, { example: e.target.value })}
+              placeholder={exampleHint || '—'}
+            />
+          </div>
         </div>
       )}
 

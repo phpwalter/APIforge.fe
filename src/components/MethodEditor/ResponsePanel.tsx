@@ -11,6 +11,7 @@ import {
   defaultActiveClass,
   reasonForCode,
 } from '../../lib/responseClass';
+import { ParamFieldRow } from './ParamFieldRow';
 import styles from './MethodEditor.module.css';
 
 const NEW_SCHEMA_VALUE = '__new__';
@@ -28,6 +29,8 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
   const addResponseHeader = useSpecStore((s) => s.addResponseHeader);
   const setResponseHeader = useSpecStore((s) => s.setResponseHeader);
   const removeResponseHeader = useSpecStore((s) => s.removeResponseHeader);
+  const expandedParamKey = useSpecStore((s) => s.expandedParamKey);
+  const toggleParamExpanded = useSpecStore((s) => s.toggleParamExpanded);
   const toggleResponseContentType = useSpecStore((s) => s.toggleResponseContentType);
   const responseActiveClass = useSpecStore((s) => s.responseActiveClass);
   const setResponseActiveClass = useSpecStore((s) => s.setResponseActiveClass);
@@ -152,31 +155,29 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
                   ) : (
                     <div className={styles.rowsList}>
                       {r.headers.map((h) => (
-                        <div key={h.id} className={styles.fieldRow}>
-                          <button
-                            type="button"
-                            className={styles.reqToggle}
-                            data-required={h.required}
-                            title="Toggle required"
-                            onClick={() => setResponseHeader(endpoint.id, r.id, h.id, { required: !h.required })}
-                          >
-                            {h.required ? '*' : '?'}
-                          </button>
-                          <input
-                            className={styles.nameInput}
-                            value={h.name}
-                            placeholder="Header-Name"
-                            onChange={(e) => setResponseHeader(endpoint.id, r.id, h.id, { name: e.target.value })}
-                          />
-                          <button
-                            type="button"
-                            className={styles.removeBtn}
-                            title="Remove header"
-                            onClick={() => removeResponseHeader(endpoint.id, r.id, h.id)}
-                          >
-                            <X size={13} />
-                          </button>
-                        </div>
+                        <ParamFieldRow
+                          key={h.id}
+                          name={h.name}
+                          onNameChange={(v) => setResponseHeader(endpoint.id, r.id, h.id, { name: v })}
+                          namePlaceholder="Header-Name"
+                          required={h.required}
+                          onToggleRequired={() =>
+                            setResponseHeader(endpoint.id, r.id, h.id, { required: !h.required })
+                          }
+                          nullable={h.nullable}
+                          onToggleNullable={() =>
+                            setResponseHeader(endpoint.id, r.id, h.id, { nullable: !h.nullable })
+                          }
+                          example={h.example}
+                          onExampleChange={(v) => setResponseHeader(endpoint.id, r.id, h.id, { example: v })}
+                          expanded={expandedParamKey === h.id}
+                          onToggleExpand={() => toggleParamExpanded(h.id)}
+                          removeDisabled={h.required}
+                          removeTitle={
+                            h.required ? "Required headers can't be removed — toggle off Required first" : 'Remove header'
+                          }
+                          onRemove={() => removeResponseHeader(endpoint.id, r.id, h.id)}
+                        />
                       ))}
                       {r.headers.length === 0 && <div className={styles.bodyNone}>No headers</div>}
                     </div>

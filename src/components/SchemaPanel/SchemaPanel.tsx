@@ -6,8 +6,8 @@ import styles from './SchemaPanel.module.css';
 
 export function SchemaPanel() {
   const schemas = useSpecStore((s) => s.schemas);
-  const selectedId = useSpecStore((s) => s.selectedId);
-  const selectBlock = useSpecStore((s) => s.selectBlock);
+  const selectedSchemaId = useSpecStore((s) => s.selectedSchemaId);
+  const selectSchema = useSpecStore((s) => s.selectSchema);
   const addSchema = useSpecStore((s) => s.addSchema);
 
   const search = useSpecStore((s) => s.schemaPanelSearch);
@@ -64,8 +64,8 @@ export function SchemaPanel() {
               <div
                 key={schema.id}
                 className={styles.row}
-                data-selected={selectedId === schema.id}
-                onClick={() => selectBlock(schema.id)}
+                data-selected={selectedSchemaId === schema.id}
+                onClick={() => selectSchema(schema.id)}
               >
                 <span className={styles.rowIcon}>
                   <Braces size={15} />

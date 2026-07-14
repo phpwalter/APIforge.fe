@@ -11,10 +11,10 @@ import styles from './SchemaDesignerCanvas.module.css';
 
 export function SchemaDesignerCanvas() {
   const schemas = useSpecStore((s) => s.schemas);
-  const selectedId = useSpecStore((s) => s.selectedId);
+  const selectedSchemaId = useSpecStore((s) => s.selectedSchemaId);
   const setSchemaName = useSpecStore((s) => s.setSchemaName);
   const deleteSchema = useSpecStore((s) => s.deleteSchema);
-  const selected = schemas.find((s) => s.id === selectedId);
+  const selected = schemas.find((s) => s.id === selectedSchemaId);
 
   return (
     <div className={styles.wrap}>

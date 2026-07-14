@@ -7,8 +7,8 @@ import styles from './DesignCanvas.module.css';
 
 export function DesignCanvas() {
   const endpoints = useSpecStore((s) => s.endpoints);
-  const selectedId = useSpecStore((s) => s.selectedId);
-  const selected = endpoints.find((e) => e.id === selectedId);
+  const selectedEndpointId = useSpecStore((s) => s.selectedEndpointId);
+  const selected = endpoints.find((e) => e.id === selectedEndpointId);
 
   return (
     <div className={styles.wrap}>

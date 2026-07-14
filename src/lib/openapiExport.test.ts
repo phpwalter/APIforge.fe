@@ -149,6 +149,40 @@ describe('buildOpenApiDocument', () => {
     expect(params[0].required).toBe(true);
   });
 
+  it('emits nullable and example on a parameter and a header schema', () => {
+    const endpoint = baseEndpoint({
+      params: [{ id: 'pm_1', name: 'verbose', in: 'query', required: false, nullable: true, example: '' }],
+      headers: [{ id: 'hd_1', name: 'X-Trace-Id', required: false, nullable: false, example: 'abc-123' }],
+    });
+    const doc = buildOpenApiDocument(baseParams({ endpoints: [endpoint] })) as {
+      paths: Record<string, Record<string, Record<string, unknown>>>;
+    };
+    const params = doc.paths['/things'].get.parameters as { name: string; schema: Record<string, unknown> }[];
+    expect(params.find((p) => p.name === 'verbose')?.schema).toEqual({ type: 'string', nullable: true });
+    expect(params.find((p) => p.name === 'X-Trace-Id')?.schema).toEqual({ type: 'string', example: 'abc-123' });
+  });
+
+  it('emits nullable and example on a response header schema', () => {
+    const endpoint = baseEndpoint({
+      responses: [
+        {
+          id: 'res_1',
+          code: '200',
+          description: 'OK',
+          headers: [{ id: 'hd_1', name: 'X-Rate-Limit', required: false, nullable: true, example: '100' }],
+          contentTypes: ['application/json'],
+          schema: '',
+          schemaIsArray: false,
+        },
+      ],
+    });
+    const doc = buildOpenApiDocument(baseParams({ endpoints: [endpoint] })) as {
+      paths: Record<string, Record<string, Record<string, unknown>>>;
+    };
+    const responses = doc.paths['/things'].get.responses as Record<string, { headers: Record<string, { schema: unknown }> }>;
+    expect(responses['200'].headers['X-Rate-Limit'].schema).toEqual({ type: 'string', nullable: true, example: '100' });
+  });
+
   it('includes a requestBody when enabled', () => {
     const endpoint = baseEndpoint({ requestBodyEnabled: true, requestBodyDescription: 'Thing to create' });
     const doc = buildOpenApiDocument(baseParams({ endpoints: [endpoint] })) as {

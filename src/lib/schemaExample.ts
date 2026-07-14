@@ -42,7 +42,7 @@ function exampleValueForRow(f: SchemaField, schemas: Schema[], depth: number): u
   if (f.kind === 'primitive') {
     const p = findPrimitive(f.primitiveKey);
     if (p && p.example !== undefined) return p.example;
-    return scalarPlaceholder(f.type);
+    return f.nullable ? null : scalarPlaceholder(f.type);
   }
   if (f.kind === 'ref' && f.type !== 'array') {
     const refSchema = schemas.find((s) => s.name === f.ref);
@@ -75,7 +75,7 @@ function exampleValueForRow(f: SchemaField, schemas: Schema[], depth: number): u
     const itemsType = f.kind === 'custom' ? f.itemsType : undefined;
     return [scalarPlaceholder(itemsType || 'string')];
   }
-  return scalarPlaceholder(f.type);
+  return f.nullable ? null : scalarPlaceholder(f.type);
 }
 
 /** Example value for a node in the nested field tree: recurses into children, else delegates to the leaf logic above. */

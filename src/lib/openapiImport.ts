@@ -37,6 +37,7 @@ interface RawParameter {
   name?: string;
   in?: string;
   required?: boolean;
+  schema?: { nullable?: boolean; example?: unknown };
 }
 
 interface RawPathItem extends Record<string, unknown> {
@@ -47,8 +48,14 @@ interface RawSchemaProperty {
   type?: string;
   format?: string;
   example?: unknown;
+  nullable?: boolean;
   $ref?: string;
-  items?: { type?: string; $ref?: string };
+  /** Array item schema — recursively shaped, so an array of inline nested objects is supported too. */
+  items?: RawSchemaProperty;
+  /** Inline nested object properties (when type is 'object' without a $ref). */
+  properties?: Record<string, RawSchemaProperty>;
+  /** Required-property names scoped to this level's own `properties`. */
+  required?: string[];
 }
 
 interface RawSchema {
@@ -186,11 +193,13 @@ function buildParamsAndHeaders(
   const params: Param[] = [];
   const headers: HeaderParam[] = [];
   merged.forEach((p) => {
+    const nullable = !!p.schema?.nullable;
+    const example = p.schema?.example !== undefined ? String(p.schema.example) : '';
     if (p.in === 'header') {
-      headers.push({ id: makeId('hd'), name: p.name!, required: !!p.required });
+      headers.push({ id: makeId('hd'), name: p.name!, required: !!p.required, nullable, example });
     } else {
       const loc: ParamLocation = p.in === 'path' ? 'path' : p.in === 'cookie' ? 'cookie' : 'query';
-      params.push({ id: makeId('pm'), name: p.name!, in: loc, required: !!p.required });
+      params.push({ id: makeId('pm'), name: p.name!, in: loc, required: !!p.required, nullable, example });
     }
   });
   return { params, headers };
@@ -277,6 +286,53 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
     schemaEffectiveType.set(name, isScalar ? toFieldType(s!.type) : 'object');
   });
 
+  // Recursively flattens a level of `properties` into the depth-annotated field list our own
+  // model uses — an inline nested object, or an array whose items are an inline nested object,
+  // pushes a container field followed immediately by its children one depth deeper.
+  function propertiesToFields(
+    properties: Record<string, RawSchemaProperty> | undefined,
+    requiredNames: Set<string>,
+    depth: number,
+  ): SchemaField[] {
+    const fields: SchemaField[] = [];
+    Object.entries(properties ?? {}).forEach(([propName, p]) => {
+      const base = {
+        id: makeId('sf'),
+        name: propName,
+        required: requiredNames.has(propName),
+        nullable: !!p?.nullable,
+        depth,
+        example: p?.example !== undefined ? String(p.example) : '',
+      };
+      const directRef = refNameFromPointer(p?.$ref);
+      if (directRef) {
+        fields.push({ ...base, kind: 'ref', ref: directRef, type: schemaEffectiveType.get(directRef) ?? 'object' });
+        return;
+      }
+      if (p?.type === 'array' && p.items) {
+        const itemsRef = refNameFromPointer(p.items.$ref);
+        if (itemsRef) {
+          fields.push({ ...base, kind: 'custom', type: 'array', itemsRef, itemsType: 'object' });
+          return;
+        }
+        if (p.items.type === 'object' && p.items.properties) {
+          fields.push({ ...base, kind: 'custom', type: 'array' });
+          fields.push(...propertiesToFields(p.items.properties, new Set(p.items.required ?? []), depth + 1));
+          return;
+        }
+        fields.push({ ...base, kind: 'custom', type: 'array', itemsType: toFieldType(p.items.type) });
+        return;
+      }
+      if (p?.type === 'object' && p.properties) {
+        fields.push({ ...base, kind: 'custom', type: 'object' });
+        fields.push(...propertiesToFields(p.properties, new Set(p.required ?? []), depth + 1));
+        return;
+      }
+      fields.push({ ...base, kind: 'custom', type: toFieldType(p?.type), format: p?.format });
+    });
+    return fields;
+  }
+
   const schemas: Schema[] = rawSchemaEntries.map(([name, s]) => {
     const isScalar = s?.type !== undefined && s.type !== 'object';
     if (isScalar) {
@@ -292,29 +348,7 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         scalarPrimitiveKey: s['x-apiforge-primitive'],
       };
     }
-    const requiredNames = new Set(s?.required ?? []);
-    const fields: SchemaField[] = Object.entries(s?.properties ?? {}).map(([propName, p]) => {
-      const base = {
-        id: makeId('sf'),
-        name: propName,
-        required: requiredNames.has(propName),
-        nullable: false,
-        depth: 0,
-        example: p?.example !== undefined ? String(p.example) : '',
-      };
-      const directRef = refNameFromPointer(p?.$ref);
-      if (directRef) {
-        return { ...base, kind: 'ref', ref: directRef, type: schemaEffectiveType.get(directRef) ?? 'object' };
-      }
-      if (p?.type === 'array' && p.items) {
-        const itemsRef = refNameFromPointer(p.items.$ref);
-        if (itemsRef) {
-          return { ...base, kind: 'custom', type: 'array', itemsRef, itemsType: 'object' };
-        }
-        return { ...base, kind: 'custom', type: 'array', itemsType: toFieldType(p.items.type) };
-      }
-      return { ...base, kind: 'custom', type: toFieldType(p?.type), format: p?.format };
-    });
+    const fields = propertiesToFields(s?.properties, new Set(s?.required ?? []), 0);
     return { id: makeId('sc'), name, fields, contentTypes: ['application/json'] };
   });
 

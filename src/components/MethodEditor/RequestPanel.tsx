@@ -1,10 +1,9 @@
-import { ArrowBigRight, Plus, X } from 'lucide-react';
+import { ArrowBigRight, Plus } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
 import type { Endpoint, ParamLocation } from '../../types/spec';
 import { methodAllowsBody } from '../../lib/methodStyle';
+import { ParamFieldRow } from './ParamFieldRow';
 import styles from './MethodEditor.module.css';
-
-const LOCATIONS: ParamLocation[] = ['query', 'path', 'header', 'cookie'];
 
 interface RequestPanelProps {
   endpoint: Endpoint;
@@ -19,6 +18,8 @@ export function RequestPanel({ endpoint }: RequestPanelProps) {
   const removeHeader = useSpecStore((s) => s.removeHeader);
   const toggleRequestBody = useSpecStore((s) => s.toggleRequestBody);
   const setRequestBodyDescription = useSpecStore((s) => s.setRequestBodyDescription);
+  const expandedParamKey = useSpecStore((s) => s.expandedParamKey);
+  const toggleParamExpanded = useSpecStore((s) => s.toggleParamExpanded);
 
   const allowsBody = methodAllowsBody(endpoint.method);
 
@@ -42,42 +43,25 @@ export function RequestPanel({ endpoint }: RequestPanelProps) {
             </div>
             <div className={styles.rowsList}>
               {endpoint.params.map((p) => (
-                <div key={p.id} className={styles.fieldRow}>
-                  <button
-                    type="button"
-                    className={styles.reqToggle}
-                    data-required={p.required}
-                    title="Toggle required"
-                    onClick={() => setParam(endpoint.id, p.id, { required: !p.required })}
-                  >
-                    {p.required ? '*' : '?'}
-                  </button>
-                  <input
-                    className={styles.nameInput}
-                    value={p.name}
-                    placeholder="name"
-                    onChange={(e) => setParam(endpoint.id, p.id, { name: e.target.value })}
-                  />
-                  <select
-                    className={styles.locSelect}
-                    value={p.in}
-                    onChange={(e) => setParam(endpoint.id, p.id, { in: e.target.value as ParamLocation })}
-                  >
-                    {LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className={styles.removeBtn}
-                    title="Remove parameter"
-                    onClick={() => removeParam(endpoint.id, p.id)}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
+                <ParamFieldRow
+                  key={p.id}
+                  name={p.name}
+                  onNameChange={(v) => setParam(endpoint.id, p.id, { name: v })}
+                  namePlaceholder="name"
+                  location={p.in}
+                  onLocationChange={(v: ParamLocation) => setParam(endpoint.id, p.id, { in: v })}
+                  required={p.required}
+                  onToggleRequired={() => setParam(endpoint.id, p.id, { required: !p.required })}
+                  nullable={p.nullable}
+                  onToggleNullable={() => setParam(endpoint.id, p.id, { nullable: !p.nullable })}
+                  example={p.example}
+                  onExampleChange={(v) => setParam(endpoint.id, p.id, { example: v })}
+                  expanded={expandedParamKey === p.id}
+                  onToggleExpand={() => toggleParamExpanded(p.id)}
+                  removeDisabled={p.required}
+                  removeTitle={p.required ? "Required parameters can't be removed — toggle off Required first" : 'Remove parameter'}
+                  onRemove={() => removeParam(endpoint.id, p.id)}
+                />
               ))}
               {endpoint.params.length === 0 && (
                 <div style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>No parameters</div>
@@ -96,34 +80,32 @@ export function RequestPanel({ endpoint }: RequestPanelProps) {
           </div>
           <div className={styles.rowsList}>
             {endpoint.headers.map((h) => (
-              <div key={h.id} className={styles.fieldRow}>
-                <button
-                  type="button"
-                  className={styles.reqToggle}
-                  data-required={h.required}
-                  disabled={h.mandated}
-                  title={h.mandated ? 'Mandated by policy' : 'Toggle required'}
-                  onClick={() => setHeader(endpoint.id, h.id, { required: !h.required })}
-                >
-                  {h.required ? '*' : '?'}
-                </button>
-                <input
-                  className={styles.nameInput}
-                  value={h.name}
-                  placeholder="Header-Name"
-                  disabled={h.mandated}
-                  onChange={(e) => setHeader(endpoint.id, h.id, { name: e.target.value })}
-                />
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  disabled={h.mandated}
-                  title={h.mandated ? 'Mandated headers cannot be removed' : 'Remove header'}
-                  onClick={() => removeHeader(endpoint.id, h.id)}
-                >
-                  <X size={13} />
-                </button>
-              </div>
+              <ParamFieldRow
+                key={h.id}
+                name={h.name}
+                onNameChange={(v) => setHeader(endpoint.id, h.id, { name: v })}
+                namePlaceholder="Header-Name"
+                nameDisabled={h.mandated}
+                required={h.required}
+                onToggleRequired={() => setHeader(endpoint.id, h.id, { required: !h.required })}
+                requiredDisabled={h.mandated}
+                requiredTitle={h.mandated ? 'Mandated by policy' : 'Toggle required'}
+                nullable={h.nullable}
+                onToggleNullable={() => setHeader(endpoint.id, h.id, { nullable: !h.nullable })}
+                example={h.example}
+                onExampleChange={(v) => setHeader(endpoint.id, h.id, { example: v })}
+                expanded={expandedParamKey === h.id}
+                onToggleExpand={() => toggleParamExpanded(h.id)}
+                removeDisabled={h.mandated || h.required}
+                removeTitle={
+                  h.mandated
+                    ? 'Mandated headers cannot be removed'
+                    : h.required
+                      ? "Required headers can't be removed — toggle off Required first"
+                      : 'Remove header'
+                }
+                onRemove={() => removeHeader(endpoint.id, h.id)}
+              />
             ))}
             {endpoint.headers.length === 0 && (
               <div style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>No headers</div>

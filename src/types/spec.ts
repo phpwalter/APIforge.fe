@@ -26,6 +26,9 @@ export interface Param {
   name: string;
   in: ParamLocation;
   required: boolean;
+  nullable: boolean;
+  /** Free-text example shown for this parameter. */
+  example: string;
 }
 
 /** Headers are always string-typed — no type picker, per the handoff README. */
@@ -35,6 +38,9 @@ export interface HeaderParam {
   required: boolean;
   /** True for policy-mandated headers (e.g. 401/403 on secured endpoints) — locked, can't be removed. */
   mandated?: boolean;
+  nullable: boolean;
+  /** Free-text example shown for this header. */
+  example: string;
 }
 
 export interface ResponseEntry {

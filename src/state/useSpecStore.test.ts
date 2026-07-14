@@ -21,7 +21,8 @@ describe('useSpecStore', () => {
     expect(s.hasDocument).toBe(true);
     expect(s.endpoints.length).toBeGreaterThan(0);
     expect(s.schemas.length).toBeGreaterThan(0);
-    expect(s.selectedId).toBe(s.endpoints[0].id);
+    expect(s.selectedEndpointId).toBe(s.endpoints[0].id);
+    expect(s.selectedSchemaId).toBe(s.schemas[0].id);
   });
 
   it('imports a parsed spec and resets panel UI state', () => {
@@ -49,7 +50,8 @@ describe('useSpecStore', () => {
     expect(s.hasDocument).toBe(true);
     expect(s.endpoints).toEqual(endpoints);
     expect(s.schemas).toEqual(schemas);
-    expect(s.selectedId).toBe('ep_x');
+    expect(s.selectedEndpointId).toBe('ep_x');
+    expect(s.selectedSchemaId).toBe('sc_x');
     expect(s.panelSearch).toBe('');
     expect(s.schemaPanelSearch).toBe('');
     expect(s.expandedTags).toEqual({});
@@ -62,7 +64,7 @@ describe('useSpecStore', () => {
     expect(s.endpoints).toHaveLength(2);
     expect(s.endpoints[0].path).toBe('/new-endpoint');
     expect(s.endpoints[1].path).toBe('/new-endpoint-2');
-    expect(s.selectedId).toBe(s.endpoints[1].id);
+    expect(s.selectedEndpointId).toBe(s.endpoints[1].id);
   });
 
   it('pickMethod reuses an existing endpoint at the same path+method, otherwise creates one', () => {
@@ -71,11 +73,11 @@ describe('useSpecStore', () => {
 
     useSpecStore.getState().pickMethod('/users', 'GET');
     expect(useSpecStore.getState().endpoints).toHaveLength(1);
-    expect(useSpecStore.getState().selectedId).toBe(firstId);
+    expect(useSpecStore.getState().selectedEndpointId).toBe(firstId);
 
     useSpecStore.getState().pickMethod('/users', 'POST');
     expect(useSpecStore.getState().endpoints).toHaveLength(2);
-    expect(useSpecStore.getState().selectedId).not.toBe(firstId);
+    expect(useSpecStore.getState().selectedEndpointId).not.toBe(firstId);
   });
 
   it('deleteMethod removes the endpoint and reselects when the selected one is deleted', () => {
@@ -83,12 +85,12 @@ describe('useSpecStore', () => {
     useSpecStore.getState().pickMethod('/b', 'GET');
     const [first, second] = useSpecStore.getState().endpoints;
 
-    useSpecStore.getState().selectBlock(first.id);
+    useSpecStore.getState().selectEndpoint(first.id);
     useSpecStore.getState().deleteMethod(first.id);
 
     const s = useSpecStore.getState();
     expect(s.endpoints).toHaveLength(1);
-    expect(s.selectedId).toBe(second.id);
+    expect(s.selectedEndpointId).toBe(second.id);
   });
 
   it('deleteMethod leaves selection untouched when a different endpoint is deleted', () => {
@@ -96,10 +98,10 @@ describe('useSpecStore', () => {
     useSpecStore.getState().pickMethod('/b', 'GET');
     const [first, second] = useSpecStore.getState().endpoints;
 
-    useSpecStore.getState().selectBlock(second.id);
+    useSpecStore.getState().selectEndpoint(second.id);
     useSpecStore.getState().deleteMethod(first.id);
 
-    expect(useSpecStore.getState().selectedId).toBe(second.id);
+    expect(useSpecStore.getState().selectedEndpointId).toBe(second.id);
   });
 
   it('sets summary and operationId, and can generate operationId from path/method', () => {
@@ -120,7 +122,9 @@ describe('useSpecStore', () => {
     const id = useSpecStore.getState().endpoints[0].id;
 
     useSpecStore.getState().addParam(id);
-    const paramId = useSpecStore.getState().endpoints[0].params[0].id;
+    const param = useSpecStore.getState().endpoints[0].params[0];
+    expect(param).toMatchObject({ required: false, nullable: false, example: '' });
+    const paramId = param.id;
     useSpecStore.getState().setParam(id, paramId, { name: 'limit', in: 'query' });
     expect(useSpecStore.getState().endpoints[0].params[0]).toMatchObject({ name: 'limit', in: 'query' });
 
@@ -133,12 +137,30 @@ describe('useSpecStore', () => {
     const id = useSpecStore.getState().endpoints[0].id;
 
     useSpecStore.getState().addHeader(id);
-    const headerId = useSpecStore.getState().endpoints[0].headers[0].id;
+    const header = useSpecStore.getState().endpoints[0].headers[0];
+    expect(header).toMatchObject({ required: false, nullable: false, example: '' });
+    const headerId = header.id;
     useSpecStore.getState().setHeader(id, headerId, { name: 'X-Request-Id' });
     expect(useSpecStore.getState().endpoints[0].headers[0].name).toBe('X-Request-Id');
 
     useSpecStore.getState().removeHeader(id, headerId);
     expect(useSpecStore.getState().endpoints[0].headers).toHaveLength(0);
+  });
+
+  it('sets nullable and example on a param, and toggles its expanded-example panel', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+    useSpecStore.getState().addParam(id);
+    const paramId = useSpecStore.getState().endpoints[0].params[0].id;
+
+    useSpecStore.getState().setParam(id, paramId, { nullable: true, example: '42' });
+    expect(useSpecStore.getState().endpoints[0].params[0]).toMatchObject({ nullable: true, example: '42' });
+
+    expect(useSpecStore.getState().expandedParamKey).toBeNull();
+    useSpecStore.getState().toggleParamExpanded(paramId);
+    expect(useSpecStore.getState().expandedParamKey).toBe(paramId);
+    useSpecStore.getState().toggleParamExpanded(paramId);
+    expect(useSpecStore.getState().expandedParamKey).toBeNull();
   });
 
   it('toggles the request body and updates its description', () => {
@@ -284,16 +306,16 @@ describe('useSpecStore', () => {
     useSpecStore.getState().addSchema();
     const s = useSpecStore.getState();
     expect(s.schemas.map((sc) => sc.name)).toEqual(['NewSchema', 'NewSchema2']);
-    expect(s.selectedId).toBe(s.schemas[1].id);
+    expect(s.selectedSchemaId).toBe(s.schemas[1].id);
   });
 
   it('adds a schema without changing selection, returning its name', () => {
-    useSpecStore.setState({ selectedId: 'ep_x' });
+    useSpecStore.setState({ selectedSchemaId: 'sc_x' });
     const name = useSpecStore.getState().addSchemaReturningName();
     const s = useSpecStore.getState();
     expect(name).toBe('NewSchema');
     expect(s.schemas.map((sc) => sc.name)).toEqual(['NewSchema']);
-    expect(s.selectedId).toBe('ep_x');
+    expect(s.selectedSchemaId).toBe('sc_x');
   });
 
   it('drops a dragged method onto a tag it does not already have', () => {
@@ -326,7 +348,7 @@ describe('schema field operations', () => {
     useSpecStore.getState().deleteSchema(id);
     const s = useSpecStore.getState();
     expect(s.schemas.map((sc) => sc.name)).toEqual(['NewSchema']);
-    expect(s.selectedId).toBe(s.schemas[0].id);
+    expect(s.selectedSchemaId).toBe(s.schemas[0].id);
   });
 
   it('adds a blank field directly to the end of the list, without opening the field picker', () => {
@@ -374,6 +396,17 @@ describe('schema field operations', () => {
     s = useSpecStore.getState();
     expect(s.schemas.filter((sc) => sc.name === 'Slug')).toHaveLength(1);
     expect(s.schemas.find((sc) => sc.id === id)!.fields).toHaveLength(2);
+  });
+
+  it('allows overriding the example on a $ref field, but ignores patch keys that only apply to custom fields', () => {
+    const id = setupSchema();
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().insertPrimitiveField('slug');
+
+    useSpecStore.getState().setSchemaField(id, 0, { example: 'custom-slug', format: 'should-be-ignored' });
+    const field = useSpecStore.getState().schemas.find((sc) => sc.id === id)!.fields[0];
+    expect(field).toMatchObject({ kind: 'ref', example: 'custom-slug' });
+    expect(field).not.toHaveProperty('format');
   });
 
   it('inserts a $ref field pointing at another schema by name', () => {
@@ -507,6 +540,31 @@ describe('security schemes', () => {
     const s = useSpecStore.getState();
     expect(s.enabledSecuritySchemes).toEqual([]);
     expect(s.securityScopes).toEqual({});
+  });
+});
+
+describe('cross-tab selection persistence', () => {
+  it('remembers the selected endpoint independently of the selected schema', () => {
+    useSpecStore.getState().pickMethod('/a', 'GET');
+    useSpecStore.getState().pickMethod('/b', 'GET');
+    const [first, second] = useSpecStore.getState().endpoints;
+    useSpecStore.getState().selectEndpoint(first.id);
+
+    useSpecStore.getState().addSchema();
+    useSpecStore.getState().addSchema();
+    const schemaId = useSpecStore.getState().schemas[1].id;
+    useSpecStore.getState().selectSchema(schemaId);
+
+    // Selecting a schema (as if the user switched to Schema Designer) must not
+    // disturb the endpoint Design Canvas had selected, and vice versa.
+    let s = useSpecStore.getState();
+    expect(s.selectedEndpointId).toBe(first.id);
+    expect(s.selectedSchemaId).toBe(schemaId);
+
+    useSpecStore.getState().selectEndpoint(second.id);
+    s = useSpecStore.getState();
+    expect(s.selectedEndpointId).toBe(second.id);
+    expect(s.selectedSchemaId).toBe(schemaId);
   });
 });
 

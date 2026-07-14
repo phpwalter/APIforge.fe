@@ -78,6 +78,19 @@ describe('fieldsToExampleValue', () => {
     const scalar: Schema = { id: 'sc_1', name: 'Slug', scalar: true, scalarType: 'string', fields: [], contentTypes: [] };
     expect(scalarSchemaExample(scalar)).toBe('string');
   });
+
+  it('shows null instead of a type placeholder for a nullable field with no example', () => {
+    const schema: Schema = {
+      id: 'sc_1',
+      name: 'Thing',
+      fields: [
+        customField('f1', 'format', { nullable: true }),
+        customField('f2', 'name'),
+      ],
+      contentTypes: ['application/json'],
+    };
+    expect(fieldsToExampleValue(schema, [schema])).toEqual({ format: null, name: 'string' });
+  });
 });
 
 describe('formatExampleForContentType', () => {
