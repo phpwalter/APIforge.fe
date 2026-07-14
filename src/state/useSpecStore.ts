@@ -1,7 +1,19 @@
 import { create } from 'zustand';
-import type { Endpoint, HeaderParam, HttpMethod, Param, ResponseEntry, Schema } from '../types/spec';
+import type {
+  Endpoint,
+  HeaderParam,
+  HttpMethod,
+  Param,
+  ResponseEntry,
+  Schema,
+  SchemaFieldCustom,
+  SchemaFieldType,
+} from '../types/spec';
 import { METHOD_PRIORITY } from '../lib/methodStyle';
 import { DEFAULT_CODE_FOR_CLASS, type ResponseClass } from '../lib/responseClass';
+import { findPrimitive } from '../lib/primitives';
+import { fieldSubtreeEnd, fieldSiblingBounds } from '../lib/schemaTree';
+import type { SchemaCompileFormat } from '../lib/schemaCompile';
 
 const EP_PANEL_MIN_WIDTH = 220;
 const EP_PANEL_MAX_WIDTH = 480;
@@ -10,6 +22,10 @@ const EP_PANEL_DEFAULT_WIDTH = 292;
 const SCHEMA_PANEL_MIN_WIDTH = 135;
 const SCHEMA_PANEL_MAX_WIDTH = 420;
 const SCHEMA_PANEL_DEFAULT_WIDTH = 175;
+
+const COMPILE_PANEL_MIN_WIDTH = 135;
+const COMPILE_PANEL_MAX_WIDTH = 560;
+const COMPILE_PANEL_DEFAULT_WIDTH = 175;
 
 /** Fixed catalog for the security row's "Add auth" picker — stands in until the full Security Scheme manager modal is built. */
 export const SECURITY_SCHEMES = ['bearerAuth', 'apiKeyAuth', 'oauth2'];
@@ -28,6 +44,13 @@ function uniqueSchemaName(existingNames: string[], base: string): string {
   return `${base}${i}`;
 }
 
+function uniqueFieldName(existingNames: string[], base: string): string {
+  if (!existingNames.includes(base)) return base;
+  let i = 2;
+  while (existingNames.includes(`${base}_${i}`)) i++;
+  return `${base}_${i}`;
+}
+
 function makeId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -39,6 +62,49 @@ function clamp(min: number, max: number, value: number): number {
 function makeResponseEntry(id: string, code: string, description = ''): ResponseEntry {
   return { id, code, description, headers: [], contentTypes: ['application/json'], schema: '', schemaIsArray: false };
 }
+
+function makeCustomField(
+  id: string,
+  name: string,
+  type: SchemaFieldType,
+  extra: Partial<SchemaFieldCustom> = {},
+): SchemaFieldCustom {
+  return { id, name, kind: 'custom', type, required: false, nullable: false, depth: 0, example: '', ...extra };
+}
+
+/** Draft state for the Primitive Picker's "Custom" tab — mirrors the mockup's customDraft* fields. */
+interface CustomFieldDraft {
+  name: string;
+  type: SchemaFieldType;
+  format: string;
+  pattern: string;
+  minLength: string;
+  maxLength: string;
+  min: string;
+  max: string;
+  enumValues: string;
+  example: string;
+  /** 'prim:<type>' or 'ref:<SchemaName>' — the array item-type select's value. */
+  itemsValue: string;
+  required: boolean;
+  nullable: boolean;
+}
+
+const DEFAULT_CUSTOM_FIELD_DRAFT: CustomFieldDraft = {
+  name: '',
+  type: 'string',
+  format: '',
+  pattern: '',
+  minLength: '',
+  maxLength: '',
+  min: '',
+  max: '',
+  enumValues: '',
+  example: '',
+  itemsValue: 'prim:string',
+  required: true,
+  nullable: false,
+};
 
 function defaultResponsesFor(method: HttpMethod): ResponseEntry[] {
   return [makeResponseEntry(makeId('res'), method === 'POST' ? '201' : '200', method === 'POST' ? 'Created' : 'OK')];
@@ -146,6 +212,59 @@ interface SpecState {
   addSchema: () => void;
   /** Creates a uniquely-named schema without changing the current selection — for inline "create new" pickers. Returns the new schema's name. */
   addSchemaReturningName: () => string;
+  setSchemaName: (schemaId: string, name: string) => void;
+  deleteSchema: (schemaId: string) => void;
+  setScalarDescription: (schemaId: string, description: string) => void;
+  toggleSchemaContentType: (schemaId: string, contentType: string) => void;
+
+  // Schema field CRUD/tree operations (all keyed by index within the schema's flat, depth-annotated field list)
+  setSchemaField: (schemaId: string, index: number, patch: Partial<SchemaFieldCustom>) => void;
+  setSchemaFieldType: (schemaId: string, index: number, type: SchemaFieldType) => void;
+  setSchemaFieldItems: (schemaId: string, index: number, value: string) => void;
+  removeSchemaField: (schemaId: string, index: number) => void;
+  toggleSchemaFieldRequired: (schemaId: string, index: number) => void;
+  toggleSchemaFieldNullable: (schemaId: string, index: number) => void;
+  indentSchemaField: (schemaId: string, index: number) => void;
+  outdentSchemaField: (schemaId: string, index: number) => void;
+
+  expandedSchemaFieldKey: string | null;
+  toggleSchemaFieldExpanded: (schemaId: string, index: number) => void;
+
+  // Schema field drag-to-reorder (same-depth siblings only)
+  draggingSchemaFieldSchemaId: string | null;
+  draggingSchemaFieldIndex: number | null;
+  dragOverSchemaFieldIndex: number | null;
+  startDragSchemaField: (schemaId: string, index: number) => void;
+  setDragOverSchemaField: (schemaId: string, index: number) => void;
+  clearDragOverSchemaField: () => void;
+  dropSchemaField: (schemaId: string, toIndex: number) => void;
+  endDragSchemaField: () => void;
+
+  // Transient error/status toast for schema field operations (required-remove guard, invalid reorder, etc.)
+  schemaToast: string | null;
+  setSchemaToast: (message: string | null) => void;
+
+  // Primitive Picker modal — inserts a field backed by a catalog primitive, a $ref to another schema, or a freely-typed custom field.
+  fieldPickerOpen: boolean;
+  fieldPickerSchemaId: string | null;
+  /** Set when the picker was opened to *convert* an existing field's kind (via the type select's "Convert…" option), rather than to add a new one. */
+  fieldPickerConvertIndex: number | null;
+  fieldPickerMode: 'primitive' | 'schema' | 'custom';
+  fieldPickerCategory: string;
+  fieldPickerSearch: string;
+  fieldPickerSelectedKey: string | null;
+  openFieldPicker: (schemaId: string, convertIndex?: number | null) => void;
+  closeFieldPicker: () => void;
+  setFieldPickerMode: (mode: 'primitive' | 'schema' | 'custom') => void;
+  setFieldPickerCategory: (cat: string) => void;
+  setFieldPickerSearch: (v: string) => void;
+  selectFieldPickerPrimitive: (pkey: string | null) => void;
+  insertPrimitiveField: (pkey: string) => void;
+  insertSchemaRefField: (schemaName: string) => void;
+
+  customFieldDraft: CustomFieldDraft;
+  setCustomFieldDraft: (patch: Partial<CustomFieldDraft>) => void;
+  addCustomField: () => void;
 
   // Schema designer panel UI state
   schemaPanelSearch: string;
@@ -156,6 +275,16 @@ interface SpecState {
   setSchemaPanelWidth: (w: number) => void;
   toggleSchemaPanelCollapsed: () => void;
   setResizingSchemaPanel: (v: boolean) => void;
+
+  // Schema compile/preview side panel (right-anchored)
+  schemaCompileFormat: SchemaCompileFormat;
+  setSchemaCompileFormat: (format: SchemaCompileFormat) => void;
+  compilePanelWidth: number;
+  compilePanelCollapsed: boolean;
+  resizingCompilePanel: boolean;
+  setCompilePanelWidth: (w: number) => void;
+  toggleCompilePanelCollapsed: () => void;
+  setResizingCompilePanel: (v: boolean) => void;
 }
 
 const sampleEndpoints: Endpoint[] = [
@@ -250,10 +379,48 @@ const sampleEndpoints: Endpoint[] = [
 ];
 
 const sampleSchemas: Schema[] = [
-  { id: 'sc_1', name: 'User', fieldCount: 5 },
-  { id: 'sc_2', name: 'Post', fieldCount: 4 },
-  { id: 'sc_3', name: 'Error', fieldCount: 2 },
-  { id: 'sc_4', name: 'PaginationMeta', fieldCount: 3 },
+  {
+    id: 'sc_1',
+    name: 'User',
+    contentTypes: ['application/json'],
+    fields: [
+      makeCustomField('sf_1a', 'id', 'string', { required: true, format: 'uuid' }),
+      makeCustomField('sf_1b', 'name', 'string', { required: true }),
+      makeCustomField('sf_1c', 'email', 'string', { required: true, format: 'email' }),
+      makeCustomField('sf_1d', 'isActive', 'boolean'),
+      makeCustomField('sf_1e', 'createdAt', 'string', { format: 'date-time' }),
+    ],
+  },
+  {
+    id: 'sc_2',
+    name: 'Post',
+    contentTypes: ['application/json'],
+    fields: [
+      makeCustomField('sf_2a', 'id', 'string', { required: true, format: 'uuid' }),
+      makeCustomField('sf_2b', 'title', 'string', { required: true }),
+      makeCustomField('sf_2c', 'body', 'string'),
+      makeCustomField('sf_2d', 'authorId', 'string', { format: 'uuid' }),
+    ],
+  },
+  {
+    id: 'sc_3',
+    name: 'Error',
+    contentTypes: ['application/json'],
+    fields: [
+      makeCustomField('sf_3a', 'code', 'integer', { required: true }),
+      makeCustomField('sf_3b', 'message', 'string', { required: true }),
+    ],
+  },
+  {
+    id: 'sc_4',
+    name: 'PaginationMeta',
+    contentTypes: ['application/json'],
+    fields: [
+      makeCustomField('sf_4a', 'page', 'integer', { required: true }),
+      makeCustomField('sf_4b', 'pageSize', 'integer', { required: true }),
+      makeCustomField('sf_4c', 'total', 'integer', { required: true }),
+    ],
+  },
 ];
 
 export const useSpecStore = create<SpecState>((set, get) => ({
@@ -549,7 +716,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       schemas.map((s) => s.name),
       'NewSchema',
     );
-    const newSchema: Schema = { id: makeId('sc'), name, fieldCount: 0 };
+    const newSchema: Schema = { id: makeId('sc'), name, fields: [], contentTypes: ['application/json'] };
     set({ schemas: [...schemas, newSchema], selectedId: newSchema.id });
   },
   addSchemaReturningName: () => {
@@ -558,9 +725,401 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       schemas.map((s) => s.name),
       'NewSchema',
     );
-    const newSchema: Schema = { id: makeId('sc'), name, fieldCount: 0 };
+    const newSchema: Schema = { id: makeId('sc'), name, fields: [], contentTypes: ['application/json'] };
     set({ schemas: [...schemas, newSchema] });
     return name;
+  },
+  setSchemaName: (schemaId, name) =>
+    set((s) => ({ schemas: s.schemas.map((sc) => (sc.id === schemaId ? { ...sc, name } : sc)) })),
+  deleteSchema: (schemaId) =>
+    set((s) => {
+      const remaining = s.schemas.filter((sc) => sc.id !== schemaId);
+      const wasSelected = s.selectedId === schemaId;
+      return { schemas: remaining, selectedId: wasSelected ? (remaining[0]?.id ?? null) : s.selectedId };
+    }),
+  setScalarDescription: (schemaId, description) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) => (sc.id === schemaId ? { ...sc, scalarDescription: description } : sc)),
+    })),
+  toggleSchemaContentType: (schemaId, contentType) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) => {
+        if (sc.id !== schemaId) return sc;
+        const has = sc.contentTypes.includes(contentType);
+        const next = has ? sc.contentTypes.filter((ct) => ct !== contentType) : [...sc.contentTypes, contentType];
+        return { ...sc, contentTypes: next.length ? next : ['application/json'] };
+      }),
+    })),
+
+  setSchemaField: (schemaId, index, patch) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) => {
+        if (sc.id !== schemaId) return sc;
+        return {
+          ...sc,
+          fields: sc.fields.map((f, i) => {
+            if (i !== index) return f;
+            if (f.kind === 'custom') return { ...f, ...patch };
+            if (patch.name !== undefined) return { ...f, name: patch.name };
+            return f;
+          }),
+        };
+      }),
+    })),
+  setSchemaFieldType: (schemaId, index, type) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) =>
+        sc.id === schemaId ? { ...sc, fields: sc.fields.map((f, i) => (i === index ? { ...f, type } : f)) } : sc,
+      ),
+    })),
+  setSchemaFieldItems: (schemaId, index, value) => {
+    const isRef = value.startsWith('ref:');
+    const name = value.slice(value.indexOf(':') + 1);
+    set((s) => ({
+      schemas: s.schemas.map((sc) => {
+        if (sc.id !== schemaId) return sc;
+        return {
+          ...sc,
+          fields: sc.fields.map((f, i) => {
+            if (i !== index || f.kind !== 'custom') return f;
+            return { ...f, itemsRef: isRef ? name : '', itemsType: isRef ? 'object' : (name as SchemaFieldType) };
+          }),
+        };
+      }),
+    }));
+  },
+  removeSchemaField: (schemaId, index) => {
+    const { schemas } = get();
+    const f = schemas.find((sc) => sc.id === schemaId)?.fields[index];
+    if (f?.required) {
+      set({ schemaToast: "Required properties can't be removed — toggle off Required first" });
+      return;
+    }
+    set((s) => ({
+      schemas: s.schemas.map((sc) => {
+        if (sc.id !== schemaId) return sc;
+        const fields = sc.fields.slice();
+        const end = fieldSubtreeEnd(fields, index);
+        fields.splice(index, end - index + 1);
+        return { ...sc, fields };
+      }),
+    }));
+  },
+  toggleSchemaFieldRequired: (schemaId, index) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) =>
+        sc.id === schemaId
+          ? { ...sc, fields: sc.fields.map((f, i) => (i === index ? { ...f, required: !f.required } : f)) }
+          : sc,
+      ),
+    })),
+  toggleSchemaFieldNullable: (schemaId, index) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) =>
+        sc.id === schemaId
+          ? { ...sc, fields: sc.fields.map((f, i) => (i === index ? { ...f, nullable: !f.nullable } : f)) }
+          : sc,
+      ),
+    })),
+  indentSchemaField: (schemaId, index) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) => {
+        if (sc.id !== schemaId) return sc;
+        const fields = sc.fields.slice();
+        const f = fields[index];
+        if (!f || index === 0) return sc;
+        const d = f.depth || 0;
+        const prevDepth = fields[index - 1].depth || 0;
+        if (prevDepth < d) return sc;
+        let parentIdx = index - 1;
+        while (parentIdx > 0 && (fields[parentIdx].depth || 0) > d) parentIdx--;
+        if ((fields[parentIdx].depth || 0) !== d) return sc;
+        const parent = fields[parentIdx];
+        if (parent.kind === 'ref' || parent.kind === 'primitive') {
+          fields[parentIdx] = makeCustomField(parent.id, parent.name, parent.type === 'array' ? 'array' : 'object', {
+            required: parent.required,
+            nullable: parent.nullable,
+            depth: parent.depth,
+          });
+        } else if (parent.type !== 'array' && parent.type !== 'object') {
+          fields[parentIdx] = { ...parent, type: 'object' };
+        } else if (parent.type === 'array' && parent.itemsRef) {
+          fields[parentIdx] = { ...parent, itemsRef: '', itemsType: 'object' };
+        }
+        const end = fieldSubtreeEnd(fields, index);
+        for (let k = index; k <= end; k++) fields[k] = { ...fields[k], depth: (fields[k].depth || 0) + 1 };
+        return { ...sc, fields };
+      }),
+    })),
+  outdentSchemaField: (schemaId, index) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) => {
+        if (sc.id !== schemaId) return sc;
+        const fields = sc.fields.slice();
+        const f = fields[index];
+        if (!f) return sc;
+        const d = f.depth || 0;
+        if (d <= 0) return sc;
+        const end = fieldSubtreeEnd(fields, index);
+        for (let k = index; k <= end; k++) fields[k] = { ...fields[k], depth: Math.max(0, (fields[k].depth || 0) - 1) };
+        return { ...sc, fields };
+      }),
+    })),
+
+  expandedSchemaFieldKey: null,
+  toggleSchemaFieldExpanded: (schemaId, index) =>
+    set((s) => {
+      const key = `${schemaId}:${index}`;
+      return { expandedSchemaFieldKey: s.expandedSchemaFieldKey === key ? null : key };
+    }),
+
+  draggingSchemaFieldSchemaId: null,
+  draggingSchemaFieldIndex: null,
+  dragOverSchemaFieldIndex: null,
+  startDragSchemaField: (schemaId, index) =>
+    set({ draggingSchemaFieldSchemaId: schemaId, draggingSchemaFieldIndex: index }),
+  setDragOverSchemaField: (schemaId, index) => {
+    const { draggingSchemaFieldSchemaId: fromSchemaId, draggingSchemaFieldIndex: fromIdx, schemas } = get();
+    if (fromSchemaId !== schemaId) return;
+    const schema = schemas.find((sc) => sc.id === schemaId);
+    if (schema && fromIdx != null) {
+      const fields = schema.fields;
+      const end = fieldSubtreeEnd(fields, fromIdx);
+      const [start, sibEnd] = fieldSiblingBounds(fields, fromIdx);
+      const fromDepth = fields[fromIdx]?.depth || 0;
+      const toDepth = fields[index]?.depth || 0;
+      if (index < start || index > sibEnd || toDepth !== fromDepth || (index >= fromIdx && index <= end)) {
+        set({ dragOverSchemaFieldIndex: null });
+        return;
+      }
+    }
+    set({ dragOverSchemaFieldIndex: index });
+  },
+  clearDragOverSchemaField: () => set({ dragOverSchemaFieldIndex: null }),
+  dropSchemaField: (schemaId, toIndex) => {
+    const { draggingSchemaFieldSchemaId: fromSchemaId, draggingSchemaFieldIndex: fromIdx, schemas } = get();
+    set({ draggingSchemaFieldSchemaId: null, draggingSchemaFieldIndex: null, dragOverSchemaFieldIndex: null });
+    if (fromSchemaId !== schemaId || fromIdx == null || fromIdx === toIndex) return;
+    const schema = schemas.find((sc) => sc.id === schemaId);
+    if (!schema) return;
+    const fields = schema.fields;
+    const end = fieldSubtreeEnd(fields, fromIdx);
+    if (toIndex >= fromIdx && toIndex <= end) return;
+    const fromDepth = fields[fromIdx]?.depth || 0;
+    const toDepth = fields[toIndex]?.depth || 0;
+    const [start, sibEnd] = fieldSiblingBounds(fields, fromIdx);
+    if (toDepth !== fromDepth || toIndex < start || toIndex > sibEnd) {
+      set({ schemaToast: 'A property can only be reordered within its parent' });
+      return;
+    }
+    const nextFields = fields.slice();
+    const block = nextFields.splice(fromIdx, end - fromIdx + 1);
+    const insertAt = toIndex > end ? toIndex - block.length : toIndex;
+    nextFields.splice(insertAt, 0, ...block);
+    set((s) => ({ schemas: s.schemas.map((sc) => (sc.id === schemaId ? { ...sc, fields: nextFields } : sc)) }));
+  },
+  endDragSchemaField: () =>
+    set({ draggingSchemaFieldSchemaId: null, draggingSchemaFieldIndex: null, dragOverSchemaFieldIndex: null }),
+
+  schemaToast: null,
+  setSchemaToast: (message) => set({ schemaToast: message }),
+
+  fieldPickerOpen: false,
+  fieldPickerSchemaId: null,
+  fieldPickerConvertIndex: null,
+  fieldPickerMode: 'primitive',
+  fieldPickerCategory: 'alpha',
+  fieldPickerSearch: '',
+  fieldPickerSelectedKey: null,
+  openFieldPicker: (schemaId, convertIndex = null) =>
+    set({
+      fieldPickerOpen: true,
+      fieldPickerSchemaId: schemaId,
+      fieldPickerConvertIndex: convertIndex,
+      fieldPickerMode: 'primitive',
+      fieldPickerSearch: '',
+      fieldPickerSelectedKey: null,
+    }),
+  closeFieldPicker: () =>
+    set({
+      fieldPickerOpen: false,
+      fieldPickerSchemaId: null,
+      fieldPickerConvertIndex: null,
+      fieldPickerSelectedKey: null,
+    }),
+  setFieldPickerMode: (mode) =>
+    set((s) => ({
+      fieldPickerMode: mode,
+      fieldPickerSelectedKey: null,
+      customFieldDraft: mode === 'custom' ? { ...DEFAULT_CUSTOM_FIELD_DRAFT } : s.customFieldDraft,
+    })),
+  setFieldPickerCategory: (cat) => set({ fieldPickerCategory: cat, fieldPickerSelectedKey: null }),
+  setFieldPickerSearch: (v) => set({ fieldPickerSearch: v }),
+  selectFieldPickerPrimitive: (pkey) => set({ fieldPickerSelectedKey: pkey || null }),
+  insertPrimitiveField: (pkey) => {
+    const p = findPrimitive(pkey);
+    const { fieldPickerSchemaId, fieldPickerConvertIndex, schemas } = get();
+    if (!p || !fieldPickerSchemaId) return;
+    const jsonType: SchemaFieldType = p.jsonType === 'null' ? 'string' : (p.jsonType as SchemaFieldType);
+    let nextSchemas = schemas;
+    const existing = schemas.find((sc) => sc.scalar && sc.scalarPrimitiveKey === p.key);
+    let wrapperName: string;
+    if (existing) {
+      wrapperName = existing.name;
+    } else {
+      const base = p.key.charAt(0).toUpperCase() + p.key.slice(1);
+      wrapperName = uniqueSchemaName(
+        schemas.map((sc) => sc.name),
+        base,
+      );
+      const wrapper: Schema = {
+        id: makeId('sc'),
+        name: wrapperName,
+        scalar: true,
+        fields: [],
+        contentTypes: ['application/json'],
+        scalarType: jsonType,
+        scalarFormat: p.format ?? undefined,
+        scalarPrimitiveKey: p.key,
+        scalarDescription: p.description || '',
+      };
+      nextSchemas = [...schemas, wrapper];
+    }
+    nextSchemas = nextSchemas.map((sc) => {
+      if (sc.id !== fieldPickerSchemaId) return sc;
+      const fields = sc.fields.slice();
+      if (fieldPickerConvertIndex != null && fields[fieldPickerConvertIndex]) {
+        const old = fields[fieldPickerConvertIndex];
+        fields[fieldPickerConvertIndex] = {
+          id: old.id,
+          name: old.name,
+          kind: 'ref',
+          ref: wrapperName,
+          type: jsonType,
+          required: old.required,
+          nullable: old.nullable,
+          depth: old.depth,
+          example: '',
+        };
+        return { ...sc, fields };
+      }
+      const name = uniqueFieldName(
+        fields.map((f) => f.name),
+        p.key,
+      );
+      fields.push({
+        id: makeId('sf'),
+        name,
+        kind: 'ref',
+        ref: wrapperName,
+        type: jsonType,
+        required: false,
+        nullable: false,
+        depth: 0,
+        example: '',
+      });
+      return { ...sc, fields };
+    });
+    set({
+      schemas: nextSchemas,
+      fieldPickerOpen: false,
+      fieldPickerSchemaId: null,
+      fieldPickerConvertIndex: null,
+      fieldPickerSelectedKey: null,
+    });
+  },
+  insertSchemaRefField: (schemaName) => {
+    const { fieldPickerSchemaId, fieldPickerConvertIndex, schemas } = get();
+    if (!fieldPickerSchemaId) return;
+    const nextSchemas = schemas.map((sc) => {
+      if (sc.id !== fieldPickerSchemaId) return sc;
+      const fields = sc.fields.slice();
+      if (fieldPickerConvertIndex != null && fields[fieldPickerConvertIndex]) {
+        const old = fields[fieldPickerConvertIndex];
+        fields[fieldPickerConvertIndex] = {
+          id: old.id,
+          name: old.name,
+          kind: 'ref',
+          ref: schemaName,
+          type: 'object',
+          required: old.required,
+          nullable: old.nullable,
+          depth: old.depth,
+          example: '',
+        };
+        return { ...sc, fields };
+      }
+      const name = uniqueFieldName(
+        fields.map((f) => f.name),
+        schemaName.toLowerCase(),
+      );
+      fields.push({
+        id: makeId('sf'),
+        name,
+        kind: 'ref',
+        ref: schemaName,
+        type: 'object',
+        required: false,
+        nullable: false,
+        depth: 0,
+        example: '',
+      });
+      return { ...sc, fields };
+    });
+    set({
+      schemas: nextSchemas,
+      fieldPickerOpen: false,
+      fieldPickerSchemaId: null,
+      fieldPickerConvertIndex: null,
+      fieldPickerSelectedKey: null,
+    });
+  },
+
+  customFieldDraft: DEFAULT_CUSTOM_FIELD_DRAFT,
+  setCustomFieldDraft: (patch) => set((s) => ({ customFieldDraft: { ...s.customFieldDraft, ...patch } })),
+  addCustomField: () => {
+    const { fieldPickerSchemaId, customFieldDraft, schemas } = get();
+    const name = customFieldDraft.name.trim();
+    if (!fieldPickerSchemaId || !name) return;
+    const schema = schemas.find((sc) => sc.id === fieldPickerSchemaId);
+    if (!schema) return;
+    const type = customFieldDraft.type;
+    const extra: Partial<SchemaFieldCustom> = {
+      required: customFieldDraft.required,
+      nullable: customFieldDraft.nullable,
+      format: customFieldDraft.format.trim() || undefined,
+    };
+    if (type === 'string') {
+      if (customFieldDraft.pattern.trim()) extra.pattern = customFieldDraft.pattern.trim();
+      if (customFieldDraft.minLength.trim() !== '') extra.minLength = customFieldDraft.minLength.trim();
+      if (customFieldDraft.maxLength.trim() !== '') extra.maxLength = customFieldDraft.maxLength.trim();
+      if (customFieldDraft.enumValues.trim()) extra.enumValues = customFieldDraft.enumValues.trim();
+    }
+    if (type === 'integer' || type === 'number') {
+      if (customFieldDraft.min.trim() !== '') extra.min = customFieldDraft.min.trim();
+      if (customFieldDraft.max.trim() !== '') extra.max = customFieldDraft.max.trim();
+    }
+    if (type === 'array') {
+      const itemsVal = customFieldDraft.itemsValue;
+      const isItemsRef = itemsVal.startsWith('ref:');
+      extra.itemsType = isItemsRef ? 'object' : (itemsVal.slice(5) as SchemaFieldType);
+      if (isItemsRef) extra.itemsRef = itemsVal.slice(4);
+    }
+    if (type !== 'array' && customFieldDraft.example.trim() !== '') extra.example = customFieldDraft.example.trim();
+    const fieldName = uniqueFieldName(
+      schema.fields.map((f) => f.name),
+      name,
+    );
+    const newField = makeCustomField(makeId('sf'), fieldName, type, extra);
+    set((s) => ({
+      schemas: s.schemas.map((sc) =>
+        sc.id === fieldPickerSchemaId ? { ...sc, fields: [...sc.fields, newField] } : sc,
+      ),
+      fieldPickerOpen: false,
+      fieldPickerSchemaId: null,
+      fieldPickerConvertIndex: null,
+      customFieldDraft: DEFAULT_CUSTOM_FIELD_DRAFT,
+    }));
   },
 
   schemaPanelSearch: '',
@@ -571,6 +1130,16 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   setSchemaPanelWidth: (w) => set({ schemaPanelWidth: clamp(SCHEMA_PANEL_MIN_WIDTH, SCHEMA_PANEL_MAX_WIDTH, w) }),
   toggleSchemaPanelCollapsed: () => set((s) => ({ schemaPanelCollapsed: !s.schemaPanelCollapsed })),
   setResizingSchemaPanel: (v) => set({ resizingSchemaPanel: v }),
+
+  schemaCompileFormat: 'json',
+  setSchemaCompileFormat: (format) => set({ schemaCompileFormat: format }),
+  compilePanelWidth: COMPILE_PANEL_DEFAULT_WIDTH,
+  compilePanelCollapsed: false,
+  resizingCompilePanel: false,
+  setCompilePanelWidth: (w) =>
+    set({ compilePanelWidth: clamp(COMPILE_PANEL_MIN_WIDTH, COMPILE_PANEL_MAX_WIDTH, w) }),
+  toggleCompilePanelCollapsed: () => set((s) => ({ compilePanelCollapsed: !s.compilePanelCollapsed })),
+  setResizingCompilePanel: (v) => set({ resizingCompilePanel: v }),
 }));
 
 export function methodsForPath(endpoints: Endpoint[], path: string): HttpMethod[] {
@@ -580,4 +1149,11 @@ export function methodsForPath(endpoints: Endpoint[], path: string): HttpMethod[
     .sort((a, b) => METHOD_PRIORITY.indexOf(a) - METHOD_PRIORITY.indexOf(b));
 }
 
-export { EP_PANEL_MIN_WIDTH, EP_PANEL_MAX_WIDTH, SCHEMA_PANEL_MIN_WIDTH, SCHEMA_PANEL_MAX_WIDTH };
+export {
+  EP_PANEL_MIN_WIDTH,
+  EP_PANEL_MAX_WIDTH,
+  SCHEMA_PANEL_MIN_WIDTH,
+  SCHEMA_PANEL_MAX_WIDTH,
+  COMPILE_PANEL_MIN_WIDTH,
+  COMPILE_PANEL_MAX_WIDTH,
+};

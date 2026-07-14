@@ -1,0 +1,69 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  margin-bottom: 6px;
+}
+
+.readonlyBox {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  background: var(--inset);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.libraryNotice {
+  font-size: 11.5px;
+  color: #a98ce0;
+  background: rgba(169, 140, 224, 0.1);
+  border: 1px solid rgba(169, 140, 224, 0.35);
+  border-radius: 8px;
+  padding: 8px 11px;
+}
+
+.textarea {
+  width: 100%;
+  resize: vertical;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 12px;
+  color: var(--text);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: var(--accent);
+}

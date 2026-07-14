@@ -71,7 +71,7 @@ export function SchemaPanel() {
                   <Braces size={15} />
                 </span>
                 <span className={styles.rowName}>{schema.name}</span>
-                <span className={styles.rowCount}>{schema.scalar ? 1 : schema.fieldCount}</span>
+                <span className={styles.rowCount}>{schema.scalar ? 1 : schema.fields.length}</span>
               </div>
             ))}
             {isEmpty && <div className={styles.emptyState}>No schemas match your search.</div>}

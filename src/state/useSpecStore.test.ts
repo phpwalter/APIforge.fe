@@ -42,7 +42,7 @@ describe('useSpecStore', () => {
         responses: [],
       },
     ];
-    const schemas: Schema[] = [{ id: 'sc_x', name: 'Thing', fieldCount: 1 }];
+    const schemas: Schema[] = [{ id: 'sc_x', name: 'Thing', fields: [], contentTypes: ['application/json'] }];
     useSpecStore.getState().importSpec({ endpoints, schemas });
 
     const s = useSpecStore.getState();
@@ -308,6 +308,143 @@ describe('useSpecStore', () => {
     expect(s.endpoints[0].tags).toEqual(['Posts']);
     expect(s.draggingMethodId).toBeNull();
     expect(s.dragOverTagKey).toBeNull();
+  });
+});
+
+describe('schema field operations', () => {
+  function setupSchema(): string {
+    useSpecStore.getState().addSchema();
+    return useSpecStore.getState().schemas[0].id;
+  }
+
+  it('renames a schema and deletes it, falling back selection to the next schema', () => {
+    const id = setupSchema();
+    useSpecStore.getState().setSchemaName(id, 'User');
+    expect(useSpecStore.getState().schemas[0].name).toBe('User');
+
+    useSpecStore.getState().addSchema();
+    useSpecStore.getState().deleteSchema(id);
+    const s = useSpecStore.getState();
+    expect(s.schemas.map((sc) => sc.name)).toEqual(['NewSchema']);
+    expect(s.selectedId).toBe(s.schemas[0].id);
+  });
+
+  it('adds a custom field via the picker draft and appends it to the schema', () => {
+    const id = setupSchema();
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().setCustomFieldDraft({ name: 'age', type: 'integer', min: '0' });
+    useSpecStore.getState().addCustomField();
+
+    const s = useSpecStore.getState();
+    expect(s.fieldPickerOpen).toBe(false);
+    expect(s.schemas[0].fields).toHaveLength(1);
+    const field = s.schemas[0].fields[0];
+    expect(field).toMatchObject({ name: 'age', kind: 'custom', type: 'integer', min: '0', required: true });
+  });
+
+  it('inserting a primitive creates a wrapper scalar schema and a $ref field, reusing the wrapper on a second insert', () => {
+    const id = setupSchema();
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().insertPrimitiveField('slug');
+
+    let s = useSpecStore.getState();
+    expect(s.schemas).toHaveLength(2);
+    const wrapper = s.schemas.find((sc) => sc.name === 'Slug');
+    expect(wrapper?.scalar).toBe(true);
+    expect(wrapper?.scalarPrimitiveKey).toBe('slug');
+    const schema = s.schemas.find((sc) => sc.id === id)!;
+    expect(schema.fields[0]).toMatchObject({ kind: 'ref', ref: 'Slug', name: 'slug' });
+
+    // Inserting the same primitive again reuses the existing wrapper schema instead of creating a new one.
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().insertPrimitiveField('slug');
+    s = useSpecStore.getState();
+    expect(s.schemas.filter((sc) => sc.name === 'Slug')).toHaveLength(1);
+    expect(s.schemas.find((sc) => sc.id === id)!.fields).toHaveLength(2);
+  });
+
+  it('inserts a $ref field pointing at another schema by name', () => {
+    const id = setupSchema();
+    useSpecStore.getState().setSchemaName(id, 'User');
+    useSpecStore.getState().addSchema();
+    const otherId = useSpecStore.getState().schemas[1].id;
+    useSpecStore.getState().setSchemaName(otherId, 'Address');
+
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().insertSchemaRefField('Address');
+
+    const s = useSpecStore.getState();
+    const user = s.schemas.find((sc) => sc.id === id)!;
+    expect(user.fields[0]).toMatchObject({ kind: 'ref', ref: 'Address', name: 'address', type: 'object' });
+  });
+
+  it('toggles required/nullable and blocks removing a required field', () => {
+    const id = setupSchema();
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().setCustomFieldDraft({ name: 'id' });
+    useSpecStore.getState().addCustomField();
+
+    // Custom fields default to required: true via the picker draft.
+    let s = useSpecStore.getState();
+    expect(s.schemas[0].fields[0]).toMatchObject({ required: true, nullable: false });
+
+    useSpecStore.getState().toggleSchemaFieldNullable(id, 0);
+    expect(useSpecStore.getState().schemas[0].fields[0].nullable).toBe(true);
+
+    useSpecStore.getState().removeSchemaField(id, 0);
+    s = useSpecStore.getState();
+    expect(s.schemas[0].fields).toHaveLength(1);
+    expect(s.schemaToast).toMatch(/can't be removed/);
+
+    useSpecStore.getState().toggleSchemaFieldRequired(id, 0);
+    useSpecStore.getState().removeSchemaField(id, 0);
+    expect(useSpecStore.getState().schemas[0].fields).toHaveLength(0);
+  });
+
+  it('indents a field under its preceding sibling and outdents it back', () => {
+    const id = setupSchema();
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().setCustomFieldDraft({ name: 'meta', type: 'object' });
+    useSpecStore.getState().addCustomField();
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().setCustomFieldDraft({ name: 'page', type: 'integer' });
+    useSpecStore.getState().addCustomField();
+
+    useSpecStore.getState().indentSchemaField(id, 1);
+    let s = useSpecStore.getState();
+    expect(s.schemas[0].fields.map((f) => f.depth)).toEqual([0, 1]);
+
+    useSpecStore.getState().outdentSchemaField(id, 1);
+    s = useSpecStore.getState();
+    expect(s.schemas[0].fields.map((f) => f.depth)).toEqual([0, 0]);
+  });
+
+  it('reorders same-depth siblings via drag and drop', () => {
+    const id = setupSchema();
+    ['a', 'b', 'c'].forEach((name) => {
+      useSpecStore.getState().openFieldPicker(id);
+      useSpecStore.getState().setCustomFieldDraft({ name });
+      useSpecStore.getState().addCustomField();
+    });
+
+    // Dropping the first row onto the last row's position inserts it just before that row.
+    useSpecStore.getState().startDragSchemaField(id, 0);
+    useSpecStore.getState().dropSchemaField(id, 2);
+    const s = useSpecStore.getState();
+    expect(s.schemas[0].fields.map((f) => f.name)).toEqual(['b', 'a', 'c']);
+    expect(s.draggingSchemaFieldSchemaId).toBeNull();
+  });
+
+  it('toggles a schema content type, always keeping at least one', () => {
+    const id = setupSchema();
+    useSpecStore.getState().toggleSchemaContentType(id, 'application/xml');
+    let s = useSpecStore.getState();
+    expect(s.schemas[0].contentTypes).toEqual(['application/json', 'application/xml']);
+
+    useSpecStore.getState().toggleSchemaContentType(id, 'application/json');
+    useSpecStore.getState().toggleSchemaContentType(id, 'application/xml');
+    s = useSpecStore.getState();
+    expect(s.schemas[0].contentTypes).toEqual(['application/json']);
   });
 });
 

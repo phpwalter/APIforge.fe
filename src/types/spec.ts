@@ -65,16 +65,76 @@ export interface Endpoint {
   responses: ResponseEntry[];
 }
 
+export type SchemaFieldKind = 'ref' | 'primitive' | 'custom';
+
+/** JSON Schema type for a custom-kind field (or the effective type of a ref/primitive field). */
+export type SchemaFieldType = 'string' | 'integer' | 'number' | 'boolean' | 'array' | 'object';
+
+interface SchemaFieldBase {
+  id: string;
+  name: string;
+  required: boolean;
+  nullable: boolean;
+  /** Nesting depth in the flat field list — 0 is top-level. Sibling order/nesting come from list position + depth. */
+  depth: number;
+  /** Free-text example shown per field (not used when type is 'array' or the field has nested children). */
+  example: string;
+}
+
+/** Points to another Schema by name — shown as a purple "→ Name" pill, opens the type picker to change. */
+export interface SchemaFieldRef extends SchemaFieldBase {
+  kind: 'ref';
+  ref: string;
+  type: SchemaFieldType;
+}
+
+/** Backed by a primitives.ts catalog entry — locked; delete and re-add to change. */
+export interface SchemaFieldPrimitive extends SchemaFieldBase {
+  kind: 'primitive';
+  primitiveKey: string;
+  type: SchemaFieldType;
+}
+
+/** Freely typed — the only kind with an editable type select and validation constraints. */
+export interface SchemaFieldCustom extends SchemaFieldBase {
+  kind: 'custom';
+  type: SchemaFieldType;
+  format?: string;
+  pattern?: string;
+  minLength?: string;
+  maxLength?: string;
+  min?: string;
+  max?: string;
+  /** Comma-separated enum values, as typed (parsed only at compile/example time). */
+  enumValues?: string;
+  /** For type === 'array': a primitive item type, or 'object' when itemsRef is set. */
+  itemsType?: SchemaFieldType;
+  /** For type === 'array': name of the Schema the array's items reference. */
+  itemsRef?: string;
+}
+
+export type SchemaField = SchemaFieldRef | SchemaFieldPrimitive | SchemaFieldCustom;
+
 /**
- * A reusable object schema. `fieldCount` stands in for the real fields
- * array until the schema field editor (ref/primitive/custom kinds) is
- * built — see the TypeScript Conversion Notes in the handoff README.
+ * A reusable schema — either an object schema (`fields`) or a scalar/primitive
+ * schema (`scalar: true`, described by the scalar* fields instead).
  */
 export interface Schema {
   id: string;
   name: string;
-  fieldCount: number;
   scalar?: boolean;
+
+  // Object schema (scalar falsy):
+  fields: SchemaField[];
+  /** MIME types this schema's auto-generated example is shown for. Never empty. */
+  contentTypes: string[];
+
+  // Scalar schema (scalar === true):
+  scalarType?: SchemaFieldType;
+  scalarFormat?: string;
+  /** Set when this scalar schema wraps a primitives.ts catalog entry — locks type/format. */
+  scalarPrimitiveKey?: string;
+  scalarDescription?: string;
 }
 
 /** A path's position in the endpoints-panel tree (parent/child by path prefix). */

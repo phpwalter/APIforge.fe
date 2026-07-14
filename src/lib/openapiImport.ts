@@ -1,5 +1,15 @@
 import { load as loadYaml } from 'js-yaml';
-import type { Endpoint, HeaderParam, HttpMethod, Param, ParamLocation, ResponseEntry, Schema } from '../types/spec';
+import type {
+  Endpoint,
+  HeaderParam,
+  HttpMethod,
+  Param,
+  ParamLocation,
+  ResponseEntry,
+  Schema,
+  SchemaField,
+  SchemaFieldType,
+} from '../types/spec';
 
 const HTTP_METHODS: HttpMethod[] = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'].map((m) =>
   m.toUpperCase(),
@@ -33,9 +43,17 @@ interface RawPathItem extends Record<string, unknown> {
   parameters?: RawParameter[];
 }
 
+interface RawSchemaProperty {
+  type?: string;
+  format?: string;
+}
+
 interface RawSchema {
   type?: string;
-  properties?: Record<string, unknown>;
+  format?: string;
+  description?: string;
+  properties?: Record<string, RawSchemaProperty>;
+  required?: string[];
 }
 
 interface RawDocument {
@@ -237,12 +255,38 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
     throw new OpenApiImportError('No operations (GET/POST/PUT/PATCH/DELETE/…) were found under any path.');
   }
 
-  const schemas: Schema[] = Object.entries(doc.components?.schemas ?? {}).map(([name, s]) => ({
-    id: makeId('sc'),
-    name,
-    fieldCount: Object.keys(s?.properties ?? {}).length,
-    scalar: s?.type !== undefined && s.type !== 'object',
-  }));
+  const JSON_SCHEMA_TYPES = new Set(['string', 'integer', 'number', 'boolean', 'array', 'object']);
+  const toFieldType = (t: string | undefined): SchemaFieldType =>
+    (t && JSON_SCHEMA_TYPES.has(t) ? t : 'string') as SchemaFieldType;
+
+  const schemas: Schema[] = Object.entries(doc.components?.schemas ?? {}).map(([name, s]) => {
+    const isScalar = s?.type !== undefined && s.type !== 'object';
+    if (isScalar) {
+      return {
+        id: makeId('sc'),
+        name,
+        scalar: true,
+        fields: [],
+        contentTypes: ['application/json'],
+        scalarType: toFieldType(s.type),
+        scalarFormat: s.format,
+        scalarDescription: s.description ?? '',
+      };
+    }
+    const requiredNames = new Set(s?.required ?? []);
+    const fields: SchemaField[] = Object.entries(s?.properties ?? {}).map(([propName, p]) => ({
+      id: makeId('sf'),
+      name: propName,
+      kind: 'custom',
+      type: toFieldType(p?.type),
+      format: p?.format,
+      required: requiredNames.has(propName),
+      nullable: false,
+      depth: 0,
+      example: '',
+    }));
+    return { id: makeId('sc'), name, fields, contentTypes: ['application/json'] };
+  });
 
   return {
     title: doc.info?.title ?? 'Untitled API',

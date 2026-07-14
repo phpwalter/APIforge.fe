@@ -10,6 +10,7 @@ export function usePanelResize(
   resizing: boolean,
   setWidth: (w: number) => void,
   setResizing: (v: boolean) => void,
+  anchor: 'left' | 'right' = 'left',
 ) {
   useEffect(() => {
     if (!resizing) return;
@@ -18,8 +19,9 @@ export function usePanelResize(
 
     const applyWidth = () => {
       frame = 0;
-      const left = panelRef.current?.getBoundingClientRect().left ?? 0;
-      setWidth(latestX - left);
+      const rect = panelRef.current?.getBoundingClientRect();
+      const width = anchor === 'right' ? (rect?.right ?? 0) - latestX : latestX - (rect?.left ?? 0);
+      setWidth(width);
     };
     const onMove = (e: MouseEvent) => {
       latestX = e.clientX;
@@ -34,5 +36,5 @@ export function usePanelResize(
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [panelRef, resizing, setWidth, setResizing]);
+  }, [panelRef, resizing, setWidth, setResizing, anchor]);
 }

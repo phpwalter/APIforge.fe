@@ -1,0 +1,145 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.headerLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.ctChipsWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.ctChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 4px 3px 8px;
+}
+
+.ctChipRemove {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+}
+
+.ctChipRemove:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.ctAddSelect {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.examplesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exampleHeadRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.exampleCtLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  flex: none;
+}
+
+.exampleAutoTag {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.exampleSpacer {
+  flex: 1;
+}
+
+.exampleRemoveBtn {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1px solid var(--del);
+  background: var(--del-soft);
+  color: var(--del);
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exampleRemoveBtn:hover {
+  background: var(--del);
+  color: #fff;
+}
+
+.exampleCode {
+  width: 100%;
+  margin: 0;
+  max-height: 160px;
+  overflow: auto;
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--text-dim);
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

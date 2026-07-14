@@ -5,6 +5,89 @@
   position: relative;
 }
 
+.editorArea {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  min-height: 0;
+}
+
+.scroll {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 30px 34px;
+}
+
+.content {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.chip {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip[data-scalar='true'] {
+  background: rgba(169, 140, 224, 0.14);
+  color: #a98ce0;
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: var(--text);
+  outline: none;
+}
+
+.nameInput:focus {
+  border-color: var(--accent);
+}
+
+.deleteBtn {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1px solid var(--del);
+  background: var(--del-soft);
+  color: var(--del);
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteBtn:hover {
+  background: var(--del);
+  color: #fff;
+  border-color: var(--del);
+}
+
 .detail {
   flex: 1;
   display: flex;
@@ -16,18 +99,4 @@
   background-size: 24px 24px;
   padding: 24px;
   text-align: center;
-}
-
-.selectionChip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-dim);
-}
-
-.nameLabel {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
 }
