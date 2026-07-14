@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { useSpecStore, SECURITY_SCHEMES } from '../../state/useSpecStore';
+import { useSpecStore } from '../../state/useSpecStore';
 import type { Endpoint } from '../../types/spec';
 import { RemoveGlyph } from './RemoveGlyph';
 import styles from './MethodEditor.module.css';
@@ -12,10 +12,11 @@ interface SecurityRowProps {
 export function SecurityRow({ endpoint }: SecurityRowProps) {
   const addSecurity = useSpecStore((s) => s.addSecurity);
   const removeSecurity = useSpecStore((s) => s.removeSecurity);
+  const enabledSecuritySchemes = useSpecStore((s) => s.enabledSecuritySchemes);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
 
-  const suggestions = SECURITY_SCHEMES.filter((s) => !endpoint.security.includes(s));
+  const suggestions = enabledSecuritySchemes.filter((scheme) => !endpoint.security.includes(scheme));
 
   const commitDraft = () => {
     const name = draft.trim();

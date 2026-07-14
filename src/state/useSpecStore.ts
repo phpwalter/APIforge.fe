@@ -27,9 +27,6 @@ const COMPILE_PANEL_MIN_WIDTH = 135;
 const COMPILE_PANEL_MAX_WIDTH = 560;
 const COMPILE_PANEL_DEFAULT_WIDTH = 175;
 
-/** Fixed catalog for the security row's "Add auth" picker — stands in until the full Security Scheme manager modal is built. */
-export const SECURITY_SCHEMES = ['bearerAuth', 'apiKeyAuth', 'oauth2'];
-
 function uniquePath(existingPaths: string[], base: string): string {
   if (!existingPaths.includes(base)) return base;
   let i = 2;
@@ -184,6 +181,15 @@ interface SpecState {
 
   addSecurity: (id: string, scheme: string) => void;
   removeSecurity: (id: string, scheme: string) => void;
+
+  // Security schemes (Settings :: Security panel) — which catalog scheme names are enabled
+  // project-wide, and their OAuth2/OIDC scopes. Drives the endpoint editor's "+ Add auth" suggestions.
+  enabledSecuritySchemes: string[];
+  setSecuritySchemeEnabled: (name: string, enabled: boolean) => void;
+  securityScopes: Record<string, string>;
+  setSecurityScopes: (name: string, scopes: string) => void;
+  /** Strips a scheme name from every endpoint's security list — used for "legacy" (uncataloged) scheme removal. */
+  removeSecurityFromAllEndpoints: (name: string) => void;
 
   // Endpoints panel UI state
   panelSearch: string;
@@ -436,6 +442,8 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       schemaPanelSearch: '',
       expandedTags: {},
       responseActiveClass: {},
+      enabledSecuritySchemes: [],
+      securityScopes: {},
     }),
   loadSampleProject: () =>
     set({
@@ -443,6 +451,7 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       schemas: sampleSchemas,
       hasDocument: true,
       selectedId: sampleEndpoints[0].id,
+      enabledSecuritySchemes: ['bearerAuth'],
     }),
 
   importStatus: null,
@@ -660,6 +669,26 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       endpoints: s.endpoints.map((e) =>
         e.id === id ? { ...e, security: e.security.filter((sc) => sc !== scheme) } : e,
       ),
+    })),
+
+  enabledSecuritySchemes: [],
+  setSecuritySchemeEnabled: (name, enabled) =>
+    set((s) => ({
+      enabledSecuritySchemes: enabled
+        ? s.enabledSecuritySchemes.includes(name)
+          ? s.enabledSecuritySchemes
+          : [...s.enabledSecuritySchemes, name]
+        : s.enabledSecuritySchemes.filter((n) => n !== name),
+      // Disabling a scheme cascades: no endpoint should keep requiring a scheme that's no longer enabled.
+      endpoints: enabled
+        ? s.endpoints
+        : s.endpoints.map((e) => (e.security.includes(name) ? { ...e, security: e.security.filter((sc) => sc !== name) } : e)),
+    })),
+  securityScopes: {},
+  setSecurityScopes: (name, scopes) => set((s) => ({ securityScopes: { ...s.securityScopes, [name]: scopes } })),
+  removeSecurityFromAllEndpoints: (name) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) => (e.security.includes(name) ? { ...e, security: e.security.filter((sc) => sc !== name) } : e)),
     })),
 
   panelSearch: '',

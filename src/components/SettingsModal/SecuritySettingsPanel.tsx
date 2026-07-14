@@ -17,11 +17,13 @@ type FetchState =
 
 export function SecuritySettingsPanel() {
   const [state, setState] = useState<FetchState>({ status: 'loading' });
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const [scopes, setScopes] = useState<Record<string, string>>({});
-  const [legacyChecked, setLegacyChecked] = useState<Record<string, boolean>>({});
 
   const endpoints = useSpecStore((s) => s.endpoints);
+  const enabledSecuritySchemes = useSpecStore((s) => s.enabledSecuritySchemes);
+  const setSecuritySchemeEnabled = useSpecStore((s) => s.setSecuritySchemeEnabled);
+  const securityScopes = useSpecStore((s) => s.securityScopes);
+  const setSecurityScopes = useSpecStore((s) => s.setSecurityScopes);
+  const removeSecurityFromAllEndpoints = useSpecStore((s) => s.removeSecurityFromAllEndpoints);
 
   const load = () => {
     setState({ status: 'loading' });
@@ -34,8 +36,20 @@ export function SecuritySettingsPanel() {
 
   useEffect(load, []);
 
-  const toggle = (key: string) => setChecked((c) => ({ ...c, [key]: !c[key] }));
-  const toggleLegacy = (name: string) => setLegacyChecked((c) => ({ ...c, [name]: !c[name] }));
+  // A catalog scheme already required by some endpoint (e.g. from an imported document) counts
+  // as enabled even before it's been explicitly checked here — reconcile once per successful fetch.
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+    const usedNames = new Set(endpoints.flatMap((e) => e.security));
+    state.types.forEach((t) => {
+      if (usedNames.has(t.openapi_name) && !enabledSecuritySchemes.includes(t.openapi_name)) {
+        setSecuritySchemeEnabled(t.openapi_name, true);
+      }
+    });
+    // Reconcile only when the fetch completes, not on every store change — otherwise unchecking
+    // a scheme the user no longer wants would immediately be re-enabled by this same effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status]);
 
   if (state.status === 'loading') {
     return <div className={styles.stateMessage}>Loading security types…</div>;
@@ -74,14 +88,14 @@ export function SecuritySettingsPanel() {
       <div>
         <div className={styles.grid}>
           {types.map((t) => {
-            const isChecked = !!checked[t.openapi_name];
+            const isChecked = enabledSecuritySchemes.includes(t.openapi_name);
             const hasScopes = securityTypeHasScopes(t);
             return (
               <button
                 key={t.id}
                 type="button"
                 className={styles.card}
-                onClick={() => toggle(t.openapi_name)}
+                onClick={() => setSecuritySchemeEnabled(t.openapi_name, !isChecked)}
               >
                 <span className={styles.checkbox} data-checked={isChecked}>
                   {isChecked && <Check size={13} />}
@@ -94,9 +108,9 @@ export function SecuritySettingsPanel() {
                       <div className={styles.scopesLabel}>Scopes</div>
                       <input
                         className={styles.scopesInput}
-                        value={scopes[t.openapi_name] ?? scopesFromFlows(t.flows)}
+                        value={securityScopes[t.openapi_name] ?? scopesFromFlows(t.flows)}
                         placeholder="Comma-separated, e.g. read:charges, write:charges"
-                        onChange={(e) => setScopes((s) => ({ ...s, [t.openapi_name]: e.target.value }))}
+                        onChange={(e) => setSecurityScopes(t.openapi_name, e.target.value)}
                       />
                     </div>
                   )}
@@ -108,22 +122,26 @@ export function SecuritySettingsPanel() {
 
         {legacyNames.length > 0 && (
           <div className={styles.gridLegacy}>
-            {legacyNames.map((name) => {
-              const isChecked = !!legacyChecked[name];
-              return (
-                <button key={name} type="button" className={styles.card} onClick={() => toggleLegacy(name)}>
-                  <span className={styles.checkbox} data-checked={isChecked}>
-                    {isChecked && <Check size={13} />}
-                  </span>
-                  <div className={styles.cardBody}>
-                    <div className={styles.cardTitleMono}>{name} (Legacy)</div>
-                    <div className={styles.cardDesc}>
-                      This is a custom scheme in use on this project, not part of the security types catalog.
-                    </div>
+            {legacyNames.map((name) => (
+              <button
+                key={name}
+                type="button"
+                className={styles.card}
+                title="Uncheck to remove this scheme from every endpoint"
+                onClick={() => removeSecurityFromAllEndpoints(name)}
+              >
+                <span className={styles.checkbox} data-checked="true">
+                  <Check size={13} />
+                </span>
+                <div className={styles.cardBody}>
+                  <div className={styles.cardTitleMono}>{name} (Legacy)</div>
+                  <div className={styles.cardDesc}>
+                    This is a custom scheme in use on this project, not part of the security types catalog.
+                    Unchecking removes it from every endpoint.
                   </div>
-                </button>
-              );
-            })}
+                </div>
+              </button>
+            ))}
           </div>
         )}
       </div>

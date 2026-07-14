@@ -448,6 +448,55 @@ describe('schema field operations', () => {
   });
 });
 
+describe('security schemes', () => {
+  it('enables a scheme and later disables it, cascading removal from every endpoint', () => {
+    useSpecStore.getState().pickMethod('/a', 'GET');
+    useSpecStore.getState().pickMethod('/b', 'GET');
+    const [epA, epB] = useSpecStore.getState().endpoints;
+
+    useSpecStore.getState().setSecuritySchemeEnabled('bearerAuth', true);
+    useSpecStore.getState().addSecurity(epA.id, 'bearerAuth');
+    useSpecStore.getState().addSecurity(epB.id, 'bearerAuth');
+    let s = useSpecStore.getState();
+    expect(s.enabledSecuritySchemes).toEqual(['bearerAuth']);
+    expect(s.endpoints.every((e) => e.security.includes('bearerAuth'))).toBe(true);
+
+    useSpecStore.getState().setSecuritySchemeEnabled('bearerAuth', false);
+    s = useSpecStore.getState();
+    expect(s.enabledSecuritySchemes).toEqual([]);
+    expect(s.endpoints.every((e) => e.security.length === 0)).toBe(true);
+  });
+
+  it('stores per-scheme scopes independently of the enabled list', () => {
+    useSpecStore.getState().setSecurityScopes('oauth2', 'read:things, write:things');
+    expect(useSpecStore.getState().securityScopes.oauth2).toBe('read:things, write:things');
+  });
+
+  it('removes a legacy scheme from every endpoint without touching the enabled catalog list', () => {
+    useSpecStore.getState().pickMethod('/a', 'GET');
+    const ep = useSpecStore.getState().endpoints[0];
+    useSpecStore.getState().addSecurity(ep.id, 'customLegacyScheme');
+
+    useSpecStore.getState().removeSecurityFromAllEndpoints('customLegacyScheme');
+    const s = useSpecStore.getState();
+    expect(s.endpoints[0].security).toEqual([]);
+    expect(s.enabledSecuritySchemes).toEqual([]);
+  });
+
+  it('seeds enabledSecuritySchemes with bearerAuth when loading the sample project', () => {
+    useSpecStore.getState().loadSampleProject();
+    expect(useSpecStore.getState().enabledSecuritySchemes).toEqual(['bearerAuth']);
+  });
+
+  it('resets security scheme state on import', () => {
+    useSpecStore.setState({ enabledSecuritySchemes: ['bearerAuth'], securityScopes: { oauth2: 'read' } });
+    useSpecStore.getState().importSpec({ endpoints: [], schemas: [] });
+    const s = useSpecStore.getState();
+    expect(s.enabledSecuritySchemes).toEqual([]);
+    expect(s.securityScopes).toEqual({});
+  });
+});
+
 describe('methodsForPath', () => {
   it('returns methods for a path ordered by method priority', () => {
     const endpoints: Endpoint[] = [
