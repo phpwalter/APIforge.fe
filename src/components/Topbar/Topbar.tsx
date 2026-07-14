@@ -30,6 +30,7 @@ export function Topbar() {
   const moreMenuOpen = useAppStore((s) => s.moreMenuOpen);
   const toggleMoreMenu = useAppStore((s) => s.toggleMoreMenu);
   const openSettings = useAppStore((s) => s.openSettings);
+  const openExportModal = useAppStore((s) => s.openExportModal);
 
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,9 +116,7 @@ export function Topbar() {
               /* wired up alongside the workspace-settings modal */
             }}
             onImport={() => importInputRef.current?.click()}
-            onExport={() => {
-              /* wired up alongside the export modal */
-            }}
+            onExport={openExportModal}
             onToggleCode={() => {
               /* wired up alongside the REST projection tab */
             }}

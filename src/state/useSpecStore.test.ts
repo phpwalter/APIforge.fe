@@ -329,6 +329,19 @@ describe('schema field operations', () => {
     expect(s.selectedId).toBe(s.schemas[0].id);
   });
 
+  it('adds a blank field directly to the end of the list, without opening the field picker', () => {
+    const id = setupSchema();
+    useSpecStore.getState().openFieldPicker(id);
+    useSpecStore.getState().setCustomFieldDraft({ name: 'id' });
+    useSpecStore.getState().addCustomField();
+
+    useSpecStore.getState().addBlankSchemaField(id);
+    const s = useSpecStore.getState();
+    expect(s.schemas[0].fields.map((f) => f.name)).toEqual(['id', '']);
+    expect(s.schemas[0].fields[1]).toMatchObject({ kind: 'custom', type: 'string', required: false });
+    expect(s.fieldPickerOpen).toBe(false);
+  });
+
   it('adds a custom field via the picker draft and appends it to the schema', () => {
     const id = setupSchema();
     useSpecStore.getState().openFieldPicker(id);

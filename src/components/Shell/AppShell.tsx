@@ -5,6 +5,7 @@ import { CanvasHeader } from '../CanvasHeader/CanvasHeader';
 import { DesignCanvas } from '../DesignCanvas/DesignCanvas';
 import { SchemaDesignerCanvas } from '../SchemaDesignerCanvas/SchemaDesignerCanvas';
 import { SettingsModal } from '../SettingsModal/SettingsModal';
+import { ExportModal } from '../ExportModal/ExportModal';
 import { EmptyProjectState } from '../EmptyProjectState/EmptyProjectState';
 import { ImportStatusToast } from '../ImportStatusToast/ImportStatusToast';
 import shellStyles from './AppShell.module.css';
@@ -19,6 +20,7 @@ export function AppShell() {
   const theme = useAppStore((s) => s.theme);
   const canvasTab = useAppStore((s) => s.canvasTab);
   const settingsOpen = useAppStore((s) => s.settingsOpen);
+  const exportOpen = useAppStore((s) => s.exportOpen);
   const hasDocument = useSpecStore((s) => s.hasDocument);
 
   return (
@@ -42,6 +44,7 @@ export function AppShell() {
       </div>
       <ImportStatusToast />
       {settingsOpen && <SettingsModal />}
+      {exportOpen && <ExportModal />}
     </div>
   );
 }

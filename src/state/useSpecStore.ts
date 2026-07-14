@@ -224,6 +224,8 @@ interface SpecState {
   toggleSchemaContentType: (schemaId: string, contentType: string) => void;
 
   // Schema field CRUD/tree operations (all keyed by index within the schema's flat, depth-annotated field list)
+  /** Appends a blank custom (string) field to the end of the schema's field list — no picker involved. */
+  addBlankSchemaField: (schemaId: string) => void;
   setSchemaField: (schemaId: string, index: number, patch: Partial<SchemaFieldCustom>) => void;
   setSchemaFieldType: (schemaId: string, index: number, type: SchemaFieldType) => void;
   setSchemaFieldItems: (schemaId: string, index: number, value: string) => void;
@@ -780,6 +782,12 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       }),
     })),
 
+  addBlankSchemaField: (schemaId) =>
+    set((s) => ({
+      schemas: s.schemas.map((sc) =>
+        sc.id === schemaId ? { ...sc, fields: [...sc.fields, makeCustomField(makeId('sf'), '', 'string')] } : sc,
+      ),
+    })),
   setSchemaField: (schemaId, index, patch) =>
     set((s) => ({
       schemas: s.schemas.map((sc) => {

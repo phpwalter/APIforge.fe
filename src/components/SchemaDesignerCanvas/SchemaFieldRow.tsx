@@ -118,6 +118,7 @@ export function SchemaFieldRow({ schema, fields, index, schemas }: Props) {
           className={styles.nameInput}
           value={f.name}
           onChange={(e) => setSchemaField(schema.id, index, { name: e.target.value })}
+          placeholder="propertyName"
         />
         {hasChildren && (
           <span className={styles.containerBadge} title="Contains nested properties">

@@ -10,13 +10,13 @@ interface Props {
 
 export function SchemaPropertiesEditor({ schema }: Props) {
   const schemas = useSpecStore((s) => s.schemas);
-  const openFieldPicker = useSpecStore((s) => s.openFieldPicker);
+  const addBlankSchemaField = useSpecStore((s) => s.addBlankSchemaField);
 
   return (
     <div className={styles.wrap}>
       <div className={styles.headerRow}>
         <span className={styles.headerLabel}>Properties</span>
-        <button type="button" className={styles.addBtn} title="Add" onClick={() => openFieldPicker(schema.id)}>
+        <button type="button" className={styles.addBtn} title="Add" onClick={() => addBlankSchemaField(schema.id)}>
           <Plus size={13} />
         </button>
       </div>

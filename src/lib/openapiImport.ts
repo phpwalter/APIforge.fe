@@ -46,6 +46,9 @@ interface RawPathItem extends Record<string, unknown> {
 interface RawSchemaProperty {
   type?: string;
   format?: string;
+  example?: unknown;
+  $ref?: string;
+  items?: { type?: string; $ref?: string };
 }
 
 interface RawSchema {
@@ -54,6 +57,7 @@ interface RawSchema {
   description?: string;
   properties?: Record<string, RawSchemaProperty>;
   required?: string[];
+  'x-apiforge-primitive'?: string;
 }
 
 interface RawDocument {
@@ -259,7 +263,21 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
   const toFieldType = (t: string | undefined): SchemaFieldType =>
     (t && JSON_SCHEMA_TYPES.has(t) ? t : 'string') as SchemaFieldType;
 
-  const schemas: Schema[] = Object.entries(doc.components?.schemas ?? {}).map(([name, s]) => {
+  const refNameFromPointer = (ref: string | undefined): string | undefined => {
+    const m = ref ? /^#\/components\/schemas\/(.+)$/.exec(ref) : null;
+    return m ? m[1] : undefined;
+  };
+
+  const rawSchemaEntries = Object.entries(doc.components?.schemas ?? {});
+  // First pass: each schema's own effective type, so a $ref property pointing at a scalar
+  // schema (e.g. a "Uuid" wrapper) can carry that scalar's real type instead of a placeholder.
+  const schemaEffectiveType = new Map<string, SchemaFieldType>();
+  rawSchemaEntries.forEach(([name, s]) => {
+    const isScalar = s?.type !== undefined && s.type !== 'object';
+    schemaEffectiveType.set(name, isScalar ? toFieldType(s!.type) : 'object');
+  });
+
+  const schemas: Schema[] = rawSchemaEntries.map(([name, s]) => {
     const isScalar = s?.type !== undefined && s.type !== 'object';
     if (isScalar) {
       return {
@@ -271,20 +289,32 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         scalarType: toFieldType(s.type),
         scalarFormat: s.format,
         scalarDescription: s.description ?? '',
+        scalarPrimitiveKey: s['x-apiforge-primitive'],
       };
     }
     const requiredNames = new Set(s?.required ?? []);
-    const fields: SchemaField[] = Object.entries(s?.properties ?? {}).map(([propName, p]) => ({
-      id: makeId('sf'),
-      name: propName,
-      kind: 'custom',
-      type: toFieldType(p?.type),
-      format: p?.format,
-      required: requiredNames.has(propName),
-      nullable: false,
-      depth: 0,
-      example: '',
-    }));
+    const fields: SchemaField[] = Object.entries(s?.properties ?? {}).map(([propName, p]) => {
+      const base = {
+        id: makeId('sf'),
+        name: propName,
+        required: requiredNames.has(propName),
+        nullable: false,
+        depth: 0,
+        example: p?.example !== undefined ? String(p.example) : '',
+      };
+      const directRef = refNameFromPointer(p?.$ref);
+      if (directRef) {
+        return { ...base, kind: 'ref', ref: directRef, type: schemaEffectiveType.get(directRef) ?? 'object' };
+      }
+      if (p?.type === 'array' && p.items) {
+        const itemsRef = refNameFromPointer(p.items.$ref);
+        if (itemsRef) {
+          return { ...base, kind: 'custom', type: 'array', itemsRef, itemsType: 'object' };
+        }
+        return { ...base, kind: 'custom', type: 'array', itemsType: toFieldType(p.items.type) };
+      }
+      return { ...base, kind: 'custom', type: toFieldType(p?.type), format: p?.format };
+    });
     return { id: makeId('sc'), name, fields, contentTypes: ['application/json'] };
   });
 

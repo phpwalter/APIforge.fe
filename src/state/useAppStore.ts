@@ -112,6 +112,11 @@ interface AppState {
   settingsOpen: boolean;
   openSettings: () => void;
   closeSettings: () => void;
+
+  // Export OpenAPI document modal
+  exportOpen: boolean;
+  openExportModal: () => void;
+  closeExportModal: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -215,6 +220,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   settingsOpen: false,
   openSettings: () => set({ settingsOpen: true, moreMenuOpen: false }),
   closeSettings: () => set({ settingsOpen: false }),
+
+  exportOpen: false,
+  openExportModal: () => set({ exportOpen: true, moreMenuOpen: false }),
+  closeExportModal: () => set({ exportOpen: false }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */
