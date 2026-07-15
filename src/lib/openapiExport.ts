@@ -223,6 +223,50 @@ export function documentToYaml(doc: unknown): string {
   return dumpYaml(doc, { noRefs: true, lineWidth: -1 });
 }
 
+/** Sanitizes a key into a valid XML element name, replacing anything else with `_`. */
+function xmlSafeTag(key: string): string {
+  const sanitized = key.replace(/[^A-Za-z0-9_.-]/g, '_');
+  const tag = /^[A-Za-z_]/.test(sanitized) ? sanitized : `_${sanitized}`;
+  return tag || '_';
+}
+
+function xmlEscapeText(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function docToXml(tag: string, val: unknown, depth: number): string {
+  const pad = '  '.repeat(depth);
+  const safeTag = xmlSafeTag(tag);
+  const keyAttr = safeTag !== tag ? ` key="${xmlEscapeText(tag)}"` : '';
+  if (val === null || val === undefined || val === '') return `${pad}<${safeTag}${keyAttr}/>`;
+  if (Array.isArray(val)) {
+    if (!val.length) return `${pad}<${safeTag}${keyAttr}/>`;
+    return val.map((v) => docToXml(tag, v, depth)).join('\n');
+  }
+  if (typeof val === 'object') {
+    const keys = Object.keys(val as Record<string, unknown>);
+    if (!keys.length) return `${pad}<${safeTag}${keyAttr}/>`;
+    const inner = keys.map((k) => docToXml(k, (val as Record<string, unknown>)[k], depth + 1)).join('\n');
+    return `${pad}<${safeTag}${keyAttr}>\n${inner}\n${pad}</${safeTag}>`;
+  }
+  return `${pad}<${safeTag}${keyAttr}>${xmlEscapeText(String(val))}</${safeTag}>`;
+}
+
+/**
+ * APIforge's own lossless object<->XML mapping — there's no standard OpenAPI XML serialization.
+ * A key that isn't already a valid XML name is sanitized and the original kept as a `key`
+ * attribute, so paths like `/v1/charges/{id}` or response codes like `'200'` round-trip through
+ * `openapiImport.ts`'s XML parser without loss (aside from single-item arrays, which are
+ * indistinguishable from a scalar on the way back in — an inherent limit of the scheme).
+ */
+export function documentToXml(doc: unknown): string {
+  const obj = doc as Record<string, unknown>;
+  const body = Object.keys(obj)
+    .map((k) => docToXml(k, obj[k], 1))
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<openapi>\n${body}\n</openapi>`;
+}
+
 /** Slugifies a project title into a safe filename stem (e.g. "My API!" -> "my-api"). */
 export function slugifyFilename(title: string): string {
   const slug = title

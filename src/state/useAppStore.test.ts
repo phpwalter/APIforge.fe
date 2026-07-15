@@ -271,6 +271,29 @@ describe('useAppStore', () => {
     s = useAppStore.getState();
     expect(s.cookiePrefs).toEqual({ analytics: true, marketing: true });
   });
+
+  it('switches the REST Projection format and toggles x-apiforge visibility', () => {
+    expect(useAppStore.getState().restProjectionFormat).toBe('yaml');
+    useAppStore.getState().setRestProjectionFormat('json');
+    expect(useAppStore.getState().restProjectionFormat).toBe('json');
+
+    expect(useAppStore.getState().restProjectionShowMeta).toBe(false);
+    useAppStore.getState().toggleRestProjectionMeta();
+    expect(useAppStore.getState().restProjectionShowMeta).toBe(true);
+  });
+
+  it('tracks a per-format manual edit independently, and clears all three together', () => {
+    useAppStore.getState().setRestProjectionManual('yaml', 'openapi: 3.1.0');
+    useAppStore.getState().setRestProjectionManual('json', '{}');
+    let s = useAppStore.getState();
+    expect(s.restProjectionManual).toEqual({ yaml: 'openapi: 3.1.0', json: '{}', xml: null });
+
+    useAppStore.getState().setRestProjectionError('Could not parse this document.');
+    useAppStore.getState().clearRestProjectionManual();
+    s = useAppStore.getState();
+    expect(s.restProjectionManual).toEqual({ yaml: null, json: null, xml: null });
+    expect(s.restProjectionError).toBeNull();
+  });
 });
 
 describe('initialsOf', () => {

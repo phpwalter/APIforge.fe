@@ -3,6 +3,7 @@ import type {
   ApiforgePreferences,
   CanvasTabId,
   NotificationPreferences,
+  RestProjectionFormat,
   SaveState,
   ThemeMode,
   ThemeName,
@@ -136,6 +137,18 @@ interface AppState {
   // Cookie category preferences (Settings > Cookies). Persisted to localStorage.
   cookiePrefs: CookiePrefs;
   setCookiePref: (key: keyof CookiePrefs, value: boolean) => void;
+
+  // REST Projection tab: active format, x-apiforge visibility, and any in-progress hand edits
+  // (null means "show the live-generated doc" — see restProjectionEdit.ts for the commit flow).
+  restProjectionFormat: RestProjectionFormat;
+  setRestProjectionFormat: (format: RestProjectionFormat) => void;
+  restProjectionShowMeta: boolean;
+  toggleRestProjectionMeta: () => void;
+  restProjectionManual: Record<RestProjectionFormat, string | null>;
+  setRestProjectionManual: (format: RestProjectionFormat, text: string) => void;
+  restProjectionError: string | null;
+  setRestProjectionError: (message: string | null) => void;
+  clearRestProjectionManual: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -274,6 +287,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       setCookiePrefs(next);
       return { cookiePrefs: next };
     }),
+
+  restProjectionFormat: 'yaml',
+  setRestProjectionFormat: (format) => set({ restProjectionFormat: format }),
+  restProjectionShowMeta: false,
+  toggleRestProjectionMeta: () => set((s) => ({ restProjectionShowMeta: !s.restProjectionShowMeta })),
+  restProjectionManual: { yaml: null, json: null, xml: null },
+  setRestProjectionManual: (format, text) =>
+    set((s) => ({ restProjectionManual: { ...s.restProjectionManual, [format]: text } })),
+  restProjectionError: null,
+  setRestProjectionError: (message) => set({ restProjectionError: message }),
+  clearRestProjectionManual: () =>
+    set({ restProjectionManual: { yaml: null, json: null, xml: null }, restProjectionError: null }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

@@ -80,6 +80,25 @@ body {
   --json-object: #7c7c8a;
 }
 
+/* REST Projection code-view syntax highlighting (_highlightLines in the source logic block) */
+.app {
+  --code-key: #a98ce0;
+  --code-string: #4a82d8;
+  --code-number: #3b9c6e;
+  --code-literal: #c79a3a;
+  --code-punct: #9a9aa2;
+  --code-plain: #c7c7cc;
+}
+
+.app[data-theme='light'] {
+  --code-key: #a98ce0;
+  --code-string: #3563b8;
+  --code-number: #2f7d54;
+  --code-literal: #a3781f;
+  --code-punct: #78787f;
+  --code-plain: #46464c;
+}
+
 .app *::-webkit-scrollbar {
   width: 10px;
   height: 10px;

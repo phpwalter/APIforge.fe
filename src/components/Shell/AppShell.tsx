@@ -4,6 +4,7 @@ import { Topbar } from '../Topbar/Topbar';
 import { CanvasHeader } from '../CanvasHeader/CanvasHeader';
 import { DesignCanvas } from '../DesignCanvas/DesignCanvas';
 import { SchemaDesignerCanvas } from '../SchemaDesignerCanvas/SchemaDesignerCanvas';
+import { RestProjectionCanvas } from '../RestProjectionCanvas/RestProjectionCanvas';
 import { SettingsModal } from '../SettingsModal/SettingsModal';
 import { ExportModal } from '../ExportModal/ExportModal';
 import { DocDialog } from '../DocDialog/DocDialog';
@@ -12,7 +13,6 @@ import { ImportStatusToast } from '../ImportStatusToast/ImportStatusToast';
 import shellStyles from './AppShell.module.css';
 
 const TAB_LABELS: Record<string, string> = {
-  rest: 'REST Projection',
   swagger: 'Swagger',
   diagnostics: 'Diagnostics',
 };
@@ -35,7 +35,8 @@ export function AppShell() {
               <CanvasHeader />
               {canvasTab === 'design' && <DesignCanvas />}
               {canvasTab === 'schema' && <SchemaDesignerCanvas />}
-              {canvasTab !== 'design' && canvasTab !== 'schema' && (
+              {canvasTab === 'rest' && <RestProjectionCanvas />}
+              {canvasTab !== 'design' && canvasTab !== 'schema' && canvasTab !== 'rest' && (
                 <div className={shellStyles.placeholder}>{TAB_LABELS[canvasTab]} panel comes next.</div>
               )}
             </>

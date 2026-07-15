@@ -8,6 +8,9 @@ export type SaveState = 'saved' | 'saving' | 'unsaved';
 
 export type CanvasTabId = 'design' | 'schema' | 'rest' | 'swagger' | 'diagnostics';
 
+/** Output format shown/edited in the REST Projection tab. */
+export type RestProjectionFormat = 'yaml' | 'json' | 'xml';
+
 export interface CanvasTabDef {
   id: CanvasTabId;
   label: string;
