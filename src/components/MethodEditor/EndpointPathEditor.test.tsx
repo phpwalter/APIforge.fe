@@ -17,11 +17,12 @@ function Harness({ id }: { id: string }) {
 }
 
 describe('EndpointPathEditor — root-level path', () => {
-  it('renders the full path editable with no locked prefix', () => {
+  it('locks the leading slash as inert text and only exposes the rest as editable', () => {
     useSpecStore.getState().pickMethod('/users', 'GET');
     const id = useSpecStore.getState().endpoints[0].id;
     render(<Harness id={id} />);
-    expect(screen.getByDisplayValue('/users')).toBeInTheDocument();
+    expect(screen.getByText('/')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('users')).toBeInTheDocument();
   });
 
   it('renames the path and every method sharing it on commit', async () => {
@@ -31,9 +32,9 @@ describe('EndpointPathEditor — root-level path', () => {
     const user = userEvent.setup();
     render(<Harness id={id} />);
 
-    const input = screen.getByDisplayValue('/users');
+    const input = screen.getByDisplayValue('users');
     await user.clear(input);
-    await user.type(input, '/accounts');
+    await user.type(input, 'accounts');
     await user.tab();
 
     const paths = useSpecStore.getState().endpoints.map((e) => e.path);
@@ -47,9 +48,9 @@ describe('EndpointPathEditor — root-level path', () => {
     const user = userEvent.setup();
     render(<Harness id={id} />);
 
-    const input = screen.getByDisplayValue('/users');
+    const input = screen.getByDisplayValue('users');
     await user.clear(input);
-    await user.type(input, '/posts');
+    await user.type(input, 'posts');
     expect(screen.getByText('Duplicate path')).toBeInTheDocument();
 
     await user.tab();
@@ -63,11 +64,26 @@ describe('EndpointPathEditor — root-level path', () => {
     const user = userEvent.setup();
     render(<Harness id={id} />);
 
-    const input = screen.getByDisplayValue('/users');
+    const input = screen.getByDisplayValue('users');
     await user.clear(input);
-    await user.type(input, '/bogus{escape}');
+    await user.type(input, 'bogus{escape}');
 
     expect(useSpecStore.getState().endpoints[0].path).toBe('/users');
+  });
+
+  it('supports multi-segment root paths without exposing the leading slash in the input', () => {
+    useSpecStore.getState().pickMethod('/auth/session', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+    render(<Harness id={id} />);
+    expect(screen.getByDisplayValue('auth/session')).toBeInTheDocument();
+  });
+
+  it('treats the bare "/" root endpoint as valid, with an empty editable segment', () => {
+    useSpecStore.getState().pickMethod('/', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+    render(<Harness id={id} />);
+    expect(screen.getByText('/')).toBeInTheDocument();
+    expect(screen.queryByText('Invalid path')).not.toBeInTheDocument();
   });
 });
 

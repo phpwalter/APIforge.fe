@@ -6,10 +6,16 @@ interface EndpointPathEditorProps {
   path: string;
 }
 
-/** A path segment is valid standalone, or as the editable suffix after a locked root — both must
- * start with / and carry at least one more character (no bare "/"). */
-function isValidSegment(s: string): boolean {
+/** The editable suffix beneath a locked parent root must itself start with / and carry at least
+ * one more character (no bare "/") — the root's own leading / is never part of this segment. */
+function isValidChildSegment(s: string): boolean {
   return /^\/\S*$/.test(s) && s.length > 1;
+}
+
+/** The editable segment at the root level excludes the leading / (which is always locked). Empty
+ * is valid — that's the bare "/" root endpoint — otherwise it must contain no whitespace. */
+function isValidRootSegment(s: string): boolean {
+  return s === '' || /^\S+$/.test(s);
 }
 
 export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
@@ -20,13 +26,16 @@ export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
 
   // If another endpoint's path is a strict ancestor of this one, its root is locked — only the
   // suffix beneath it can be edited here; renaming the root itself happens on that other endpoint.
+  // Otherwise the leading "/" itself is locked — every path has one, so it's never user-editable.
   const allPaths = [...new Set(endpoints.map((e) => e.path))];
   const ancestors = allPaths.filter((p) => p !== path && path.startsWith(`${p}/`));
   const parentRoot = ancestors.sort((a, b) => b.length - a.length)[0] ?? null;
+  const lockedPrefix = parentRoot ?? '/';
+  const isValidSegment = parentRoot ? isValidChildSegment : isValidRootSegment;
 
-  const committedSegment = parentRoot ? path.slice(parentRoot.length) : path;
+  const committedSegment = path.slice(lockedPrefix.length);
   const segment = draft ?? committedSegment;
-  const fullValue = parentRoot ? parentRoot + segment : segment;
+  const fullValue = lockedPrefix + segment;
 
   const invalidFormat = !isValidSegment(segment);
   const collides = !invalidFormat && fullValue !== path && endpoints.some((e) => e.path === fullValue);
@@ -35,7 +44,7 @@ export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
   const commit = () => {
     const trimmed = segment.trim();
     if (isValidSegment(trimmed)) {
-      const newPath = parentRoot ? parentRoot + trimmed : trimmed;
+      const newPath = lockedPrefix + trimmed;
       if (newPath !== path) renamePath(path, newPath);
     }
     setDraft(null);
@@ -44,16 +53,14 @@ export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
   return (
     <div className={styles.pathHeadingRow}>
       <div className={styles.pathFieldWrap} data-invalid={invalid}>
-        {parentRoot && (
-          <span
-            className={styles.pathRootLocked}
-            title="Inherited from the parent endpoint — rename the parent to change this"
-          >
-            {parentRoot}
-          </span>
-        )}
+        <span
+          className={styles.pathRootLocked}
+          title={parentRoot ? 'Inherited from the parent endpoint — rename the parent to change this' : undefined}
+        >
+          {lockedPrefix}
+        </span>
         <input
-          className={parentRoot ? `${styles.pathInput} ${styles.pathInputNoLeftPad}` : styles.pathInput}
+          className={`${styles.pathInput} ${styles.pathInputNoLeftPad}`}
           value={segment}
           placeholder={parentRoot ? '/{id}' : undefined}
           spellCheck={false}
@@ -83,7 +90,7 @@ export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
             invalidFormat
               ? parentRoot
                 ? 'The sub-path must start with / after the inherited root.'
-                : 'Path must start with / and contain no spaces.'
+                : 'Path must not be empty or contain spaces.'
               : `Another endpoint already uses ${fullValue}.`
           }
         >
