@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{background:#15151a}
+.app{
+  --bg:oklch(0.205 0.005 285);--surface:oklch(0.238 0.005 285);--surface-2:oklch(0.272 0.006 285);
+  --border:oklch(0.32 0.006 285);--border-strong:oklch(0.4 0.006 285);
+  --text:oklch(0.95 0.003 285);--text-dim:oklch(0.72 0.005 285);--text-faint:oklch(0.55 0.006 285);
+  --accent:oklch(0.66 0.15 264);--accent-soft:oklch(0.66 0.15 264 / 0.16);--accent-text:#fff;
+  --add:oklch(0.72 0.16 150);--add-soft:oklch(0.72 0.16 150 / 0.16);
+  --del:oklch(0.66 0.2 22);--del-soft:oklch(0.66 0.2 22 / 0.16);
+  --warn:oklch(0.77 0.15 75);--warn-soft:oklch(0.77 0.15 75 / 0.16);
+  --shadow:0 16px 48px -12px rgba(0,0,0,0.6);--inset:oklch(0.18 0.005 285);
+  font-family:'Hanken Grotesk',system-ui,sans-serif;
+}
+.app[data-theme="light"]{
+  --bg:oklch(0.975 0.003 285);--surface:oklch(0.995 0.001 285);--surface-2:oklch(0.965 0.003 285);
+  --border:oklch(0.905 0.004 285);--border-strong:oklch(0.84 0.005 285);
+  --text:oklch(0.27 0.01 285);--text-dim:oklch(0.46 0.008 285);--text-faint:oklch(0.62 0.006 285);
+  --accent:oklch(0.55 0.16 264);--accent-soft:oklch(0.55 0.16 264 / 0.1);--accent-text:#fff;
+  --add:oklch(0.5 0.15 150);--add-soft:oklch(0.5 0.15 150 / 0.1);
+  --del:oklch(0.55 0.21 22);--del-soft:oklch(0.55 0.21 22 / 0.1);
+  --warn:oklch(0.6 0.13 66);--warn-soft:oklch(0.6 0.13 66 / 0.12);
+  --shadow:0 16px 48px -16px rgba(0,0,0,0.18);--inset:oklch(0.985 0.002 285);
+}
+.app *::-webkit-scrollbar{width:10px;height:10px}
+.app *::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px;border:3px solid transparent;background-clip:content-box}
+.app *::-webkit-scrollbar-track{background:transparent}
+@keyframes popIn{from{opacity:0;transform:translateY(8px) scale(0.98)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div class="app" data-theme="{{ theme }}" style="position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);color:var(--text);overflow:hidden">
+
+  <!-- TOPBAR -->
+  <header style="height:52px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px 0 16px;border-bottom:1px solid var(--border);background:var(--surface)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div style="width:22px;height:22px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--accent-text)">A</div>
+      <span style="font-weight:600;font-size:14px;letter-spacing:-0.01em">Apiary</span>
+    </div>
+    <div style="width:1px;height:18px;background:var(--border)"></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-dim)">
+      <span style="color:var(--text-faint)">acme-corp</span>
+      <span style="color:var(--text-faint)">/</span>
+      <span style="color:var(--text);font-weight:500">Payments API</span>
+      <span style="margin-left:4px;font-size:11px;padding:1px 6px;border:1px solid var(--border);border-radius:5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace">v1.0.0</span>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-faint);margin-right:2px">
+      <span style="width:7px;height:7px;border-radius:50%;background:#3b9c6e"></span>Saved
+    </span>
+
+    <button onClick="{{ toggleTheme }}" title="{{ themeTitle }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;color:var(--text-dim);cursor:pointer" style-hover="border-color:var(--border-strong);color:var(--text)">
+      <span style="font-size:14px">{{ themeIcon }}</span>
+    </button>
+
+    <button onClick="{{ toggleCode }}" style="height:32px;display:flex;align-items:center;gap:7px;padding:0 11px;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:12.5px;font-family:'JetBrains Mono',monospace" style-hover="border-color:var(--border-strong);color:var(--text)">
+      {{ icCode }} Code
+    </button>
+
+    <button onClick="{{ openShare }}" style="height:32px;display:flex;align-items:center;gap:7px;padding:0 13px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:8px;color:var(--accent);cursor:pointer;font-size:12.5px;font-weight:600" style-hover="background:var(--accent);color:var(--accent-text)">
+      Share
+    </button>
+  </header>
+
+  <!-- BODY -->
+  <div style="flex:1;display:flex;min-height:0">
+
+    <!-- SIDEBAR -->
+    <aside style="width:248px;flex:none;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;min-height:0">
+      <div style="padding:14px 14px 10px">
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px">Drag to canvas</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ palette }}" as="item" hint-placeholder-count="6">
+            <div draggable="true" data-kind="{{ item.kind }}" onDragStart="{{ onPaletteDragStart }}" onClick="{{ onPaletteClick }}" title="Drag onto the canvas or click to add" style="display:flex;align-items:center;gap:10px;padding:8px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);cursor:grab;user-select:none" style-hover="border-color:var(--accent);background:var(--accent-soft)">
+              <span style="width:22px;height:22px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ item.tint }};color:{{ item.fg }}">{{ item.iconEl }}</span>
+              <span style="font-size:13px;color:var(--text)">{{ item.label }}</span>
+              <span style="flex:1"></span>
+              <span style="color:var(--text-faint);display:flex">{{ icGrip }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:6px 14px"></div>
+
+      <div style="padding:8px 14px 4px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-faint)">Document</div>
+        <span style="font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace">{{ blockCount }}</span>
+      </div>
+      <div style="flex:1;overflow:auto;padding:4px 8px 14px">
+        <sc-for list="{{ treeGroups }}" as="grp" hint-placeholder-count="3">
+          <div style="margin-bottom:5px">
+            <div data-group="{{ grp.key }}" onClick="{{ toggleGroup }}" style="display:flex;align-items:center;gap:7px;padding:5px 7px;cursor:pointer;border-radius:6px;user-select:none" style-hover="background:var(--surface-2)">
+              <span style="width:10px;flex:none;font-size:9px;color:var(--text-faint)">{{ grp.caret }}</span>
+              <span style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint)">{{ grp.label }}</span>
+              <span style="flex:1"></span>
+              <span style="font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace">{{ grp.count }}</span>
+            </div>
+            <sc-if value="{{ grp.expanded }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="2">
+                <div data-id="{{ it.id }}" onClick="{{ selectBlock }}" style="{{ it.rowStyle }}" style-hover="background:var(--surface-2)">
+                  <span style="width:30px;flex:none;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:{{ it.color }}">{{ it.tag }}</span>
+                  <span style="font-size:12.5px;font-family:'JetBrains Mono',monospace;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span>
+                </div>
+              </sc-for>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <!-- ACCOUNT CARD -->
+      <!-- ACCOUNT CARD + USER MENU -->
+      <div style="flex:none;border-top:1px solid var(--border);padding:8px;position:relative">
+        <sc-if value="{{ userMenuOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeUserMenu }}" style="position:fixed;inset:0;z-index:30"></div>
+          <div style="position:absolute;left:8px;right:8px;bottom:100%;margin-bottom:6px;z-index:31;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:6px;animation:popIn .14s ease">
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 9px 11px">
+              <span style="width:38px;height:38px;flex:none;border-radius:50%;border:1px solid var(--border-strong);background:linear-gradient(135deg,var(--accent),oklch(0.6 0.13 320));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px">JT</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">James Taylor</div>
+                <div style="font-size:11.5px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">james@acme-corp.com</div>
+              </div>
+            </div>
+            <div style="height:1px;background:var(--border);margin:2px 4px 4px"></div>
+            <button style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icUser }}</span><span style="flex:1">My Profile</span></button>
+            <button style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icSettings }}</span><span style="flex:1">Workspace Settings</span></button>
+            <button style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icInvite }}</span><span style="flex:1">Invite Members</span></button>
+            <div style="height:1px;background:var(--border);margin:4px 4px"></div>
+            <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icThemeMenu }}</span><span style="flex:1">Theme</span><span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-dim);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:3px 7px">{{ themeBadgeIcon }} {{ themeBadge }}</span></button>
+            <button style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icLang }}</span><span style="flex:1">Language</span><span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-dim);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:3px 7px">English</span></button>
+            <button style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icKeyboard }}</span><span style="flex:1">Keyboard Shortcuts</span></button>
+            <div style="height:1px;background:var(--border);margin:4px 4px"></div>
+            <button style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icHelp }}</span><span style="flex:1">Help &amp; Documentation</span><span style="flex:none;color:var(--text-faint);display:flex">{{ icExternal }}</span></button>
+            <button style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;text-align:left" style-hover="background:var(--surface-2)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">{{ icSparkles }}</span><span style="flex:1">What's New</span><span style="flex:none;color:var(--text-faint);display:flex">{{ icExternal }}</span></button>
+            <div style="height:1px;background:var(--border);margin:4px 4px"></div>
+            <button onClick="{{ signOut }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:9px;cursor:pointer;font-size:13px;color:var(--del);font-weight:600;font-family:inherit;text-align:left" style-hover="background:var(--del-soft)"><span style="width:18px;flex:none;display:flex;align-items:center;justify-content:center">{{ icSignOut }}</span><span style="flex:1">Sign Out</span></button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ signedIn }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ accountClick }}" title="Account" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 9px;border:1px solid var(--border);background:var(--surface-2);border-radius:11px;cursor:pointer;text-align:left" style-hover="border-color:var(--border-strong)">
+            <span style="width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--border-strong);background:linear-gradient(135deg,var(--accent),oklch(0.6 0.13 320));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">JT</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">James Taylor</div>
+              <div style="font-size:11px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">james@acme-corp.com</div>
+            </div>
+            <span style="flex:none;color:var(--text-faint);font-size:12px;line-height:1">{{ accountChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ signedOut }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ accountClick }}" title="Sign in" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 9px;border:1px solid var(--border);background:var(--surface-2);border-radius:11px;cursor:pointer;text-align:left" style-hover="border-color:var(--accent)">
+            <span style="width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--border);background:var(--inset);color:var(--text-faint);display:flex;align-items:center;justify-content:center">{{ icUserBig }}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;font-weight:600;color:var(--text)">Sign in</div>
+              <div style="font-size:11px;color:var(--text-faint)">Access your workspace</div>
+            </div>
+            <span style="flex:none;color:var(--accent);display:flex">{{ icArrowRight }}</span>
+          </button>
+        </sc-if>
+      </div>
+    </aside>
+
+    <!-- CANVAS AREA -->
+    <main style="flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)">
+      <!-- canvas header -->
+      <div style="height:46px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;font-weight:600">Design canvas</span>
+        <div style="flex:1"></div>
+        <div style="display:flex;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:3px">
+          <sc-for list="{{ metaphors }}" as="m" hint-placeholder-count="3">
+            <button data-metaphor="{{ m.id }}" onClick="{{ setMetaphor }}" style="{{ m.btnStyle }}">{{ m.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- BLOCKS VIEW -->
+      <sc-if value="{{ isBlocks }}" hint-placeholder-val="{{ true }}">
+        <div onDragOver="{{ onCanvasDragOver }}" onDragLeave="{{ onCanvasDragLeave }}" onDrop="{{ onCanvasDrop }}" style="{{ canvasStyle }}">
+          <div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ blocksVM }}" as="block" hint-placeholder-count="4">
+              <div data-id="{{ block.id }}" onClick="{{ selectBlock }}" style="{{ block.cardStyle }}">
+
+                <!-- READ-ONLY -->
+                <sc-if value="{{ block.readonly }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="{{ block.chipStyle }}">{{ block.chip }}</span>
+                    <span style="font-size:14px;font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:500">{{ block.title }}</span>
+                    <span style="flex:1"></span>
+                    <span style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em">{{ block.kindLabel }}</span>
+                  </div>
+                  <div style="font-size:12.5px;color:var(--text-dim);margin-top:7px">{{ block.subtitle }}</div>
+                  <div style="margin-top:11px;display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ block.rows }}" as="row" hint-placeholder-count="2">
+                      <span style="{{ row.style }}">{{ row.text }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <!-- EDIT: ENDPOINT -->
+                <sc-if value="{{ block.editEndpoint }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <select data-id="{{ block.id }}" data-field="method" value="{{ block.method }}" onChange="{{ setField }}" style="font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:7px;padding:6px 8px;color:{{ block.methodColor }};outline:none;cursor:pointer">
+                      <option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="PATCH">PATCH</option><option value="DELETE">DELETE</option>
+                    </select>
+                    <input data-id="{{ block.id }}" data-field="path" value="{{ block.path }}" onChange="{{ setField }}" placeholder="/path" style="flex:1;min-width:0;font-size:13px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                    <button data-id="{{ block.id }}" onClick="{{ deleteBlock }}" title="Remove" style="width:26px;height:26px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:7px;font-size:14px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                  </div>
+                  <input data-id="{{ block.id }}" data-field="summary" value="{{ block.summary }}" onChange="{{ setField }}" placeholder="Summary" style="width:100%;margin-top:8px;font-size:13px;font-family:inherit;background:var(--inset);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
+                    <span style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint)">Parameters</span>
+                    <button data-id="{{ block.id }}" onClick="{{ addParam }}" style="font-size:11.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:3px 9px;cursor:pointer">+ Param</button>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ block.params }}" as="p" hint-placeholder-count="2">
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <input data-id="{{ block.id }}" data-pindex="{{ $index }}" data-pfield="name" value="{{ p.name }}" onChange="{{ setParam }}" style="flex:1;min-width:0;font-size:12.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                        <select data-id="{{ block.id }}" data-pindex="{{ $index }}" data-pfield="in" value="{{ p.in }}" onChange="{{ setParam }}" style="font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 6px;color:var(--text-dim);outline:none;cursor:pointer">
+                          <option value="query">query</option><option value="path">path</option><option value="header">header</option><option value="cookie">cookie</option>
+                        </select>
+                        <select data-id="{{ block.id }}" data-pindex="{{ $index }}" data-pfield="type" value="{{ p.type }}" onChange="{{ setParam }}" style="font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 6px;color:var(--text-dim);outline:none;cursor:pointer">
+                          <option value="string">string</option><option value="integer">integer</option><option value="number">number</option><option value="boolean">boolean</option><option value="array">array</option>
+                        </select>
+                        <button data-id="{{ block.id }}" data-pindex="{{ $index }}" onClick="{{ removeParam }}" style="width:24px;height:24px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:13px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px">
+                    <span style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint)">Request headers</span>
+                    <button data-id="{{ block.id }}" onClick="{{ addHeader }}" style="font-size:11.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:3px 9px;cursor:pointer">+ Header</button>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ block.headers }}" as="h" hint-placeholder-count="1">
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <span style="width:18px;flex:none;text-align:center;font-size:12px;color:var(--accent)">⤓</span>
+                        <input data-id="{{ block.id }}" data-hindex="{{ $index }}" data-hfield="name" value="{{ h.name }}" onChange="{{ setHeader }}" style="flex:1;min-width:0;font-size:12.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                        <select data-id="{{ block.id }}" data-hindex="{{ $index }}" data-hfield="type" value="{{ h.type }}" onChange="{{ setHeader }}" style="width:108px;flex:none;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 6px;color:var(--text-dim);outline:none;cursor:pointer">
+                          <option value="string">string</option><option value="integer">integer</option><option value="number">number</option><option value="boolean">boolean</option>
+                        </select>
+                        <button data-id="{{ block.id }}" data-hindex="{{ $index }}" onClick="{{ removeHeader }}" style="width:24px;height:24px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:13px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px">
+                    <span style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint)">Responses</span>
+                    <button data-id="{{ block.id }}" onClick="{{ addResp }}" style="font-size:11.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:3px 9px;cursor:pointer">+ Response</button>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ block.responses }}" as="r" hint-placeholder-count="2">
+                      <div style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;background:var(--bg)">
+                        <div style="display:flex;align-items:center;gap:6px">
+                          <input data-id="{{ block.id }}" data-rindex="{{ r._ri }}" data-rfield="code" value="{{ r.code }}" onChange="{{ setResp }}" style="width:64px;flex:none;font-size:12.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                          <input data-id="{{ block.id }}" data-rindex="{{ r._ri }}" data-rfield="desc" value="{{ r.desc }}" onChange="{{ setResp }}" style="flex:1;min-width:0;font-size:12.5px;font-family:inherit;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text-dim);outline:none" style-focus="border-color:var(--accent)" />
+                          <button data-id="{{ block.id }}" data-rindex="{{ r._ri }}" onClick="{{ removeResp }}" style="width:24px;height:24px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:13px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin:9px 0 6px;padding-left:2px">
+                          <span style="font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-faint)">Response headers</span>
+                          <button data-id="{{ block.id }}" data-rindex="{{ r._ri }}" onClick="{{ addRespHeader }}" style="font-size:11px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:2px 8px;cursor:pointer" style-hover="border-color:var(--add);color:var(--add)">+ Header</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:5px">
+                          <sc-for list="{{ r.headers }}" as="h" hint-placeholder-count="1">
+                            <div style="display:flex;align-items:center;gap:6px">
+                              <span style="width:16px;flex:none;text-align:center;font-size:11px;color:var(--text-faint)">⤒</span>
+                              <input data-id="{{ block.id }}" data-rindex="{{ r._ri }}" data-hindex="{{ $index }}" data-hfield="name" value="{{ h.name }}" onChange="{{ setRespHeader }}" style="flex:1;min-width:0;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                              <select data-id="{{ block.id }}" data-rindex="{{ r._ri }}" data-hindex="{{ $index }}" data-hfield="type" value="{{ h.type }}" onChange="{{ setRespHeader }}" style="width:104px;flex:none;font-size:11.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:var(--text-dim);outline:none;cursor:pointer">
+                                <option value="string">string</option><option value="integer">integer</option><option value="number">number</option><option value="boolean">boolean</option>
+                              </select>
+                              <button data-id="{{ block.id }}" data-rindex="{{ r._ri }}" data-hindex="{{ $index }}" onClick="{{ removeRespHeader }}" style="width:22px;height:22px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:12px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <!-- EDIT: SCHEMA -->
+                <sc-if value="{{ block.editSchema }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="{{ block.chipStyle }}">{{ block.chip }}</span>
+                    <input data-id="{{ block.id }}" data-field="name" value="{{ block.name }}" onChange="{{ setField }}" placeholder="SchemaName" style="flex:1;min-width:0;font-size:14px;font-weight:500;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                    <button data-id="{{ block.id }}" onClick="{{ deleteBlock }}" title="Remove" style="width:26px;height:26px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:7px;font-size:14px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
+                    <span style="font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint)">Properties</span>
+                    <button data-id="{{ block.id }}" onClick="{{ addSField }}" style="font-size:11.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:3px 9px;cursor:pointer">+ Property</button>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ block.fields }}" as="f" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <input data-id="{{ block.id }}" data-findex="{{ $index }}" data-ffield="name" value="{{ f.name }}" onChange="{{ setSField }}" style="flex:1;min-width:0;font-size:12.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                        <select data-id="{{ block.id }}" data-findex="{{ $index }}" data-ffield="type" value="{{ f.type }}" onChange="{{ setSField }}" style="width:118px;flex:none;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 6px;color:var(--text-dim);outline:none;cursor:pointer">
+                          <option value="string">string</option><option value="integer">integer</option><option value="number">number</option><option value="boolean">boolean</option><option value="array">array</option><option value="object">object</option>
+                        </select>
+                        <button data-id="{{ block.id }}" data-findex="{{ $index }}" onClick="{{ removeSField }}" style="width:24px;height:24px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:13px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ dropHintStyle }}">Drop an element here, or drag from the left palette</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- GRAPH VIEW -->
+      <sc-if value="{{ isGraph }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-height:0;position:relative;overflow:auto;background-image:radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);background-size:24px 24px;padding:26px 28px">
+          <div style="{{ graphCanvasStyle }}">
+            {{ graphSvg }}
+            <sc-for list="{{ graphNodes }}" as="node" hint-placeholder-count="4">
+              <div data-id="{{ node.id }}" onMouseDown="{{ onNodeDown }}" style="{{ node.posStyle }}">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="{{ node.chipStyle }}">{{ node.chip }}</span>
+                  <span style="font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ node.title }}</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">{{ node.subtitle }}</div>
+                <sc-for list="{{ node.rows }}" as="row" hint-placeholder-count="2">
+                  <div style="{{ row.style }}">{{ row.text }}</div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- TREE VIEW -->
+      <sc-if value="{{ isTree }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-height:0;display:flex">
+          <div style="flex:1;min-width:0;overflow:auto;padding:30px 34px">
+            <div style="max-width:760px;margin:0 auto">
+
+              <!-- PATH-GROUPED EDITOR -->
+              <sc-if value="{{ treePath }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:11px;margin-bottom:7px">
+                  <span style="width:30px;height:30px;flex:none;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace">{ }</span>
+                  <sc-if value="{{ treePath.isChild }}" hint-placeholder-val="{{ false }}">
+                    <div style="flex:1;min-width:0;display:flex;align-items:center;background:var(--inset);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+                      <span title="Inherited from the parent endpoint — rename the parent to change this" style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text-faint);padding:6px 0 6px 10px;white-space:nowrap;user-select:none">{{ treePath.lockedRoot }}</span>
+                      <input data-path="{{ treePath.path }}" data-root="{{ treePath.lockedRoot }}" value="{{ treePath.pathEditValue }}" onChange="{{ onPathInput }}" onBlur="{{ onPathCommit }}" onKeyDown="{{ onPathKey }}" placeholder="/{id}" style="flex:1;min-width:0;font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;background:transparent;border:none;padding:6px 10px 6px 0;color:var(--text);outline:none" />
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ treePath.isRoot }}" hint-placeholder-val="{{ true }}">
+                    <input data-path="{{ treePath.path }}" data-root="" value="{{ treePath.pathEditValue }}" onChange="{{ onPathInput }}" onBlur="{{ onPathCommit }}" onKeyDown="{{ onPathKey }}" style="{{ treePath.pathInputStyle }}" style-focus="border-color:var(--border);background:var(--inset)" />
+                  </sc-if>
+                  <sc-if value="{{ treePath.vBadge }}" hint-placeholder-val="{{ false }}">
+                    <span style="{{ treePath.badgeStyle }}" title="{{ treePath.vHint }}">{{ treePath.vBadge.text }}</span>
+                  </sc-if>
+                  <span style="flex:1"></span>
+                  <div style="position:relative;flex:none">
+                    <button data-path="{{ treePath.path }}" onClick="{{ togglePathMenu }}" title="Endpoint actions" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:16px;line-height:1" style-hover="border-color:var(--border-strong);color:var(--text)">⋮</button>
+                    <sc-if value="{{ pathMenuOpen }}" hint-placeholder-val="{{ false }}">
+                      <div onClick="{{ closePathMenu }}" style="position:fixed;inset:0;z-index:14"></div>
+                      <div style="position:absolute;top:40px;right:0;z-index:15;min-width:190px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:5px;animation:popIn .14s ease">
+                        <button data-path="{{ treePath.path }}" onClick="{{ askDeletePath }}" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-size:12.5px;padding:8px 10px;border:none;background:transparent;color:#d97b7b;border-radius:7px;cursor:pointer;font-family:inherit" style-hover="background:rgba(199,92,92,0.12)">
+                          <span style="font-size:13px">🗑</span> Delete endpoint…
+                        </button>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+                <sc-if value="{{ treePath.vBadge }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11.5px;color:var(--text-faint);margin:0 0 18px 41px">{{ treePath.vHint }}</div>
+                </sc-if>
+                <sc-if value="{{ treePath.isChild }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-faint);margin:0 0 18px 41px">
+                    <span style="width:14px;height:14px;flex:none;border-left:1.5px solid var(--border-strong);border-bottom:1.5px solid var(--border-strong);border-radius:0 0 0 3px;margin-top:-6px"></span>
+                    {{ treePath.derivedHint }}
+                  </div>
+                </sc-if>
+                <sc-if value="{{ treePath.ok }}" hint-placeholder-val="{{ true }}">
+                  <div style="height:14px"></div>
+                </sc-if>
+
+                <!-- METHOD PILLS (tabbed) -->
+                <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px">
+                  <sc-for list="{{ treePath.methodPills }}" as="mp" hint-placeholder-count="6">
+                    <button data-path="{{ treePath.path }}" data-method="{{ mp.method }}" onClick="{{ pickMethod }}" title="{{ mp.title }}" style="{{ mp.style }}">{{ mp.method }}</button>
+                  </sc-for>
+                </div>
+
+                <sc-if value="{{ treePath.noSel }}" hint-placeholder-val="{{ true }}">
+                  <div style="border:1px dashed var(--border-strong);border-radius:12px;padding:34px 20px;text-align:center">
+                    <div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">No method selected</div>
+                    <div style="font-size:12px;color:var(--text-faint)">Pick a method pill above to add it and start editing. HEAD is managed automatically.</div>
+                  </div>
+                </sc-if>
+
+                <sc-for list="{{ treePath.selList }}" as="m" hint-placeholder-count="0">
+                    <div>
+                      <!-- method sub-header -->
+                      <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--surface-2);border:1px solid var(--border);border-bottom:none;border-radius:11px 11px 0 0">
+                        <span style="font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;background:{{ m.methodColor }};padding:6px 14px;border-radius:7px;flex:none">{{ m.method }}</span>
+                        <div style="display:flex;flex-direction:column;gap:2px">
+                          <span style="font-size:9.5px;font-weight:700;letter-spacing:0.04em;color:{{ m.idemColor }}">• {{ m.idemText }}</span>
+                          <span style="font-size:9.5px;font-weight:700;letter-spacing:0.04em;color:{{ m.safeColor }}">• {{ m.safeText }}</span>
+                        </div>
+                        <select data-id="{{ m.id }}" value="{{ m.security }}" onChange="{{ setSecurity }}" disabled="{{ m.authDisabled }}" title="{{ m.authTitle }}" style="{{ m.authStyle }}">
+                          <sc-for list="{{ securityOptions }}" as="o" hint-placeholder-count="3"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+                        </select>
+                        <span style="flex:1"></span>
+                        <div style="display:flex;gap:5px;flex:none">
+                          <sc-for list="{{ m.statusPills }}" as="sp" hint-placeholder-count="5">
+                            <button data-id="{{ m.id }}" data-cls="{{ sp.cls }}" onClick="{{ toggleRespClass }}" title="{{ sp.title }}" style="{{ sp.style }}">{{ sp.cls }}</button>
+                          </sc-for>
+                        </div>
+                        <button data-id="{{ m.id }}" onClick="{{ deleteMethod }}" title="{{ m.deleteTitle }}" style="{{ m.deleteBtnStyle }}" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                      </div>
+
+                      <!-- method body (2-col) -->
+                      <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 11px 11px;padding:16px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:18px 22px">
+                        <!-- REQUEST -->
+                        <div style="flex:1;min-width:0">
+                          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:9px">Request</div>
+                          <div style="border:1px solid var(--border-strong);border-radius:11px;background:var(--inset);padding:13px">
+
+                          <div style="border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:11px 12px;margin-bottom:11px">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                            <span style="font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint)">Parameters</span>
+                            <button data-id="{{ m.id }}" onClick="{{ addParam }}" style="font-size:10.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:3px 8px;cursor:pointer">+</button>
+                          </div>
+                          <div style="display:flex;flex-direction:column;gap:6px">
+                            <sc-for list="{{ m.params }}" as="p" hint-placeholder-count="1">
+                              <div style="display:flex;align-items:center;gap:5px">
+                                <input data-id="{{ m.id }}" data-pindex="{{ $index }}" data-pfield="name" value="{{ p.name }}" onChange="{{ setParam }}" style="flex:1;min-width:0;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                                <select data-id="{{ m.id }}" data-pindex="{{ $index }}" data-pfield="in" value="{{ p.in }}" onChange="{{ setParam }}" style="font-size:11px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 6px;color:var(--text-dim);outline:none;cursor:pointer"><option value="query">query</option><option value="path">path</option><option value="header">header</option><option value="cookie">cookie</option></select>
+                                <button data-id="{{ m.id }}" data-pindex="{{ $index }}" onClick="{{ removeParam }}" style="width:22px;height:22px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:12px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                              </div>
+                            </sc-for>
+                          </div>
+                          </div>
+
+                          <div style="border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:11px 12px">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                            <span style="font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint)">Headers</span>
+                            <button data-id="{{ m.id }}" onClick="{{ addHeader }}" style="font-size:10.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:3px 8px;cursor:pointer">+</button>
+                          </div>
+                          <div style="display:flex;flex-direction:column;gap:6px">
+                            <sc-for list="{{ m.headers }}" as="h" hint-placeholder-count="1">
+                              <div style="display:flex;align-items:center;gap:5px">
+                                <button data-id="{{ m.id }}" data-hindex="{{ h._hi }}" onClick="{{ toggleHeaderReq }}" style="{{ h.reqStyle }}">{{ h.reqLabel }}</button>
+                                <input data-id="{{ m.id }}" data-hindex="{{ h._hi }}" data-hfield="name" value="{{ h.name }}" onChange="{{ setHeader }}" style="flex:1;min-width:0;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                                <select data-id="{{ m.id }}" data-hindex="{{ h._hi }}" data-hfield="type" value="{{ h.type }}" onChange="{{ setHeader }}" style="font-size:11px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 6px;color:var(--text-dim);outline:none;cursor:pointer"><option value="string">string</option><option value="integer">integer</option><option value="number">number</option><option value="boolean">boolean</option></select>
+                                <button data-id="{{ m.id }}" data-hindex="{{ h._hi }}" onClick="{{ removeHeader }}" style="width:22px;height:22px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:12px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                              </div>
+                            </sc-for>
+                          </div>
+                          </div>
+
+                          <sc-if value="{{ m.hasBody }}" hint-placeholder-val="{{ false }}">
+                            <div style="border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:11px 12px;margin-top:11px">
+                            <div style="font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px">Request body</div>
+                            <div style="display:flex;flex-direction:column;gap:6px">
+                              <div style="display:flex;align-items:center;gap:8px">
+                                <span style="font-size:11px;color:var(--text-faint);width:54px;flex:none">schema</span>
+                                <select data-id="{{ m.id }}" value="{{ m.bodySchema }}" onChange="{{ setReqBodySchema }}" style="flex:1;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 7px;color:var(--text);outline:none;cursor:pointer"><sc-for list="{{ schemaOptions }}" as="o" hint-placeholder-count="2"><option value="{{ o.value }}">{{ o.label }}</option></sc-for></select>
+                              </div>
+                              <div style="display:flex;align-items:center;gap:8px">
+                                <span style="font-size:11px;color:var(--text-faint);width:54px;flex:none">type</span>
+                                <select data-id="{{ m.id }}" value="{{ m.bodyContentType }}" onChange="{{ setReqContentType }}" style="flex:1;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:5px 7px;color:var(--text-dim);outline:none;cursor:pointer"><sc-for list="{{ ctOptions }}" as="o" hint-placeholder-count="2"><option value="{{ o.value }}">{{ o.label }}</option></sc-for></select>
+                              </div>
+                            </div>
+                            </div>
+                          </sc-if>
+                          </div>
+                        </div>
+
+                        <!-- RESPONSES -->
+                        <div style="flex:1;min-width:0">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+                            <div style="display:flex;align-items:center;gap:8px">
+                              <span style="font-size:13px;font-weight:600;color:var(--text)">Responses</span>
+                              <span style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;background:{{ m.selClassColor }};padding:3px 8px;border-radius:6px">{{ m.selClassLabel }}</span>
+                            </div>
+                            <button data-id="{{ m.id }}" onClick="{{ addResp }}" style="font-size:10.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:3px 9px;cursor:pointer">+ Response</button>
+                          </div>
+                          <sc-if value="{{ m.respEmpty }}" hint-placeholder-val="{{ false }}">
+                            <div style="border:1px dashed var(--border-strong);border-radius:9px;padding:22px 16px;text-align:center">
+                              <div style="font-size:12.5px;color:var(--text-dim);margin-bottom:3px">No <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text)">{{ m.selClassLabel }}</span> responses defined</div>
+                              <div style="font-size:11.5px;color:var(--text-faint)">Add one with + Response, or pick another status class above.</div>
+                            </div>
+                          </sc-if>
+                          <div style="display:flex;flex-direction:column;gap:10px">
+                            <sc-for list="{{ m.responses }}" as="r" hint-placeholder-count="2">
+                              <div style="border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:10px 11px">
+                                <div style="display:flex;align-items:center;gap:6px">
+                                  <select data-id="{{ m.id }}" data-rindex="{{ r._ri }}" value="{{ r.code }}" onChange="{{ setRespCode }}" style="{{ r.codeBadgeStyle }}"><sc-for list="{{ r.codeOptions }}" as="o" hint-placeholder-count="3"><option value="{{ o.value }}">{{ o.value }}</option></sc-for></select>
+                                  <input value="{{ r.reason }}" disabled="{{ true }}" title="Standard reason phrase" style="flex:1;min-width:0;font-size:12px;font-family:inherit;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text-dim);outline:none;cursor:not-allowed" />
+                                  <button data-id="{{ m.id }}" data-rindex="{{ r._ri }}" onClick="{{ removeResp }}" style="width:22px;height:22px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:12px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                                </div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin:9px 0 6px">
+                                  <span style="font-size:9.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-faint)">Headers</span>
+                                  <button data-id="{{ m.id }}" data-rindex="{{ r._ri }}" onClick="{{ addRespHeader }}" style="font-size:10px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:5px;padding:2px 8px;cursor:pointer" style-hover="border-color:var(--add);color:var(--add)">+</button>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+                                  <sc-for list="{{ r.headers }}" as="h" hint-placeholder-count="1">
+                                    <div style="display:flex;align-items:center;gap:5px">
+                                      <button data-id="{{ m.id }}" data-rindex="{{ r._ri }}" data-hindex="{{ h._hi }}" onClick="{{ toggleRespHeaderReq }}" style="{{ h.reqStyle }}">{{ h.reqLabel }}</button>
+                                      <input data-id="{{ m.id }}" data-rindex="{{ r._ri }}" data-hindex="{{ h._hi }}" data-hfield="name" value="{{ h.name }}" onChange="{{ setRespHeader }}" style="flex:1;min-width:0;font-size:11.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                                      <select data-id="{{ m.id }}" data-rindex="{{ r._ri }}" data-hindex="{{ h._hi }}" data-hfield="type" value="{{ h.type }}" onChange="{{ setRespHeader }}" style="font-size:11px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:var(--text-dim);outline:none;cursor:pointer"><option value="string">string</option><option value="integer">integer</option><option value="number">number</option><option value="boolean">boolean</option></select>
+                                      <button data-id="{{ m.id }}" data-rindex="{{ r._ri }}" data-hindex="{{ h._hi }}" onClick="{{ removeRespHeader }}" style="width:20px;height:20px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:5px;font-size:11px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                                    </div>
+                                  </sc-for>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:5px">
+                                  <div style="display:flex;align-items:center;gap:7px">
+                                    <span style="font-size:9.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-faint);width:52px;flex:none">Body</span>
+                                    <select data-id="{{ m.id }}" data-rindex="{{ r._ri }}" value="{{ r.schema }}" onChange="{{ setRespBodySchema }}" style="flex:1;min-width:0;font-size:11.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--text);outline:none;cursor:pointer"><sc-for list="{{ schemaOptions }}" as="o" hint-placeholder-count="2"><option value="{{ o.value }}">{{ o.label }}</option></sc-for></select>
+                                  </div>
+                                  <div style="display:flex;align-items:center;gap:7px">
+                                    <span style="font-size:9.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-faint);width:52px;flex:none">Type</span>
+                                    <select data-id="{{ m.id }}" data-rindex="{{ r._ri }}" value="{{ r.contentType }}" onChange="{{ setRespContentType }}" style="flex:1;min-width:0;font-size:11px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--text-dim);outline:none;cursor:pointer"><sc-for list="{{ ctOptions }}" as="o" hint-placeholder-count="2"><option value="{{ o.value }}">{{ o.label }}</option></sc-for></select>
+                                  </div>
+                                </div>
+                              </div>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+              </sc-if>
+
+              <!-- SCHEMA EDITOR -->
+              <sc-if value="{{ selVM.editSchema }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+                  <span style="{{ selVM.chipStyle }}">{{ selVM.chip }}</span>
+                  <input data-id="{{ selVM.id }}" data-field="name" value="{{ selVM.name }}" onChange="{{ setField }}" placeholder="SchemaName" style="flex:1;min-width:0;font-size:16px;font-weight:600;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                  <button data-id="{{ selVM.id }}" onClick="{{ deleteBlock }}" title="Remove" style="width:32px;height:32px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:8px;font-size:15px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-faint)">Properties</span>
+                  <button data-id="{{ selVM.id }}" onClick="{{ addSField }}" style="font-size:11.5px;font-weight:600;color:var(--add);background:var(--add-soft);border:1px solid var(--add);border-radius:6px;padding:4px 10px;cursor:pointer">+ Property</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ selVM.fields }}" as="f" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <input data-id="{{ selVM.id }}" data-findex="{{ $index }}" data-ffield="name" value="{{ f.name }}" onChange="{{ setSField }}" style="flex:1;min-width:0;font-size:12.5px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--text);outline:none" style-focus="border-color:var(--accent)" />
+                      <select data-id="{{ selVM.id }}" data-findex="{{ $index }}" data-ffield="type" value="{{ f.type }}" onChange="{{ setSField }}" style="width:124px;flex:none;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:6px;padding:6px 7px;color:var(--text-dim);outline:none;cursor:pointer">
+                        <option value="string">string</option><option value="integer">integer</option><option value="number">number</option><option value="boolean">boolean</option><option value="array">array</option><option value="object">object</option>
+                      </select>
+                      <button data-id="{{ selVM.id }}" data-findex="{{ $index }}" onClick="{{ removeSField }}" style="width:26px;height:26px;flex:none;border:1px solid var(--del);background:var(--del-soft);color:var(--del);cursor:pointer;border-radius:6px;font-size:13px" style-hover="background:var(--del);color:#fff;border-color:var(--del)">×</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          <!-- VALIDATION RAIL -->
+          <sc-if value="{{ validation.collapsed }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:none;width:48px;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:16px">
+              <button onClick="{{ toggleValCollapse }}" title="Expand validation" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:15px;line-height:1" style-hover="color:var(--text);border-color:var(--border-strong)">‹</button>
+              <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-faint)">Validation</div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+                <span style="{{ validation.dotError }}" title="Errors">{{ validation.errorCount }}</span>
+                <span style="{{ validation.dotWarn }}" title="Warnings">{{ validation.warnCount }}</span>
+                <span style="{{ validation.dotInfo }}" title="Info">{{ validation.infoCount }}</span>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ validation.expanded }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:none;width:300px;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;min-height:0">
+              <div style="flex:none;display:flex;align-items:center;gap:8px;padding:17px 16px 13px">
+                <span style="font-size:14px;font-weight:600;letter-spacing:-0.01em">Validation</span>
+                <span style="flex:1"></span>
+                <button onClick="{{ toggleValCollapse }}" title="Collapse panel" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface-2);border-radius:7px;color:var(--text-dim);cursor:pointer;font-size:15px;line-height:1" style-hover="color:var(--text);border-color:var(--border-strong)">›</button>
+              </div>
+              <div style="flex:none;display:flex;gap:6px;padding:0 16px 13px">
+                <sc-for list="{{ validation.pills }}" as="p" hint-placeholder-count="3">
+                  <button data-sev="{{ p.sev }}" onClick="{{ toggleValFilter }}" title="{{ p.title }}" style="{{ p.style }}">
+                    <span style="{{ p.dotStyle }}">{{ p.glyph }}</span>{{ p.count }} {{ p.label }}
+                  </button>
+                </sc-for>
+              </div>
+              <div style="height:1px;background:var(--border);margin:0 16px;flex:none"></div>
+              <div style="flex:1;min-height:0;overflow:auto;padding:9px 8px 16px;display:flex;flex-direction:column;gap:3px">
+                <sc-for list="{{ validation.items }}" as="it" hint-placeholder-count="4">
+                  <div data-id="{{ it.targetId }}" onClick="{{ jumpToIssue }}" title="Jump to source" style="{{ it.itemStyle }}" style-hover="background:var(--surface-2)">
+                    <span style="{{ it.badgeStyle }}">{{ it.glyph }}</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:12.5px;font-weight:500;color:var(--text);line-height:1.35;text-wrap:pretty">{{ it.title }}</div>
+                      <div style="font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.ref }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ validation.isEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:38px 18px;text-align:center">
+                    <div style="width:36px;height:36px;margin:0 auto 11px;border-radius:50%;background:var(--add-soft);color:var(--add);display:flex;align-items:center;justify-content:center;font-size:17px">✓</div>
+                    <div style="font-size:12.5px;color:var(--text-dim);line-height:1.5;text-wrap:pretty">{{ validation.emptyText }}</div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <!-- SHARE / LIBRARY MODAL -->
+  <sc-if value="{{ shareOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeShare }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:40;animation:fadeIn .16s ease;padding:40px">
+      <div onClick="{{ stop }}" style="width:760px;max-width:100%;max-height:86%;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;animation:popIn .2s cubic-bezier(.4,0,.2,1)">
+        <div style="display:flex;align-items:center;gap:12px;padding:18px 20px 0">
+          <div style="flex:1">
+            <div style="font-size:16px;font-weight:600;letter-spacing:-0.01em">Share &amp; library</div>
+            <div style="font-size:12.5px;color:var(--text-faint);margin-top:2px">Payments API · acme-corp</div>
+          </div>
+          <button onClick="{{ closeShare }}" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:15px" style-hover="color:var(--text)">×</button>
+        </div>
+        <div style="display:flex;gap:4px;padding:14px 20px 0;border-bottom:1px solid var(--border)">
+          <button data-tab="share" onClick="{{ setShareTab }}" style="{{ tabShareStyle }}">Share this project</button>
+          <button data-tab="library" onClick="{{ setShareTab }}" style="{{ tabLibStyle }}">Component library</button>
+        </div>
+
+        <!-- SHARE TAB -->
+        <sc-if value="{{ isShareTab }}" hint-placeholder-val="{{ true }}">
+          <div style="overflow:auto;padding:20px">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:11px;background:var(--inset);margin-bottom:22px">
+              <span style="width:26px;height:26px;flex:none;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px">🔗</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:500">Anyone with the link can view</div>
+                <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">apiary.dev/acme-corp/payments-api</div>
+              </div>
+              <button style="font-size:12.5px;font-weight:600;padding:7px 13px;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;color:var(--text);cursor:pointer" style-hover="border-color:var(--border-strong)">Copy link</button>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <input placeholder="Invite a person or organization by email…" style="flex:1;height:38px;padding:0 13px;border:1px solid var(--border);background:var(--inset);border-radius:9px;color:var(--text);font-size:13px;font-family:inherit;outline:none" style-focus="border-color:var(--accent)" />
+              <button style="height:38px;padding:0 16px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">Invite</button>
+            </div>
+
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-faint);margin:18px 0 10px">Shared across companies</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ accessList }}" as="a" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 13px;border:1px solid var(--border);border-radius:10px">
+                  <span style="{{ a.dotStyle }}">{{ a.dot }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;font-weight:500">{{ a.org }}</div>
+                    <div style="font-size:11.5px;color:var(--text-faint)">{{ a.sub }}</div>
+                  </div>
+                  <span style="font-size:12px;color:var(--text-dim);padding:5px 11px;border:1px solid var(--border);border-radius:8px">{{ a.role }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- LIBRARY TAB -->
+        <sc-if value="{{ isLibTab }}" hint-placeholder-val="{{ false }}">
+          <div style="overflow:auto;padding:20px">
+            <input placeholder="Search shared schemas, endpoints & security schemes…" style="width:100%;height:38px;padding:0 13px;border:1px solid var(--border);background:var(--inset);border-radius:9px;color:var(--text);font-size:13px;font-family:inherit;outline:none;margin-bottom:18px" style-focus="border-color:var(--accent)" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <sc-for list="{{ libraryItems }}" as="it" hint-placeholder-count="6">
+                <div style="border:1px solid var(--border);border-radius:11px;padding:13px 14px;background:var(--inset)">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+                    <span style="{{ it.chipStyle }}">{{ it.tagText }}</span>
+                    <span style="font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.name }}</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">{{ it.desc }}</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:11px;color:var(--text-faint);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.org }} · ↓ {{ it.downloads }}</span>
+                    <button data-kind="{{ it.addKind }}" onClick="{{ importLibItem }}" style="font-size:12px;font-weight:600;padding:6px 12px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:8px;cursor:pointer" style-hover="background:var(--accent);color:var(--accent-text)">Import</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- AUTH MODAL -->
+  <sc-if value="{{ authOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeAuth }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:41;animation:fadeIn .16s ease;padding:40px">
+      <div onClick="{{ stop }}" style="width:392px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;animation:popIn .2s cubic-bezier(.4,0,.2,1)">
+        <div style="padding:26px 26px 8px;text-align:center">
+          <div style="width:38px;height:38px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:var(--accent-text);margin:0 auto 14px">A</div>
+          <div style="font-size:18px;font-weight:600;letter-spacing:-0.01em">{{ authTitle }}</div>
+          <div style="font-size:12.5px;color:var(--text-faint);margin-top:4px">Design, version &amp; share your APIs</div>
+        </div>
+        <div style="padding:18px 26px 8px;display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ providers }}" as="p" hint-placeholder-count="5">
+            <button onClick="{{ signIn }}" style="display:flex;align-items:center;gap:11px;height:42px;padding:0 14px;border:1px solid var(--border);background:var(--surface-2);border-radius:10px;color:var(--text);cursor:pointer;font-size:13.5px;font-weight:500;font-family:inherit" style-hover="border-color:var(--border-strong);background:var(--inset)">
+              <span style="width:24px;height:24px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;background:{{ p.bg }};color:{{ p.fg }};border:1px solid {{ p.bd }}">{{ p.mark }}</span>
+              <span style="flex:1;text-align:left">Continue with {{ p.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 26px">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:11px;color:var(--text-faint)">or</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        <div style="padding:0 26px 8px;display:flex;flex-direction:column;gap:9px">
+          <input placeholder="you@company.com" style="height:42px;padding:0 14px;border:1px solid var(--border);background:var(--inset);border-radius:10px;color:var(--text);font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:var(--accent)" />
+          <button onClick="{{ signIn }}" style="height:42px;border:none;background:var(--accent);color:var(--accent-text);border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit">{{ authTitle }}</button>
+        </div>
+        <div style="padding:14px 26px 24px;text-align:center;font-size:12.5px;color:var(--text-faint)">
+          {{ authSwitchText }}
+          <span onClick="{{ toggleAuthMode }}" style="color:var(--accent);font-weight:600;cursor:pointer;margin-left:4px">{{ authSwitchCta }}</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- DELETE ENDPOINT CONFIRM -->
+  <sc-if value="{{ deletePathVM }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ cancelDeletePath }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:42;animation:fadeIn .16s ease;padding:40px">
+      <div onClick="{{ stop }}" style="width:420px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;animation:popIn .2s cubic-bezier(.4,0,.2,1)">
+        <div style="padding:22px 22px 0;display:flex;align-items:center;gap:11px">
+          <div style="width:34px;height:34px;flex:none;border-radius:9px;background:rgba(199,92,92,0.16);color:#d97b7b;display:flex;align-items:center;justify-content:center;font-size:16px">🗑</div>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-0.01em">Delete endpoint?</div>
+        </div>
+        <div style="padding:14px 22px 4px;font-size:13px;color:var(--text-dim);line-height:1.6">
+          This permanently removes <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text)">{{ deletePathVM.path }}</span> and all <span style="font-weight:600;color:var(--text)">{{ deletePathVM.count }}</span> of its methods:
+        </div>
+        <div style="padding:12px 22px 0;display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ deletePathVM.chips }}" as="c" hint-placeholder-count="2">
+            <span style="{{ c.style }}">{{ c.method }}</span>
+          </sc-for>
+        </div>
+        <sc-if value="{{ deletePathVM.hasChildren }}" hint-placeholder-val="{{ false }}">
+          <div style="margin:16px 22px 0;padding:11px 13px;border:1px solid rgba(199,92,92,0.4);background:rgba(199,92,92,0.1);border-radius:9px">
+            <div style="font-size:12px;font-weight:600;color:#d97b7b;margin-bottom:7px">⚠ This also deletes {{ deletePathVM.childCount }} derived sub-endpoint(s):</div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <sc-for list="{{ deletePathVM.childPaths }}" as="cp" hint-placeholder-count="1">
+                <span style="font-size:11.5px;font-family:'JetBrains Mono',monospace;color:var(--text-dim)">{{ cp.path }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div style="padding:22px;display:flex;gap:9px;justify-content:flex-end">
+          <button onClick="{{ cancelDeletePath }}" style="font-size:13px;font-weight:600;padding:9px 16px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;cursor:pointer;font-family:inherit" style-hover="border-color:var(--border-strong)">Cancel</button>
+          <button onClick="{{ confirmDeletePath }}" style="font-size:13px;font-weight:600;padding:9px 16px;border:1px solid #c75c5c;background:#c75c5c;color:#fff;border-radius:9px;cursor:pointer;font-family:inherit" style-hover="background:#b84c4c">Delete endpoint</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- CODE PANEL -->
+  <div style="{{ codeBackdropStyle }}" onClick="{{ toggleCode }}"></div>
+  <aside style="{{ codePanelStyle }}">
+    <div style="height:46px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;font-weight:600">openapi.yaml</span>
+      <span style="font-size:11px;padding:1px 7px;border-radius:5px;background:var(--accent-soft);color:var(--accent);font-family:'JetBrains Mono',monospace">{{ yamlState }}</span>
+      <div style="flex:1"></div>
+      <button onClick="{{ resetYaml }}" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:7px;padding:5px 9px;cursor:pointer;font-family:'JetBrains Mono',monospace" style-hover="border-color:var(--border-strong);color:var(--text)">Regenerate</button>
+      <button onClick="{{ toggleCode }}" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface-2);border-radius:7px;color:var(--text-dim);cursor:pointer" style-hover="color:var(--text)">×</button>
+    </div>
+    <textarea spellcheck="false" value="{{ yaml }}" onChange="{{ editYaml }}" style="flex:1;width:100%;resize:none;border:none;outline:none;background:var(--inset);color:var(--text-dim);padding:16px 18px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7"></textarea>
+    <div style="flex:none;height:34px;display:flex;align-items:center;gap:14px;padding:0 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace">
+      <span>OpenAPI 3.1.0</span><span>·</span><span>{{ lineCount }} lines</span><span style="flex:1"></span><span>Edits sync to canvas ↔</span>
+    </div>
+  </aside>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:860},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;system&quot;,&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'system' | 'light' | 'dark'&quot;,&quot;section&quot;:&quot;Appearance&quot;}}">
+class Component extends DCLogic {
+  state = {
+    themeMode: null,
+    systemDark: (typeof window!=='undefined' && window.matchMedia) ? window.matchMedia('(prefers-color-scheme: dark)').matches : true,
+    metaphor: 'blocks',
+    codeOpen: false,
+    shareOpen: false,
+    authOpen: false,
+    authMode: 'signin',
+    signedIn: true,
+    userMenuOpen: false,
+    dragOver: false,
+    valFilters: [],
+    valCollapsed: false,
+    selectedId: 'ep1',
+    manualYaml: null,
+    blocks: [
+      { id:'ep1', kind:'endpoint', method:'GET', path:'/v1/charges', summary:'List all charges', security:'APIKEYAUTH', headers:[{name:'Accept',type:'string',required:true}], params:[{name:'limit',in:'query',type:'integer'},{name:'status',in:'query',type:'string'}], responses:[{code:'200',desc:'A list of charges',schema:'Charge',contentType:'application/json',headers:[{name:'RateLimit-Remaining',type:'integer',required:true},{name:'X-Request-Id',type:'string',required:false}]}] },
+      { id:'ep2', kind:'endpoint', method:'POST', path:'/v1/charges', summary:'Create a charge', security:'APIKEYAUTH', requestBody:{schema:'Charge',contentType:'application/json'}, headers:[{name:'Idempotency-Key',type:'string',required:true}], params:[], responses:[{code:'201',desc:'Created',schema:'Charge',contentType:'application/json',headers:[{name:'Location',type:'string',required:true}]},{code:'402',desc:'Payment Required',schema:'Error',contentType:'application/json',headers:[]}] },
+      { id:'sc1', kind:'schema', name:'Charge', fields:[{name:'id',type:'string'},{name:'amount',type:'integer'},{name:'currency',type:'string'},{name:'status',type:'string'},{name:'created',type:'integer'}] },
+      { id:'ep3', kind:'endpoint', method:'DELETE', path:'/v1/charges/{id}', summary:'Refund a charge', security:'BEARERAUTH', headers:[], params:[{name:'id',in:'path',type:'string'}], responses:[{code:'200',desc:'Refunded',schema:'Charge',contentType:'application/json',headers:[]},{code:'404',desc:'Not Found',schema:'Error',contentType:'application/json',headers:[]}] },
+      { id:'eph1', kind:'endpoint', method:'HEAD', path:'/v1/charges', summary:'Resource metadata & allowed methods', security:'NONE', auto:true, requestBody:{schema:'',contentType:'application/json'}, headers:[], params:[], responses:[{code:'200',desc:'Metadata',schema:'',contentType:'application/json',headers:[{name:'Allow',type:'string',required:true,auto:true}]}] },
+      { id:'eph2', kind:'endpoint', method:'HEAD', path:'/v1/charges/{id}', summary:'Resource metadata & allowed methods', security:'NONE', auto:true, requestBody:{schema:'',contentType:'application/json'}, headers:[], params:[{name:'id',in:'path',type:'string'}], responses:[{code:'200',desc:'Metadata',schema:'',contentType:'application/json',headers:[{name:'Allow',type:'string',required:true,auto:true}]}] },
+      { id:'sc2', kind:'schema', name:'Error', fields:[{name:'code',type:'integer'},{name:'message',type:'string'}] }
+    ]
+  };
+
+  uid(){ return 'b' + Math.random().toString(36).slice(2,7); }
+
+  // ---- theme mode: 'system' follows the OS, else explicit light/dark ----
+  currentMode(){ return this.state.themeMode ?? this.props.theme ?? 'dark'; }
+  resolvedTheme(){ const m=this.currentMode(); return m==='system' ? (this.state.systemDark?'dark':'light') : m; }
+
+  componentDidMount(){
+    if(typeof window!=='undefined' && window.matchMedia){
+      this._mql=window.matchMedia('(prefers-color-scheme: dark)');
+      this._onScheme=(e)=>this.setState({systemDark:e.matches});
+      if(this._mql.addEventListener) this._mql.addEventListener('change', this._onScheme);
+      else if(this._mql.addListener) this._mql.addListener(this._onScheme);
+    }
+  }
+  componentWillUnmount(){
+    if(this._mql && this._onScheme){
+      if(this._mql.removeEventListener) this._mql.removeEventListener('change', this._onScheme);
+      else if(this._mql.removeListener) this._mql.removeListener(this._onScheme);
+    }
+  }
+
+  methodColor(m){
+    return ({GET:'#3b9c6e',POST:'#4a82d8',PUT:'#c79a3a',PATCH:'#c79a3a',DELETE:'#c75c5c'})[m] || '#7c7c8a';
+  }
+
+  reasonFor(code){
+    return ({'100':'Continue','101':'Switching Protocols','102':'Processing','103':'Early Hints','200':'OK','201':'Created','202':'Accepted','203':'Non-Authoritative','204':'No Content','205':'Reset Content','206':'Partial Content','300':'Multiple Choices','301':'Moved Permanently','302':'Found','303':'See Other','304':'Not Modified','307':'Temporary Redirect','308':'Permanent Redirect','400':'Bad Request','401':'Unauthorized','402':'Payment Required','403':'Forbidden','404':'Not Found','405':'Method Not Allowed','406':'Not Acceptable','408':'Request Timeout','409':'Conflict','410':'Gone','422':'Unprocessable Entity','429':'Too Many Requests','500':'Internal Server Error','501':'Not Implemented','502':'Bad Gateway','503':'Service Unavailable','504':'Gateway Timeout'})[code] || '';
+  }
+
+  stdCodesFor(cls){
+    return ({'1xx':['100','101','102','103'],'2xx':['200','201','202','203','204','205','206'],'3xx':['300','301','302','303','304','307','308'],'4xx':['400','401','402','403','404','405','406','408','409','410','422','429'],'5xx':['500','501','502','503','504']})[cls] || [];
+  }
+
+  uniquePath(base){
+    const paths=new Set(this.state.blocks.filter(b=>b.kind==='endpoint').map(b=>b.path));
+    if(!paths.has(base)) return base;
+    let i=2; while(paths.has(base+'-'+i)) i++; return base+'-'+i;
+  }
+
+  defaultBlock(kind){
+    const id=this.uid();
+    if(kind==='schema') return {id,kind:'schema',name:'NewSchema',fields:[{name:'id',type:'string'}]};
+    if(kind==='security') return {id,kind:'security',name:'bearerAuth',scheme:'http',fields:[{name:'scheme',type:'bearer'}]};
+    if(kind==='tag') return {id,kind:'tag',name:'untagged',fields:[]};
+    if(kind==='parameter') return {id,kind:'endpoint',method:'GET',path:this.uniquePath('/new-path'),summary:'New endpoint',security:'APIKEYAUTH',requestBody:{schema:'',contentType:'application/json'},headers:[],params:[{name:'param',in:'query',type:'string'}],responses:[{code:'200',desc:'OK',schema:'',contentType:'application/json',headers:[]}]};
+    if(kind==='response') return {id,kind:'endpoint',method:'GET',path:this.uniquePath('/new-path'),summary:'New endpoint',security:'APIKEYAUTH',requestBody:{schema:'',contentType:'application/json'},headers:[],params:[],responses:[{code:'200',desc:'OK',schema:'',contentType:'application/json',headers:[]},{code:'400',desc:'Bad Request',schema:'',contentType:'application/json',headers:[]}]};
+    // Plain new endpoint: HEAD only (incomplete until a real method is added)
+    return this.makeHead(this.uniquePath('/new-endpoint'));
+  }
+
+  makeHead(path){
+    return {id:this.uid(), kind:'endpoint', method:'HEAD', path, summary:'Resource metadata & allowed methods', security:'NONE', auto:true, requestBody:{schema:'',contentType:'application/json'}, headers:[], params:[], responses:[{code:'200',desc:'Metadata',schema:'',contentType:'application/json',headers:[{name:'Allow',type:'string',required:true,auto:true}]}]};
+  }
+
+  // Rename a path exactly + cascade the change into every descendant (prefix oldPath + '/').
+  renamePath(oldPath, newPath){
+    if(oldPath===newPath) return;
+    this.setState(s=>({
+      blocks:s.blocks.map(b=>{
+        if(b.kind!=='endpoint') return b;
+        if(b.path===oldPath) return {...b, path:newPath};
+        if(b.path.startsWith(oldPath+'/')) return {...b, path:newPath + b.path.slice(oldPath.length)};
+        return b;
+      }),
+      manualYaml:null
+    }));
+  }
+
+  addBlock(kind){
+    const b=this.defaultBlock(kind);
+    this.setState(s=>{
+      let blocks=[...s.blocks, b];
+      if(b.kind==='endpoint' && b.method!=='HEAD'){
+        const hasHead=blocks.some(x=>x.kind==='endpoint'&&x.path===b.path&&x.method==='HEAD');
+        if(!hasHead) blocks=[...blocks, this.makeHead(b.path)];
+      }
+      return {blocks, selectedId:b.id, manualYaml:null};
+    });
+  }
+
+  updateBlock(id, fn){
+    this.setState(s=>({blocks:s.blocks.map(b=> b.id===id ? fn({...b}) : b), manualYaml:null}));
+  }
+
+  // ---- graph node dragging ----
+  onNodeDown(e){
+    if(e.button!==0) return;
+    const id=e.currentTarget.dataset.id;
+    const pos=(this._posMap&&this._posMap[id])||{x:0,y:0};
+    this._drag={id, sx:e.clientX, sy:e.clientY, ox:pos.x, oy:pos.y};
+    this._onMove=this.onNodeMove.bind(this);
+    this._onUp=this.onNodeUp.bind(this);
+    window.addEventListener('mousemove', this._onMove);
+    window.addEventListener('mouseup', this._onUp);
+    this.setState({selectedId:id, draggingId:id});
+    e.preventDefault();
+  }
+  onNodeMove(e){
+    if(!this._drag) return;
+    const d=this._drag;
+    const nx=Math.max(0, d.ox+(e.clientX-d.sx));
+    const ny=Math.max(0, d.oy+(e.clientY-d.sy));
+    this.setState(s=>({nodePos:{...(s.nodePos||{}), [d.id]:{x:nx,y:ny}}}));
+  }
+  onNodeUp(){
+    window.removeEventListener('mousemove', this._onMove);
+    window.removeEventListener('mouseup', this._onUp);
+    this._drag=null;
+    this.setState({draggingId:null});
+  }
+
+  generateYaml(blocks){
+    const eps=blocks.filter(b=>b.kind==='endpoint');
+    const schemas=blocks.filter(b=>b.kind==='schema'||b.kind==='security');
+    let s='openapi: 3.1.0\ninfo:\n  title: Payments API\n  version: 1.0.0\n';
+    if(eps.length){
+      s+='paths:\n';
+      const byPath={};
+      eps.forEach(e=>{(byPath[e.path]=byPath[e.path]||[]).push(e);});
+      const methodsByPath={};
+      eps.forEach(e=>{(methodsByPath[e.path]=methodsByPath[e.path]||[]).push(e.method.toUpperCase());});
+      Object.keys(byPath).forEach(p=>{
+        s+='  '+p+':\n';
+        byPath[p].forEach(e=>{
+          s+='    '+e.method.toLowerCase()+':\n';
+          s+='      summary: '+e.summary+'\n';
+          if(e.security && e.security!=='NONE'){ s+='      security:\n        - '+e.security+': []\n'; }
+          const allParams=[...(e.params||[]), ...((e.headers||[]).map(h=>({name:h.name,in:'header',type:h.type,required:h.required!==false})))];
+          if(allParams.length){
+            s+='      parameters:\n';
+            allParams.forEach(pa=>{ s+='        - name: '+pa.name+'\n          in: '+(pa.in||'query')+'\n'+((pa.required!==undefined)?'          required: '+(pa.required!==false)+'\n':'')+'          schema: { type: '+(pa.type||'string')+' }\n'; });
+          }
+          if(['POST','PUT','PATCH'].includes(e.method) && e.requestBody && e.requestBody.schema){
+            s+='      requestBody:\n        content:\n          '+(e.requestBody.contentType||'application/json')+":\n            schema: { $ref: '#/components/schemas/"+e.requestBody.schema+"' }\n";
+          }
+          s+='      responses:\n';
+          (e.responses||[]).forEach(r=>{
+            s+="        '"+r.code+"':\n          description: "+(this.reasonFor(r.code)||r.desc)+'\n';
+            if(r.headers&&r.headers.length){
+              s+='          headers:\n';
+              r.headers.forEach(h=>{ s+='            '+h.name+':\n              schema: { type: '+(h.type||'string')+' }\n'+((e.method==='HEAD'&&h.name==='Allow')?"              example: '"+(methodsByPath[e.path]||[]).join(', ')+"'\n":''); });
+            }
+            if(r.schema){
+              s+='          content:\n            '+(r.contentType||'application/json')+":\n              schema: { $ref: '#/components/schemas/"+r.schema+"' }\n";
+            }
+          });
+        });
+      });
+    }
+    if(schemas.length){
+      s+='components:\n  schemas:\n';
+      schemas.forEach(sc=>{
+        s+='    '+sc.name+':\n      type: object\n      properties:\n';
+        (sc.fields||[]).forEach(f=>{ s+='        '+f.name+': { type: '+f.type+' }\n'; });
+      });
+    }
+    return s;
+  }
+
+  // Derive live validation issues from the current document.
+  computeValidation(){
+    const blocks=this.state.blocks;
+    const schemaNames=new Set(blocks.filter(b=>b.kind==='schema').map(b=>b.name));
+    const items=[];
+    const push=(sev,title,ref,targetId)=>items.push({sev,title,ref,targetId});
+    const enumWords=['status','state','type','kind','role'];
+    blocks.filter(b=>b.kind==='endpoint'&&b.method!=='HEAD').forEach(e=>{
+      const loc=e.method+' '+e.path;
+      const resps=e.responses||[];
+      if(!(e.summary&&e.summary.trim())) push('error','Missing description for endpoint',loc,e.id);
+      if(!resps.some(r=>/^2/.test(String(r.code)))) push('error','No success (2xx) response defined',loc,e.id);
+      if(!resps.some(r=>/^[45]/.test(String(r.code)))) push('error','No error (4xx/5xx) response defined',loc,e.id);
+      if(['POST','PUT','PATCH'].includes(e.method) && !(e.requestBody&&e.requestBody.schema)) push('error',e.method+' request body has no schema',loc,e.id);
+      resps.forEach(r=>{
+        const code=String(r.code);
+        if(!/^(204|304)$/.test(code) && !r.schema && !(r.desc&&r.desc.trim())) push('error','Response '+code+' is missing content',loc,e.id);
+        if(r.schema && !schemaNames.has(r.schema)) push('error','Response '+code+" references unknown schema '"+r.schema+"'",loc,e.id);
+      });
+      const successHdrs=resps.filter(r=>/^2/.test(String(r.code))).flatMap(r=>r.headers||[]);
+      if(!successHdrs.some(h=>/ratelimit/i.test(h.name))) push('info','Consider adding rate limiting information',loc,e.id);
+    });
+    blocks.filter(b=>b.kind==='schema').forEach(s=>{
+      if(!s.example) push('warning',"Schema '"+s.name+"' should have example",'components/schemas/'+s.name,s.id);
+      (s.fields||[]).forEach(f=>{
+        if(enumWords.includes((f.name||'').toLowerCase()) && f.type==='string') push('warning',"Field '"+f.name+"' should be enum type",'components/schemas/'+s.name,s.id);
+      });
+    });
+    blocks.filter(b=>b.kind==='tag').forEach(t=>{
+      if(!t.description) push('warning',"Tag '"+t.name+"' is not documented",'components/tags/'+t.name,t.id);
+    });
+    const order={error:0,warning:1,info:2};
+    items.sort((a,b)=>order[a.sev]-order[b.sev]);
+    return items;
+  }
+
+  renderVals(){
+    const LU = {
+      x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+      moon:'<path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+      sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+      monitor:'<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>',
+      code:'<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+      'chevron-up':'<path d="m18 15-6-6-6 6"/>',
+      'chevron-down':'<path d="m6 9 6 6 6-6"/>',
+      'chevron-right':'<path d="m9 18 6-6-6-6"/>',
+      user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+      'user-plus':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+      settings:'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+      globe:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+      keyboard:'<path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/>',
+      help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+      sparkles:'<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+      external:'<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+      'log-out':'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+      'arrow-right':'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+      ellipsis:'<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
+      trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+      link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+      braces:'<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"/><path d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/>',
+      key:'<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
+      hash:'<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
+      tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+      sliders:'<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+      'corner-down-left':'<polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>',
+      'circle-alert':'<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+      'triangle-alert':'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+      info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+      'arrow-down-to-line':'<path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/>',
+      'arrow-up-to-line':'<path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/>',
+      grip:'<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>'
+    };
+    const ic = (name, size, opts) => {
+      const inner = LU[name]; if(!inner) return null; opts = opts || {};
+      return React.createElement('svg', {
+        xmlns:'http://www.w3.org/2000/svg', width:size||16, height:size||16, viewBox:'0 0 24 24',
+        fill:'none', stroke:'currentColor', strokeWidth:opts.sw||2, strokeLinecap:'round', strokeLinejoin:'round',
+        style:{display:'block', flex:'none', ...(opts.style||{})},
+        dangerouslySetInnerHTML:{__html: inner}
+      });
+    };
+    this._ic = ic;
+    const { metaphor, codeOpen, selectedId, blocks, dragOver, manualYaml } = this.state;
+    const theme = this.resolvedTheme();
+    const themeMode = this.currentMode();
+    const accentChip = (c)=>`width:46px;flex:none;text-align:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:3px 0;border-radius:6px;color:#fff;background:${c}`;
+
+    const palette = [
+      {kind:'endpoint',label:'Endpoint',glyph:'{}',tint:'rgba(74,130,216,0.18)',fg:'#6ea2e8',iconEl:ic('braces',14)},
+      {kind:'schema',label:'Schema',glyph:'#',tint:'rgba(59,156,110,0.18)',fg:'#52b487',iconEl:ic('hash',14)},
+      {kind:'parameter',label:'Parameter',glyph:'?',tint:'rgba(199,154,58,0.18)',fg:'#d4ab52',iconEl:ic('sliders',14)},
+      {kind:'response',label:'Response',glyph:'↵',tint:'rgba(124,124,138,0.18)',fg:'#9a9aa8',iconEl:ic('corner-down-left',14)},
+      {kind:'security',label:'Security scheme',glyph:'⚷',tint:'rgba(199,92,92,0.18)',fg:'#d47878',iconEl:ic('key',14)},
+      {kind:'tag',label:'Tag',glyph:'⚑',tint:'rgba(150,110,220,0.18)',fg:'#a98ce0',iconEl:ic('tag',14)}
+    ];
+
+    const metaphors = [
+      {id:'blocks',label:'Blocks'},{id:'graph',label:'Graph'},{id:'tree',label:'Tree'}
+    ].map(m=>({
+      ...m,
+      btnStyle:`padding:5px 13px;border:none;border-radius:6px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;`+(metaphor===m.id
+        ? 'background:var(--accent);color:var(--accent-text)'
+        : 'background:transparent;color:var(--text-dim)')
+    }));
+
+    const tree = blocks.map(b=>{
+      const isEp=b.kind==='endpoint';
+      const sel=b.id===selectedId;
+      return {
+        id:b.id,
+        tag: isEp ? b.method.slice(0,3) : (b.kind==='schema'?'{}':(b.kind==='security'?'⚷':'#')),
+        color: isEp ? this.methodColor(b.method) : 'var(--text-faint)',
+        label: isEp ? b.path : b.name,
+        rowStyle:`display:flex;align-items:center;gap:9px;padding:5px 8px;border-radius:6px;cursor:pointer;margin-bottom:1px;`+(sel?'background:var(--accent-soft)':'')
+      };
+    });
+
+    const tintMap={schema:'#52b487',security:'#d47878',tag:'#a98ce0'};
+    const blocksVM = blocks.map(b=>{
+      const sel=b.id===selectedId;
+      const cardStyle=`background:var(--surface);border:1px solid ${sel?'var(--accent)':'var(--border)'};border-radius:12px;padding:15px 16px;cursor:pointer;box-shadow:${sel?'0 0 0 3px var(--accent-soft)':'0 1px 2px rgba(0,0,0,0.18)'};transition:border-color .12s`;
+      const isEp=b.kind==='endpoint';
+      const common={ id:b.id, cardStyle, editing:sel, readonly:!sel, isEndpoint:isEp, editEndpoint:sel&&isEp, editSchema:sel&&!isEp };
+      if(isEp){
+        return {
+          ...common,
+          chip:b.method, chipStyle:accentChip(this.methodColor(b.method)),
+          title:b.path, kindLabel:'endpoint', subtitle:b.summary,
+          method:b.method, methodColor:this.methodColor(b.method), path:b.path, summary:b.summary,
+          headers:b.headers||[], params:b.params||[], responses:(b.responses||[]).map((r,ri)=>({...r,_ri:ri,headers:r.headers||[]})),
+          rows:[
+            ...(b.headers||[]).map(h=>({text:`⤓ ${h.name}`,style:`font-size:11.5px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent)`})),
+            ...b.params.map(p=>({text:`${p.name}: ${p.in}`,style:`font-size:11.5px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim)`})),
+            ...b.responses.map(r=>({text:`${r.code} ${r.desc}${(r.headers&&r.headers.length)?'  ·  '+r.headers.length+' hdr':''}`,style:`font-size:11.5px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:transparent;border:1px dashed var(--border-strong);color:var(--text-faint)`}))
+          ]
+        };
+      }
+      return {
+        ...common,
+        chip: ic(b.kind==='schema'?'braces':(b.kind==='security'?'key':'tag'),16), chipStyle:accentChip(tintMap[b.kind]||'#7c7c8a'),
+        title:b.name, kindLabel:b.kind, subtitle:b.kind==='schema'?`object · ${(b.fields||[]).length} properties`:(b.kind==='security'?'HTTP bearer authentication':'Grouping tag'),
+        name:b.name, schemaKind:b.kind, fields:b.fields||[],
+        rows:(b.fields||[]).map(f=>({text:`${f.name}: ${f.type}`,style:`font-size:11.5px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim)`}))
+      };
+    });
+
+    // ---- GRAPH layout ----
+    const epList = blocks.filter(b=>b.kind==='endpoint');
+    const scList = blocks.filter(b=>b.kind!=='endpoint');
+    const tintMapG={schema:'#52b487',security:'#d47878',tag:'#a98ce0'};
+    const EPW=296, SCW=232;
+    const posMap={};
+    epList.forEach((b,i)=>{ posMap[b.id]=(this.state.nodePos&&this.state.nodePos[b.id])||{x:40,y:28+i*150}; });
+    scList.forEach((b,j)=>{ posMap[b.id]=(this.state.nodePos&&this.state.nodePos[b.id])||{x:520,y:48+j*180}; });
+    this._posMap=posMap;
+    const dragId=this.state.draggingId;
+    const nodeStyle=(id,w)=>{ const p=posMap[id]; const drag=id===dragId; return `position:absolute;left:${p.x}px;top:${p.y}px;width:${w}px;background:var(--surface);border:1px solid ${id===selectedId?'var(--accent)':'var(--border)'};border-radius:11px;padding:12px 14px;cursor:${drag?'grabbing':'grab'};user-select:none;box-shadow:${id===selectedId?'0 0 0 3px var(--accent-soft),0 8px 22px -8px rgba(0,0,0,0.5)':'0 4px 14px -6px rgba(0,0,0,0.35)'};z-index:${drag?3:1};transition:${drag?'none':'box-shadow .12s'}`; };
+    const graphNodes=[];
+    epList.forEach((b)=>{
+      graphNodes.push({
+        id:b.id, posStyle:nodeStyle(b.id,EPW),
+        chip:b.method, chipStyle:accentChip(this.methodColor(b.method)),
+        title:b.path, subtitle:b.summary,
+        rows:b.responses.map(r=>({text:`${r.code} · ${r.desc}`,style:`font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-faint);margin-top:5px`}))
+      });
+    });
+    scList.forEach((b)=>{
+      graphNodes.push({
+        id:b.id, posStyle:nodeStyle(b.id,SCW),
+        chip: ic(b.kind==='schema'?'braces':(b.kind==='security'?'key':'tag'),16), chipStyle:accentChip(tintMapG[b.kind]||'#7c7c8a'),
+        title:b.name, subtitle:b.kind==='schema'?`${(b.fields||[]).length} properties`:b.kind,
+        rows:(b.fields||[]).slice(0,5).map(f=>({text:`${f.name}: ${f.type}`,style:`font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-faint);margin-top:5px`}))
+      });
+    });
+    const edges=[];
+    epList.forEach((b)=>{
+      scList.forEach((sc)=>{
+        if(sc.name && b.path.toLowerCase().includes(sc.name.toLowerCase())){
+          const pe=posMap[b.id], ps=posMap[sc.id];
+          edges.push({x1:pe.x+EPW, y1:pe.y+34, x2:ps.x, y2:ps.y+30});
+        }
+      });
+    });
+    let gW=820, gH=420;
+    Object.values(posMap).forEach(p=>{ gW=Math.max(gW,p.x+EPW+60); gH=Math.max(gH,p.y+280); });
+    const graphCanvasStyle=`position:relative;width:${gW}px;height:${gH}px;min-width:100%;min-height:100%`;
+    const graphSvg = React.createElement('svg',{width:gW,height:gH,style:{position:'absolute',left:0,top:0,zIndex:0,overflow:'visible',pointerEvents:'none'}},
+      edges.map((e,i)=>React.createElement('path',{key:'p'+i,d:`M ${e.x1} ${e.y1} C ${e.x1+80} ${e.y1}, ${e.x2-80} ${e.y2}, ${e.x2} ${e.y2}`,fill:'none',style:{stroke:'var(--accent)',strokeOpacity:0.55,strokeWidth:1.6}})),
+      edges.map((e,i)=>React.createElement('circle',{key:'c'+i,cx:e.x1,cy:e.y1,r:3,style:{fill:'var(--accent)'}})),
+      edges.map((e,i)=>React.createElement('circle',{key:'d'+i,cx:e.x2,cy:e.y2,r:3,style:{fill:'var(--accent)'}}))
+    );
+
+    // ---- TREE detail ----
+    const rowFn=(sel)=>`display:flex;align-items:center;gap:8px;padding:5px 8px 5px 18px;border-radius:7px;cursor:pointer;margin-bottom:1px;`+(sel?'background:var(--accent-soft)':'');
+    const collapsed=this.state.collapsed||{};
+    const treeGroups=[
+      {label:'Paths', items: epList.map(b=>({id:b.id,tag:b.method,color:this.methodColor(b.method),label:b.path,rowStyle:rowFn(b.id===selectedId)}))},
+      {label:'Schemas', items: blocks.filter(b=>b.kind==='schema').map(b=>({id:b.id,tag:ic('braces',14),color:'var(--text-faint)',label:b.name,rowStyle:rowFn(b.id===selectedId)}))},
+      {label:'Security & tags', items: blocks.filter(b=>b.kind==='security'||b.kind==='tag').map(b=>({id:b.id,tag:ic(b.kind==='security'?'key':'tag',14),color:'var(--text-faint)',label:b.name,rowStyle:rowFn(b.id===selectedId)}))}
+    ].filter(g=>g.items.length).map(g=>({...g, key:g.label, count:g.items.length, expanded:!collapsed[g.label], caret: ic(collapsed[g.label]?'chevron-right':'chevron-down',13)}));
+
+    const selBlock = blocks.find(b=>b.id===selectedId) || blocks[0];
+    let selDetail={chip:'',chipStyle:'',title:'',summary:'',sections:[]};
+    if(selBlock){
+      if(selBlock.kind==='endpoint'){
+        selDetail={
+          chip:selBlock.method, chipStyle:accentChip(this.methodColor(selBlock.method)),
+          title:selBlock.path, summary:selBlock.summary,
+          sections:[
+            {heading:'Parameters', rows:(selBlock.params.length?selBlock.params:[{name:'—',in:'no parameters',type:''}]).map(p=>({k:p.name,v:p.type?`${p.in} · ${p.type}`:p.in}))},
+            {heading:'Responses', rows:selBlock.responses.map(r=>({k:r.code,v:r.desc}))}
+          ]
+        };
+      } else {
+        selDetail={
+          chip: ic(selBlock.kind==='schema'?'braces':(selBlock.kind==='security'?'key':'tag'),16), chipStyle:accentChip(tintMapG[selBlock.kind]||'#7c7c8a'),
+          title:selBlock.name, summary:selBlock.kind==='schema'?'Reusable object schema':(selBlock.kind==='security'?'Security scheme':'Tag'),
+          sections:[{heading:selBlock.kind==='schema'?'Properties':'Configuration', rows:(selBlock.fields||[]).map(f=>({k:f.name,v:f.type}))}]
+        };
+      }
+    }
+
+    // ---- TREE: path-grouped editor VM ----
+    const reasonMap={'200':'OK','201':'Created','202':'Accepted','204':'No Content','301':'Moved','302':'Found','304':'Not Modified','400':'Bad Request','401':'Unauthorized','402':'Payment Required','403':'Forbidden','404':'Not Found','405':'Not Allowed','409':'Conflict','410':'Gone','422':'Unprocessable','429':'Too Many Requests','500':'Server Error','502':'Bad Gateway','503':'Unavailable'};
+    const clsColor={'1xx':'#7c7c8a','2xx':'#3b9c6e','3xx':'#4a82d8','4xx':'#c79a3a','5xx':'#c75c5c'};
+    const clsOf=(code)=>{ const n=parseInt(code,10); return (isNaN(n)?1:Math.floor(n/100))+'xx'; };
+    const schemaNamesAll=blocks.filter(b=>b.kind==='schema').map(b=>b.name);
+    const schemaOptions=[{value:'',label:'— none —'}, ...schemaNamesAll.map(n=>({value:n,label:n}))];
+    const securityOptions=['APIKEYAUTH','BEARERAUTH','OAUTH2','BASICAUTH','NONE'].map(s=>({value:s,label:s}));
+    const ctOptions=['application/json','application/xml','text/plain','multipart/form-data','application/x-www-form-urlencoded'].map(c=>({value:c,label:c}));
+    const bodyMethods=['POST','PUT','PATCH'];
+    const hdrReqStyle=(req)=>`font-size:9px;font-weight:700;letter-spacing:0.04em;padding:2px 6px;border-radius:5px;cursor:pointer;flex:none;border:1px solid ${req?'var(--accent)':'var(--border)'};background:${req?'var(--accent-soft)':'transparent'};color:${req?'var(--accent)':'var(--text-faint)'}`;
+    const methodOpenState=this.state.methodOpen||{};
+    const respClassState=this.state.respClass||{};
+    const classOrder=['1xx','2xx','3xx','4xx','5xx'];
+    const pillStyleA=(cls,has,sel)=>{ const c=clsColor[cls]; const base="font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:4px 10px;border-radius:7px;cursor:pointer;transition:box-shadow .12s;"; if(!has) return base+`border:1px dashed var(--border);background:transparent;color:var(--text-faint);opacity:0.5`; if(sel) return base+`border:1px solid ${c};background:${c};color:#fff;box-shadow:0 0 0 3px ${c}55`; return base+`border:1px solid ${c};background:${c};color:#fff;opacity:0.42`; };
+    let treePath=null;
+    if(metaphor==='tree' && selBlock && selBlock.kind==='endpoint'){
+      const path=selBlock.path;
+      const eps=blocks.filter(b=>b.kind==='endpoint'&&b.path===path);
+      const allowText=eps.map(e=>e.method).join(', ');
+      const allowChips=eps.map(e=>({method:e.method, style:`font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;background:${this.methodColor(e.method)};padding:4px 9px;border-radius:6px`}));
+      const methodVMs=eps.map(e=>{
+        const open=(e.id in methodOpenState)?methodOpenState[e.id]:(e.id===selectedId);
+        const idem=['GET','HEAD','OPTIONS','PUT','DELETE','TRACE'].includes(e.method);
+        const unsafe=['POST','PUT','PATCH','DELETE'].includes(e.method);
+        const respClasses={}; (e.responses||[]).forEach(r=>{ const cc=clsOf(r.code); respClasses[cc]=(respClasses[cc]||0)+1; });
+        const selClass=(respClassState[e.id]!==undefined)?respClassState[e.id]:(classOrder.find(c=>respClasses[c])||'2xx');
+        const statusPills=classOrder.map(c=>({cls:c, has:!!respClasses[c], sel:c===selClass, style:pillStyleA(c,!!respClasses[c],c===selClass), title:respClasses[c]?`Show ${c} responses (${respClasses[c]})`:`No ${c} responses yet — click to view empty state`}));
+        const responses=(e.responses||[]).map((r,ri)=>({r,ri})).filter(x=>clsOf(x.r.code)===selClass).map(({r,ri})=>{
+          const c=clsOf(r.code);
+          const codeOpts=this.stdCodesFor(c).map(cd=>({value:cd, label:`${cd} · ${this.reasonFor(cd)}`}));
+          return {
+            _ri:ri, code:r.code, cls:c, reason:this.reasonFor(r.code)||r.desc||'', leftText:`${c} ${r.code}`,
+            codeOptions:codeOpts,
+            codeBadgeStyle:`font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;background:${clsColor[c]};padding:4px 9px;border-radius:6px;flex:none`,
+            pillLeftStyle:`font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;background:${clsColor[c]};padding:4px 9px;border-radius:6px 0 0 6px`,
+            pillRightStyle:`font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text-dim);background:var(--surface-2);padding:4px 10px;border-radius:0 6px 6px 0;border:1px solid var(--border);border-left:none`,
+            headers:(r.headers||[]).map((h,hi)=>({...h,_hi:hi, reqStyle:hdrReqStyle(h.required!==false), reqLabel:h.required!==false?'REQ':'OPT'})),
+            schema:r.schema||'', contentType:r.contentType||'application/json'
+          };
+        });
+        return {
+          id:e.id, method:e.method, methodColor:this.methodColor(e.method), open, caret:open?'▾':'▸',
+          idemText:idem?'IDEMPOTENT':'NON-IDEMPOTENT', idemColor:idem?'#3b9c6e':'#c75c5c',
+          safeText:unsafe?'UNSAFE':'SAFE', safeColor:unsafe?'#c75c5c':'#3b9c6e',
+          security:e.security||'APIKEYAUTH', statusPills,
+          isHead:e.method==='HEAD', authDisabled:e.method==='HEAD',
+          deleteTitle:e.method==='HEAD'?'HEAD is managed automatically':'Delete this method',
+          deleteBtnStyle:`width:30px;height:30px;flex:none;margin-left:8px;border:1px solid var(--del);border-radius:8px;background:var(--del-soft);color:var(--del);font-size:15px;line-height:1;${e.method==='HEAD'?'opacity:0.35;cursor:not-allowed':'cursor:pointer'}`,
+          authStyle:`font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;background:var(--inset);border:1px solid var(--border);border-radius:7px;padding:5px 7px;color:var(--text-dim);outline:none;${e.method==='HEAD'?'opacity:0.4;cursor:not-allowed;pointer-events:none':'cursor:pointer'}`,
+          authTitle:e.method==='HEAD'?'HEAD does not carry authentication':'Security scheme',
+          allowText, allowChips,
+          selClass, selClassColor:clsColor[selClass], selClassLabel:selClass,
+          respEmpty:responses.length===0,
+          params:(e.params||[]),
+          headers:(e.headers||[]).map((h,hi)=>({...h,_hi:hi, reqStyle:hdrReqStyle(h.required!==false), reqLabel:h.required!==false?'REQ':'OPT'})),
+          hasBody:bodyMethods.includes(e.method),
+          bodySchema:(e.requestBody&&e.requestBody.schema)||'', bodyContentType:(e.requestBody&&e.requestBody.contentType)||'application/json',
+          responses,
+          headerStyle:`display:flex;align-items:center;gap:11px;padding:10px 12px;cursor:pointer;border-radius:${open?'11px 11px 0 0':'11px'};background:${e.id===selectedId?'var(--accent-soft)':'var(--surface-2)'};border:1px solid ${e.id===selectedId?'var(--accent)':'var(--border)'};border-bottom:${open?'none':'1px solid '+(e.id===selectedId?'var(--accent)':'var(--border)')}`,
+          bodyStyle:`border:1px solid ${e.id===selectedId?'var(--accent)':'var(--border)'};border-top:none;border-radius:0 0 11px 11px;padding:16px;display:${open?'flex':'none'};flex-wrap:wrap;align-items:flex-start;gap:18px 22px`
+        };
+      });
+      const methodPriority=['GET','POST','PUT','PATCH','DELETE','OPTIONS','TRACE'];
+      const realEps=eps.filter(e=>e.method!=='HEAD');
+      let selMethodId=null;
+      if(realEps.some(e=>e.id===selectedId)) selMethodId=selectedId;
+      else { const f=methodPriority.map(m=>realEps.find(e=>e.method===m)).find(Boolean); selMethodId=f?f.id:null; }
+      const selMethod = selMethodId ? methodVMs.find(v=>v.id===selMethodId) : null;
+      const methodPills = methodPriority.map(m=>{
+        const ep=eps.find(e=>e.method===m);
+        const defined=!!ep;
+        const selected=!!(selMethod && selMethod.method===m);
+        const col=this.methodColor(m);
+        const base="font-size:12.5px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:7px 15px;border-radius:8px;cursor:pointer;transition:box-shadow .12s;letter-spacing:0.02em;";
+        let style;
+        if(!defined) style=base+`border:1px dashed ${col};background:transparent;color:${col};opacity:0.55`;
+        else if(selected) style=base+`border:1px solid ${col};background:${col};color:#fff;box-shadow:0 0 0 3px ${col}55`;
+        else style=base+`border:1px solid ${col};background:${col};color:#fff;opacity:0.45`;
+        return {method:m, defined, selected, style, title: defined?(selected?m+' — editing':'Edit '+m):'Add '+m+' to this endpoint'};
+      });
+      treePath={ path, methodPills, selMethod, selList:(selMethod?[selMethod]:[]), noSel:!selMethod, methodCount:realEps.length };
+      // ---- parent/child (derivative) detection ----
+      const allEpPaths=[...new Set(blocks.filter(b=>b.kind==='endpoint').map(b=>b.path))];
+      const ancestors=allEpPaths.filter(q=>q!==path && path.startsWith(q+'/'));
+      const parentRoot=ancestors.sort((a,b)=>b.length-a.length)[0]||null;
+      const isChild=!!parentRoot;
+      const draft=(this.state.pathDraft||{})[path];
+      const editing=draft!==undefined;
+      const effPath=editing?draft:path;
+      const suffix=parentRoot?effPath.slice(parentRoot.length):effPath;
+      // ---- validation (on the effective / draft path) ----
+      const methodNames=eps.map(e=>e.method);
+      const dupMethods=[...new Set(methodNames.filter((m,i)=>methodNames.indexOf(m)!==i))];
+      const hasReal=methodNames.some(m=>m!=='HEAD');
+      const validStr=/^\/\S*$/.test(effPath) && effPath.length>1 && (!isChild || (suffix.startsWith('/') && suffix.length>1));
+      const collide=allEpPaths.some(q=>q!==path && q===effPath);
+      let vBadge=null;
+      if(!validStr) vBadge={level:'red', text:'Invalid path', hint: isChild?'The sub-path must start with / after the inherited root.':'Path must start with / and contain no spaces.'};
+      else if(collide) vBadge={level:'red', text:'Duplicate path', hint:'Another endpoint already uses '+effPath+'. Choose a different path.'};
+      else if(dupMethods.length) vBadge={level:'red', text:'Duplicate '+dupMethods.join(', '), hint:'This path already defines '+dupMethods.join(', ')+'. Remove or change the conflicting method(s) to resolve.'};
+      else if(!hasReal) vBadge={level:'amber', text:'Needs a method', hint:'Only HEAD is defined. Pick a method pill above to add GET, POST, etc.'};
+      const badgeStyle=vBadge?`display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:0.03em;padding:4px 9px;border-radius:7px;${vBadge.level==='red'?'background:rgba(199,92,92,0.16);color:#d97b7b;border:1px solid rgba(199,92,92,0.5)':'background:rgba(199,154,58,0.16);color:#cfa54e;border:1px solid rgba(199,154,58,0.5)'}`:'';
+      const pathInputStyle=`flex:1;min-width:0;font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;background:transparent;border:1px solid ${vBadge&&vBadge.level==='red'?'rgba(199,92,92,0.6)':'transparent'};border-radius:8px;padding:6px 8px;color:var(--text);outline:none`;
+      treePath.vBadge=vBadge; treePath.badgeStyle=badgeStyle; treePath.pathInputStyle=pathInputStyle; treePath.vHint=vBadge?vBadge.hint:''; treePath.ok=!vBadge;
+      treePath.isChild=isChild; treePath.isRoot=!isChild; treePath.lockedRoot=parentRoot||''; treePath.pathEditValue=isChild?suffix:effPath; treePath.derivedHint=isChild?('Derived from '+parentRoot+' — edit the parent to rename the root'):'';
+    }
+
+    const yaml = manualYaml!=null ? manualYaml : this.generateYaml(blocks);
+
+    const treePathKey = treePath ? treePath.path : null;
+    let deletePathVM=null;
+    if(this.state.deletePath){
+      const dp=this.state.deletePath;
+      const own=blocks.filter(b=>b.kind==='endpoint'&&b.path===dp);
+      const childBlocks=blocks.filter(b=>b.kind==='endpoint'&&b.path.startsWith(dp+'/'));
+      const childPaths=[...new Set(childBlocks.map(b=>b.path))];
+      deletePathVM={
+        path:dp, count:own.length,
+        chips:own.map(e=>({method:e.method, style:`font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;background:${this.methodColor(e.method)};padding:4px 9px;border-radius:6px`})),
+        hasChildren:childPaths.length>0, childCount:childPaths.length,
+        childPaths:childPaths.map(p=>({path:p}))
+      };
+    }
+
+    // ---- SHARE / LIBRARY ----
+    const shareTab = this.state.shareTab || 'share';
+    const tabBtn=(active)=>`flex:1;padding:9px 0;border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border-bottom:2px solid ${active?'var(--accent)':'transparent'};color:${active?'var(--text)':'var(--text-faint)'}`;
+    const orgDot=(c)=>`width:26px;height:26px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;background:${c}`;
+    const accessList=[
+      {org:'Acme Corp', sub:'Owner workspace · 14 members', role:'Owner', color:'#4a82d8', dot:'AC'},
+      {org:'Northwind Pay', sub:'partner@northwind.io', role:'Can edit', color:'#3b9c6e', dot:'NP'},
+      {org:'Globex Bank', sub:'API integrations team', role:'Can view', color:'#c79a3a', dot:'GB'},
+      {org:'Initech Ltd', sub:'Pending invite', role:'Invited', color:'#9a6ee0', dot:'IL'}
+    ];
+    const libraryItems=[
+      {kind:'schema', name:'Money', org:'Stripe-style commons', desc:'amount + currency value object', downloads:'12.4k', color:'#52b487', addKind:'schema'},
+      {kind:'schema', name:'PageInfo', org:'Acme Corp', desc:'Cursor pagination wrapper', downloads:'3.1k', color:'#52b487', addKind:'schema'},
+      {kind:'endpoint', name:'POST /webhooks', org:'Northwind Pay', desc:'Webhook subscription endpoint', downloads:'1.8k', color:'#4a82d8', addKind:'endpoint'},
+      {kind:'security', name:'OAuth2 (client credentials)', org:'OpenAuth commons', desc:'Standard machine-to-machine flow', downloads:'9.7k', color:'#d47878', addKind:'security'},
+      {kind:'schema', name:'Address', org:'Globex Bank', desc:'Postal address, ISO country', downloads:'5.5k', color:'#52b487', addKind:'schema'},
+      {kind:'endpoint', name:'GET /health', org:'Acme Corp', desc:'Liveness & readiness probe', downloads:'22.0k', color:'#4a82d8', addKind:'endpoint'}
+    ].map(it=>({...it, chipStyle:accentChip(it.color), tagText:it.kind}));
+
+    // ---- AUTH ----
+    const authMode = this.state.authMode || 'signin';
+    const providers=[
+      {id:'github', label:'GitHub', mark:'GH', bg:'#1f2328', fg:'#fff'},
+      {id:'gitlab', label:'GitLab', mark:'GL', bg:'#8c4a23', fg:'#fff'},
+      {id:'google', label:'Google', mark:'G', bg:'#ffffff', fg:'#3c4043', bd:'#dadce0'},
+      {id:'microsoft', label:'Microsoft', mark:'MS', bg:'#2f2f2f', fg:'#fff'},
+      {id:'bitbucket', label:'Bitbucket', mark:'BB', bg:'#1c3a6e', fg:'#fff'}
+    ];
+
+    // ---- validation rail view-model ----
+    const valAll=this.computeValidation();
+    const errorCount=valAll.filter(i=>i.sev==='error').length;
+    const warnCount=valAll.filter(i=>i.sev==='warning').length;
+    const infoCount=valAll.filter(i=>i.sev==='info').length;
+    const valFilters=this.state.valFilters||[];
+    const activeSevs=valFilters.length?valFilters:['error','warning','info'];
+    const sevMeta={ error:{cvar:'--del',glyph:'!',shape:'circle'}, warning:{cvar:'--warn',glyph:'!',shape:'tri'}, info:{cvar:'--accent',glyph:'i',shape:'circle'} };
+    const badgeStyleFor=(sev,size)=>{ const m=sevMeta[sev]; const s=size||18; return m.shape==='tri'
+      ? `width:${s}px;height:${s}px;flex:none;background:var(${m.cvar});color:#fff;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*0.55)}px;font-weight:800;line-height:1;padding-top:${Math.round(s*0.18)}px;clip-path:polygon(50% 4%,100% 96%,0 96%)`
+      : `width:${s}px;height:${s}px;flex:none;border-radius:50%;background:var(${m.cvar});color:#fff;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*0.6)}px;font-weight:800;line-height:1`; };
+    const valItems=valAll.filter(i=>activeSevs.includes(i.sev)).map((i,idx)=>({
+      ...i, uid:i.sev+idx, glyph:sevMeta[i.sev].glyph,
+      badgeStyle:badgeStyleFor(i.sev,18),
+      itemStyle:`display:flex;gap:11px;align-items:flex-start;padding:11px 12px;border-radius:9px;cursor:pointer;${i.targetId===selectedId?'background:var(--surface-2);':''}`
+    }));
+    const mkPill=(sev,label,count)=>{ const active=valFilters.includes(sev); const cvar=sevMeta[sev].cvar;
+      const base='display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:7px 8px;border-radius:8px;cursor:pointer;flex:1;justify-content:center;transition:background .12s,color .12s;';
+      const style=active ? base+`color:#fff;background:var(${cvar});border:1px solid var(${cvar})` : base+`color:var(${cvar});background:var(${cvar}-soft);border:1px solid transparent`;
+      const dotStyle=badgeStyleFor(sev,14);
+      return {sev,label,count,active,style,dotStyle,glyph:sevMeta[sev].glyph,title:active?'Showing only '+label.toLowerCase()+' — click to clear':'Filter to '+label.toLowerCase()}; };
+    const valPills=[ mkPill('error','Errors',errorCount), mkPill('warning','Warnings',warnCount), mkPill('info','Info',infoCount) ];
+    const valCollapsed=!!this.state.valCollapsed;
+    const dotChip=(sev,count)=>{ const cvar=sevMeta[sev].cvar; return `min-width:24px;height:22px;padding:0 6px;border-radius:6px;background:var(${cvar}-soft);color:var(${cvar});display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace`; };
+    const validation={
+      collapsed:valCollapsed, expanded:!valCollapsed,
+      errorCount, warnCount, infoCount, total:valAll.length,
+      items:valItems, pills:valPills,
+      isEmpty:valItems.length===0,
+      emptyText: valAll.length===0 ? 'No issues found — the spec looks clean.' : 'No issues match the active filters.',
+      dotError:dotChip('error',errorCount), dotWarn:dotChip('warning',warnCount), dotInfo:dotChip('info',infoCount)
+    };
+
+    return {
+      validation,
+      shareOpen:this.state.shareOpen, authOpen:this.state.authOpen,
+      shareTab, isShareTab:shareTab==='share', isLibTab:shareTab==='library',
+      tabShareStyle:tabBtn(shareTab==='share'), tabLibStyle:tabBtn(shareTab==='library'),
+      accessList:accessList.map(a=>({...a, dotStyle:orgDot(a.color)})),
+      libraryItems,
+      authMode, isSignin:authMode==='signin', isSignup:authMode==='signup',
+      authTitle: authMode==='signin'?'Sign in to Apiary':'Create your account',
+      authSwitchText: authMode==='signin'?'New to Apiary?':'Already have an account?',
+      authSwitchCta: authMode==='signin'?'Create account':'Sign in',
+      providers,
+      setShareTab:(e)=>this.setState({shareTab:e.currentTarget.dataset.tab}),
+      importLibItem:(e)=>{ this.addBlock(e.currentTarget.dataset.kind); this.setState({shareOpen:false}); },
+      toggleAuthMode:()=>this.setState(s=>({authMode:(s.authMode||'signin')==='signin'?'signup':'signin'})),
+      stop:(e)=>e.stopPropagation(),
+      theme, isBlocks:metaphor==='blocks', isGraph:metaphor==='graph', isTree:metaphor==='tree',
+      signedIn:this.state.signedIn, signedOut:!this.state.signedIn, userMenuOpen:this.state.userMenuOpen,
+      accountChevron: ic(this.state.userMenuOpen?'chevron-down':'chevron-up',16),
+      themeBadge: themeMode.charAt(0).toUpperCase()+themeMode.slice(1),
+      themeBadgeIcon: ic(themeMode==='system'?'monitor':(theme==='dark'?'moon':'sun'),13),
+      icCode: ic('code',15), icUser: ic('user',16), icSettings: ic('settings',16), icInvite: ic('user-plus',16),
+      icThemeMenu: ic('moon',16), icLang: ic('globe',16), icKeyboard: ic('keyboard',16), icHelp: ic('help',16),
+      icSparkles: ic('sparkles',16), icExternal: ic('external',13), icSignOut: ic('log-out',15),
+      icUserBig: ic('user',18), icArrowRight: ic('arrow-right',15),
+      icLink: ic('link',14), icTrashModal: ic('trash',16), icWarnModal: ic('triangle-alert',15),
+      icHeaderDown: ic('arrow-down-to-line',13), icHeaderUp: ic('arrow-up-to-line',12),
+      icTrashMenu: ic('trash',14), icGrip: ic('grip',16),
+      themeIcon: ic(themeMode==='system'?'monitor':(theme==='dark'?'moon':'sun'),15),
+      themeTitle: themeMode==='system' ? ('Theme: System · following OS ('+theme+') — click for Light' ) : (themeMode==='light' ? 'Theme: Light — click for Dark' : 'Theme: Dark — click for System'),
+      palette, metaphors, tree, blocksVM,
+      blockCount: blocks.length, yaml, lineCount: yaml.split('\n').length,
+      yamlState: manualYaml!=null ? 'edited' : 'generated',
+      canvasStyle:`flex:1;min-height:0;overflow:auto;padding:28px 24px 60px;${dragOver?'background:var(--accent-soft);outline:2px dashed var(--accent);outline-offset:-12px':''}`,
+      dropHintStyle:`text-align:center;font-size:12.5px;color:var(--text-faint);padding:18px;border:1.5px dashed var(--border-strong);border-radius:12px;font-family:'JetBrains Mono',monospace;${dragOver?'border-color:var(--accent);color:var(--accent)':''}`,
+      codeBackdropStyle:`position:absolute;inset:0;background:rgba(0,0,0,0.32);opacity:${codeOpen?'1':'0'};pointer-events:${codeOpen?'auto':'none'};transition:opacity .2s;z-index:20`,
+      codePanelStyle:`position:absolute;top:0;right:0;bottom:0;width:480px;max-width:88vw;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow);display:flex;flex-direction:column;z-index:21;transform:translateX(${codeOpen?'0':'100%'});transition:transform .26s cubic-bezier(.4,0,.2,1)`,
+      graphNodes, graphSvg, graphCanvasStyle, treeGroups, selDetail,
+      selVM: blocksVM.find(v=>v.id===selectedId) || blocksVM[0] || {},
+      treePath, schemaOptions, securityOptions, ctOptions,
+      pathMenuOpen:this.state.pathMenuOpen===treePathKey && !!treePath,
+      deletePathVM,
+      toggleTheme:()=>this.setState(s=>{ const cur=s.themeMode ?? this.props.theme ?? 'dark'; const next={dark:'system',system:'light',light:'dark'}[cur]||'system'; return {themeMode:next}; }),
+      toggleCode:()=>this.setState(s=>({codeOpen:!s.codeOpen})),
+      openShare:()=>this.setState({shareOpen:true}),
+      closeShare:()=>this.setState({shareOpen:false}),
+      openAuth:()=>this.setState({authOpen:true}),
+      closeAuth:()=>this.setState({authOpen:false}),
+      accountClick:()=>{ if(this.state.signedIn) this.setState(s=>({userMenuOpen:!s.userMenuOpen})); else this.setState({authOpen:true}); },
+      signIn:()=>this.setState({signedIn:true, authOpen:false, userMenuOpen:false}),
+      signOut:()=>this.setState({signedIn:false, userMenuOpen:false}),
+      closeUserMenu:()=>this.setState({userMenuOpen:false}),
+      setMetaphor:(e)=>this.setState({metaphor:e.currentTarget.dataset.metaphor}),
+      toggleGroup:(e)=>{ const k=e.currentTarget.dataset.group; this.setState(s=>({collapsed:{...(s.collapsed||{}),[k]:!(s.collapsed&&s.collapsed[k])}})); },
+      toggleMethod:(e)=>{ const id=e.currentTarget.dataset.id; this.setState(s=>{ const m={...(s.methodOpen||{})}; const cur=(id in m)?m[id]:(id===s.selectedId); m[id]=!cur; return {methodOpen:m, selectedId:id}; }); },
+      setSecurity:(e)=>{ const id=e.target.dataset.id; const v=e.target.value; this.updateBlock(id,b=>({...b,security:v})); },
+      toggleRespClass:(e)=>{ e.stopPropagation(); const {id,cls}=e.currentTarget.dataset; this.setState(s=>({respClass:{...(s.respClass||{}),[id]:cls}})); },
+      setReqBodySchema:(e)=>{ const id=e.target.dataset.id; const v=e.target.value; this.updateBlock(id,b=>({...b,requestBody:{...(b.requestBody||{contentType:'application/json'}),schema:v}})); },
+      setReqContentType:(e)=>{ const id=e.target.dataset.id; const v=e.target.value; this.updateBlock(id,b=>({...b,requestBody:{...(b.requestBody||{schema:''}),contentType:v}})); },
+      setRespBodySchema:(e)=>{ const {id,rindex}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,schema:v}:r)})); },
+      setRespContentType:(e)=>{ const {id,rindex}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,contentType:v}:r)})); },
+      toggleHeaderReq:(e)=>{ e.stopPropagation(); const {id,hindex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,headers:b.headers.map((h,i)=>i==hindex?{...h,required:h.required===false}:h)})); },
+      toggleRespHeaderReq:(e)=>{ e.stopPropagation(); const {id,rindex,hindex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,headers:r.headers.map((h,j)=>j==hindex?{...h,required:h.required===false}:h)}:r)})); },
+      onPathInput:(e)=>{ const key=e.currentTarget.dataset.path; const root=e.currentTarget.dataset.root||''; const full=root+e.target.value; this.setState(s=>({pathDraft:{...(s.pathDraft||{}),[key]:full}})); },
+      onPathCommit:(e)=>{ const key=e.currentTarget.dataset.path; const d=(this.state.pathDraft||{})[key]; this.setState(s=>{ const pd={...(s.pathDraft||{})}; delete pd[key]; return {pathDraft:pd}; }); if(d!==undefined && d!==key) this.renamePath(key, d); },
+      onPathKey:(e)=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } },
+      addMethodToPath:(e)=>{ const path=e.currentTarget.dataset.path; const used=this.state.blocks.filter(b=>b.kind==='endpoint'&&b.path===path).map(b=>b.method); const next=['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'].find(m=>!used.includes(m))||'GET'; const nb={id:this.uid(),kind:'endpoint',method:next,path,summary:'New '+next+' operation',security:'APIKEYAUTH',requestBody:{schema:'',contentType:'application/json'},headers:[],params:[],responses:[{code:'200',desc:'OK',schema:'',contentType:'application/json',headers:[]}]}; this.setState(s=>{ let blocks=[...s.blocks,nb]; if(next!=='HEAD' && !blocks.some(x=>x.kind==='endpoint'&&x.path===path&&x.method==='HEAD')) blocks=[...blocks,this.makeHead(path)]; return {blocks,selectedId:nb.id,manualYaml:null}; }); },
+      togglePathMenu:(e)=>{ e.stopPropagation(); const p=e.currentTarget.dataset.path; this.setState(s=>({pathMenuOpen:s.pathMenuOpen===p?null:p})); },
+      pickMethod:(e)=>{ e.stopPropagation(); const {path,method}=e.currentTarget.dataset; this.setState(s=>{ const existing=s.blocks.find(b=>b.kind==='endpoint'&&b.path===path&&b.method===method); if(existing) return {selectedId:existing.id}; const nb={id:this.uid(),kind:'endpoint',method,path,summary:'New '+method+' operation',security:'APIKEYAUTH',requestBody:{schema:'',contentType:'application/json'},headers:[],params:[],responses:[{code:'200',desc:'OK',schema:'',contentType:'application/json',headers:[]}]}; let blocks=[...s.blocks,nb]; if(!blocks.some(x=>x.kind==='endpoint'&&x.path===path&&x.method==='HEAD')) blocks=[...blocks,this.makeHead(path)]; return {blocks,selectedId:nb.id,manualYaml:null}; }); },
+      deleteMethod:(e)=>{ e.stopPropagation(); const id=e.currentTarget.dataset.id; this.setState(s=>{ const b=s.blocks.find(x=>x.id===id); if(!b||b.method==='HEAD') return {}; const path=b.path; const blocks=s.blocks.filter(x=>x.id!==id); const sel=blocks.find(x=>x.kind==='endpoint'&&x.path===path)||blocks.find(x=>x.kind==='endpoint'); return {blocks, selectedId:sel?sel.id:s.selectedId, manualYaml:null}; }); },
+      closePathMenu:()=>this.setState({pathMenuOpen:null}),
+      askDeletePath:(e)=>{ e.stopPropagation(); const p=e.currentTarget.dataset.path; this.setState({deletePath:p, pathMenuOpen:null}); },
+      cancelDeletePath:()=>this.setState({deletePath:null}),
+      confirmDeletePath:()=>{ const dp=this.state.deletePath; this.setState(s=>{ const remaining=s.blocks.filter(b=>!(b.kind==='endpoint'&&(b.path===dp||b.path.startsWith(dp+'/')))); const nextEp=remaining.find(b=>b.kind==='endpoint'); return {blocks:remaining, deletePath:null, pathMenuOpen:null, selectedId:nextEp?nextEp.id:(remaining[0]?remaining[0].id:null), manualYaml:null}; }); },
+      selectBlock:(e)=>this.setState({selectedId:e.currentTarget.dataset.id}),
+      toggleValCollapse:()=>this.setState(s=>({valCollapsed:!s.valCollapsed})),
+      toggleValFilter:(e)=>{ const sev=e.currentTarget.dataset.sev; this.setState(s=>{ const f=new Set(s.valFilters||[]); f.has(sev)?f.delete(sev):f.add(sev); return {valFilters:[...f]}; }); },
+      jumpToIssue:(e)=>{ const id=e.currentTarget.dataset.id; if(id) this.setState({selectedId:id}); },
+      deleteBlock:(e)=>{ e.stopPropagation(); const id=e.currentTarget.dataset.id; this.setState(s=>({blocks:s.blocks.filter(b=>b.id!==id),manualYaml:null})); },
+      onNodeDown:(e)=>this.onNodeDown(e),
+      setField:(e)=>{ const {id,field}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,[field]:v})); },
+      setParam:(e)=>{ const {id,pindex,pfield}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,params:b.params.map((p,i)=>i==pindex?{...p,[pfield]:v}:p)})); },
+      addParam:(e)=>{ e.stopPropagation(); const id=e.currentTarget.dataset.id; this.updateBlock(id,b=>({...b,params:[...(b.params||[]),{name:'newParam',in:'query',type:'string'}]})); },
+      removeParam:(e)=>{ e.stopPropagation(); const {id,pindex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,params:b.params.filter((_,i)=>i!=pindex)})); },
+      setResp:(e)=>{ const {id,rindex,rfield}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,[rfield]:v}:r)})); },
+      setRespCode:(e)=>{ const {id,rindex}=e.target.dataset; const code=e.target.value; const desc=this.reasonFor(code); this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,code,desc}:r)})); },
+      addResp:(e)=>{ e.stopPropagation(); const id=e.currentTarget.dataset.id; const sel=(this.state.respClass||{})[id]; const codeByClass={'1xx':'100','2xx':'200','3xx':'302','4xx':'400','5xx':'500'}; const descByClass={'1xx':'Continue','2xx':'OK','3xx':'Found','4xx':'Bad Request','5xx':'Server Error'}; const code=sel?codeByClass[sel]:'200'; const desc=sel?descByClass[sel]:'OK'; this.updateBlock(id,b=>({...b,responses:[...(b.responses||[]),{code,desc,schema:'',contentType:'application/json',headers:[]}]})); },
+      setHeader:(e)=>{ const {id,hindex,hfield}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,headers:b.headers.map((h,i)=>i==hindex?{...h,[hfield]:v}:h)})); },
+      addHeader:(e)=>{ e.stopPropagation(); const id=e.currentTarget.dataset.id; this.updateBlock(id,b=>({...b,headers:[...(b.headers||[]),{name:'X-Custom-Header',type:'string',required:true}]})); },
+      removeHeader:(e)=>{ e.stopPropagation(); const {id,hindex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,headers:b.headers.filter((_,i)=>i!=hindex)})); },
+      setRespHeader:(e)=>{ const {id,rindex,hindex,hfield}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,headers:(r.headers||[]).map((h,j)=>j==hindex?{...h,[hfield]:v}:h)}:r)})); },
+      addRespHeader:(e)=>{ e.stopPropagation(); const {id,rindex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,headers:[...(r.headers||[]),{name:'X-Custom-Header',type:'string',required:true}]}:r)})); },
+      removeRespHeader:(e)=>{ e.stopPropagation(); const {id,rindex,hindex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,responses:b.responses.map((r,i)=>i==rindex?{...r,headers:(r.headers||[]).filter((_,j)=>j!=hindex)}:r)})); },
+      removeResp:(e)=>{ e.stopPropagation(); const {id,rindex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,responses:b.responses.filter((_,i)=>i!=rindex)})); },
+      setSField:(e)=>{ const {id,findex,ffield}=e.target.dataset; const v=e.target.value; this.updateBlock(id,b=>({...b,fields:b.fields.map((f,i)=>i==findex?{...f,[ffield]:v}:f)})); },
+      addSField:(e)=>{ e.stopPropagation(); const id=e.currentTarget.dataset.id; this.updateBlock(id,b=>({...b,fields:[...(b.fields||[]),{name:'newField',type:'string'}]})); },
+      removeSField:(e)=>{ e.stopPropagation(); const {id,findex}=e.currentTarget.dataset; this.updateBlock(id,b=>({...b,fields:b.fields.filter((_,i)=>i!=findex)})); },
+      onPaletteClick:(e)=>this.addBlock(e.currentTarget.dataset.kind),
+      onPaletteDragStart:(e)=>{ e.dataTransfer.setData('text/kind',e.currentTarget.dataset.kind); e.dataTransfer.effectAllowed='copy'; },
+      onCanvasDragOver:(e)=>{ e.preventDefault(); if(!this.state.dragOver) this.setState({dragOver:true}); },
+      onCanvasDragLeave:(e)=>{ if(e.currentTarget.contains(e.relatedTarget)) return; this.setState({dragOver:false}); },
+      onCanvasDrop:(e)=>{ e.preventDefault(); const k=e.dataTransfer.getData('text/kind'); this.setState({dragOver:false}); if(k) this.addBlock(k); },
+      editYaml:(e)=>this.setState({manualYaml:e.target.value}),
+      resetYaml:()=>this.setState({manualYaml:null})
+    };
+  }
+}
+</script>
+</body>
+</html>
