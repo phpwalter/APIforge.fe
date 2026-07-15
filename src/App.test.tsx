@@ -4,7 +4,7 @@ import App from './App';
 import { useAppStore } from './state/useAppStore';
 import { useSpecStore } from './state/useSpecStore';
 import { fetchMe, readAuthSessionFromLocation } from './lib/api/auth';
-import { getAuthToken } from './lib/api/authToken';
+import { getAuthToken, setAuthProvider, setAuthToken, setPendingAuthProvider } from './lib/api/authToken';
 
 // App boots by checking for a real backend session — keep that hermetic in tests rather than
 // letting it hit the network, by always resolving to "not signed in" here by default.
@@ -19,9 +19,11 @@ const initialSpecState = useSpecStore.getState();
 beforeEach(() => {
   useAppStore.setState(initialAppState, true);
   useSpecStore.setState(initialSpecState, true);
-  vi.mocked(readAuthSessionFromLocation).mockReturnValue(null);
+  vi.mocked(readAuthSessionFromLocation).mockReset().mockReturnValue(null);
+  vi.mocked(fetchMe).mockReset().mockRejectedValue(new Error('not signed in'));
   window.history.replaceState({}, '', '/');
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 describe('App', () => {
@@ -74,5 +76,41 @@ describe('App', () => {
     await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
     expect(useAppStore.getState().userProfile).toEqual({ name: 'Walter Torres', email: 'otrwalter@gmail.com' });
     expect(fetchMe).not.toHaveBeenCalled();
+  });
+
+  it('tags the session with whichever provider was recorded as pending before the redirect (e.g. GitHub, not just Google)', async () => {
+    setPendingAuthProvider('github');
+    window.history.replaceState({}, '', '/?auth_session=fake');
+    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
+      user: { display_name: 'Ada Lovelace', email: 'ada@example.com' },
+      token: { access_token: 'the-token', token_type: 'Bearer', expires_in: 3600 },
+    });
+
+    render(<App />);
+
+    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
+    expect(useAppStore.getState().authProvider).toBe('github');
+  });
+
+  it('restores a session from a token stored on an earlier visit, tagged with that visit\'s provider', async () => {
+    setAuthToken('stored-token');
+    setAuthProvider('github');
+    vi.mocked(fetchMe).mockResolvedValue({ display_name: 'Ada Lovelace', email: 'ada@example.com' });
+
+    render(<App />);
+
+    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
+    expect(useAppStore.getState().authProvider).toBe('github');
+    expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
+  });
+
+  it('does not attempt to restore a session from a token with no associated provider (inconsistent stored state)', async () => {
+    setAuthToken('stored-token');
+    // No setAuthProvider call — simulates leftover/corrupted state.
+
+    render(<App />);
+
+    await waitFor(() => expect(fetchMe).not.toHaveBeenCalled());
+    expect(useAppStore.getState().signedIn).toBe(false);
   });
 });

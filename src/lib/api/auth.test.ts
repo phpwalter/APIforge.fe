@@ -1,11 +1,16 @@
 import { fetchMe, linkProvider, readAuthSessionFromLocation, redirectToProviderSignIn, signOutProvider, unlinkProvider } from './auth';
 import { apiGet, apiPost, apiUrl } from './client';
+import { takePendingAuthProvider } from './authToken';
 
 vi.mock('./client', () => ({
   apiGet: vi.fn(),
   apiPost: vi.fn(),
   apiUrl: vi.fn((path: string) => `http://api.test${path}`),
 }));
+
+beforeEach(() => {
+  sessionStorage.clear();
+});
 
 describe('redirectToProviderSignIn', () => {
   it('navigates the full page to the backend\'s own OAuth entry point for the given provider', () => {
@@ -19,6 +24,19 @@ describe('redirectToProviderSignIn', () => {
 
     expect(apiUrl).toHaveBeenCalledWith('/auth/google');
     expect(window.location.href).toBe('http://api.test/auth/google');
+
+    window.location = original;
+  });
+
+  it('records the provider as pending, so the callback\'s return can tag the session correctly', () => {
+    const original = window.location;
+    // @ts-expect-error -- deliberately replacing a read-only global for this one assertion
+    delete window.location;
+    window.location = { ...original, href: '' } as Location;
+
+    redirectToProviderSignIn('github');
+
+    expect(takePendingAuthProvider()).toBe('github');
 
     window.location = original;
   });

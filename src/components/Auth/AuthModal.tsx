@@ -7,7 +7,7 @@ import { ProviderIcon } from './ProviderIcon';
 import styles from './AuthModal.module.css';
 
 /** Providers with a real backend OAuth round trip — everything else stays a demo instant sign-in. */
-const LIVE_PROVIDERS = new Set(['google']);
+const LIVE_PROVIDERS = new Set(['google', 'github']);
 
 export function AuthModal() {
   const closeAuth = useAppStore((s) => s.closeAuth);
@@ -21,8 +21,8 @@ export function AuthModal() {
     return () => window.removeEventListener('keydown', onKey);
   }, [closeAuth]);
 
-  // Google leaves the SPA entirely for a real OAuth redirect through the backend. The rest have
-  // no backend integration yet, so they still complete sign-in instantly for demo purposes.
+  // LIVE_PROVIDERS leave the SPA entirely for a real OAuth redirect through the backend. The rest
+  // have no backend integration yet, so they still complete sign-in instantly for demo purposes.
   const signInWith = (providerId: string) =>
     LIVE_PROVIDERS.has(providerId) ? redirectToProviderSignIn(providerId) : signIn();
 

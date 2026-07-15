@@ -3,7 +3,14 @@ import { useAppStore } from './state/useAppStore';
 import { AppShell } from './components/Shell/AppShell';
 import { LandingPage } from './components/Landing/LandingPage';
 import { fetchMe, readAuthSessionFromLocation, type MeResponse } from './lib/api/auth';
-import { getAuthToken, setAuthToken, clearAuthToken } from './lib/api/authToken';
+import {
+  getAuthProvider,
+  getAuthToken,
+  setAuthProvider,
+  setAuthToken,
+  clearAuthToken,
+  takePendingAuthProvider,
+} from './lib/api/authToken';
 import type { UserProfile } from './types/ui';
 
 function profileFrom(me: {
@@ -30,8 +37,9 @@ function App() {
     if (bootstrapped.current) return;
     bootstrapped.current = true;
 
-    // Back from a completed Google OAuth round trip — the backend hands the session back via a
-    // base64 query param rather than a cookie (this API is bearer-token only).
+    // Back from a completed OAuth round trip — the backend hands the session back via a base64
+    // query param rather than a cookie (this API is bearer-token only). The payload itself
+    // doesn't say which provider produced it, so fall back on what we recorded before redirecting.
     const session = readAuthSessionFromLocation(window.location.search);
     if (session?.token?.access_token) {
       const params = new URLSearchParams(window.location.search);
@@ -43,16 +51,20 @@ function App() {
         window.location.pathname + (query ? `?${query}` : '') + window.location.hash,
       );
 
+      const provider = takePendingAuthProvider() ?? 'google';
       setAuthToken(session.token.access_token);
-      hydrateSession(profileFrom(session.user ?? {}), 'google');
+      setAuthProvider(provider);
+      hydrateSession(profileFrom(session.user ?? {}), provider);
       return;
     }
 
     // Otherwise, a token from an earlier visit may still be valid — verify it against the server
     // rather than trusting whatever profile was last cached, since it may be stale or revoked.
-    if (!getAuthToken()) return;
+    const token = getAuthToken();
+    const provider = getAuthProvider();
+    if (!token || !provider) return;
     fetchMe()
-      .then((me: MeResponse) => hydrateSession(profileFrom(me), 'google'))
+      .then((me: MeResponse) => hydrateSession(profileFrom(me), provider))
       .catch(() => clearAuthToken());
   }, [hydrateSession]);
 

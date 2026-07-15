@@ -1,4 +1,5 @@
 import { apiGet, apiPost, apiUrl } from './client';
+import { setPendingAuthProvider } from './authToken';
 
 /**
  * The backend's /auth/me schema isn't fleshed out in the imported OpenAPI document (empty
@@ -21,6 +22,9 @@ export interface MeResponse {
  * never touches either.
  */
 export function redirectToProviderSignIn(provider: string): void {
+  // The auth_session payload the callback returns doesn't say which provider produced it —
+  // remember it here so the app can tag the session correctly once the browser comes back.
+  setPendingAuthProvider(provider);
   window.location.href = apiUrl(`/auth/${provider}`);
 }
 
