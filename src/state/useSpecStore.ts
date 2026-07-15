@@ -158,6 +158,8 @@ interface SpecState {
 
   // Method editor mutations
   pickMethod: (path: string, method: HttpMethod) => void;
+  /** Renames a path across every method that shares it, plus any descendant path nested beneath it. */
+  renamePath: (oldPath: string, newPath: string) => void;
   deleteMethod: (id: string) => void;
   setSummary: (id: string, summary: string) => void;
   setOperationId: (id: string, operationId: string) => void;
@@ -511,6 +513,17 @@ export const useSpecStore = create<SpecState>((set, get) => ({
     }
     const newEndpoint = newEndpointDefaults(path, method);
     set({ endpoints: [...endpoints, newEndpoint], selectedEndpointId: newEndpoint.id });
+  },
+
+  renamePath: (oldPath, newPath) => {
+    if (oldPath === newPath) return;
+    set((s) => ({
+      endpoints: s.endpoints.map((e) => {
+        if (e.path === oldPath) return { ...e, path: newPath };
+        if (e.path.startsWith(`${oldPath}/`)) return { ...e, path: newPath + e.path.slice(oldPath.length) };
+        return e;
+      }),
+    }));
   },
 
   deleteMethod: (id) =>

@@ -10,12 +10,75 @@
   margin: 0 auto;
 }
 
-.pathHeading {
+.pathHeadingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.pathFieldWrap {
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-width: 120px;
+  max-width: 100%;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+}
+
+.pathFieldWrap:hover {
+  border-color: var(--border);
+  background: var(--inset);
+}
+
+.pathFieldWrap:focus-within {
+  border-color: var(--accent);
+  background: var(--inset);
+}
+
+.pathFieldWrap[data-invalid='true'] {
+  border-color: #c75c5c;
+}
+
+.pathRootLocked {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-faint);
+  padding: 4px 0 4px 7px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.pathInput {
+  flex: 1;
+  min-width: 60px;
   font-size: 15px;
   font-weight: 600;
   font-family: 'JetBrains Mono', monospace;
   color: var(--text);
-  margin: 0 0 14px;
+  background: transparent;
+  border: none;
+  padding: 4px 7px;
+  outline: none;
+}
+
+.pathInputNoLeftPad {
+  padding-left: 0;
+}
+
+.pathBadge {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(199, 92, 92, 0.16);
+  color: #d97b7b;
+  border: 1px solid rgba(199, 92, 92, 0.5);
+  white-space: nowrap;
 }
 
 .pills {

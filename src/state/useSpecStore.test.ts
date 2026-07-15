@@ -104,6 +104,31 @@ describe('useSpecStore', () => {
     expect(useSpecStore.getState().selectedEndpointId).toBe(second.id);
   });
 
+  it('renamePath updates every method sharing the exact path', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    useSpecStore.getState().pickMethod('/users', 'POST');
+    useSpecStore.getState().renamePath('/users', '/accounts');
+
+    const paths = useSpecStore.getState().endpoints.map((e) => e.path);
+    expect(paths).toEqual(['/accounts', '/accounts']);
+  });
+
+  it('renamePath cascades into descendant paths nested beneath the renamed one', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    useSpecStore.getState().pickMethod('/users/{id}', 'GET');
+    useSpecStore.getState().pickMethod('/users-archive', 'GET');
+    useSpecStore.getState().renamePath('/users', '/accounts');
+
+    const paths = useSpecStore.getState().endpoints.map((e) => e.path);
+    expect(paths).toEqual(['/accounts', '/accounts/{id}', '/users-archive']);
+  });
+
+  it('renamePath is a no-op when the path is unchanged', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    useSpecStore.getState().renamePath('/users', '/users');
+    expect(useSpecStore.getState().endpoints[0].path).toBe('/users');
+  });
+
   it('sets summary and operationId, and can generate operationId from path/method', () => {
     useSpecStore.getState().pickMethod('/users/{id}', 'GET');
     const id = useSpecStore.getState().endpoints[0].id;

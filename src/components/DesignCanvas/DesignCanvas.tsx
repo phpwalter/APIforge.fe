@@ -2,6 +2,7 @@ import { useSpecStore } from '../../state/useSpecStore';
 import { EndpointsPanel } from '../EndpointsPanel/EndpointsPanel';
 import { MethodPills } from '../MethodEditor/MethodPills';
 import { MethodEditor } from '../MethodEditor/MethodEditor';
+import { EndpointPathEditor } from '../MethodEditor/EndpointPathEditor';
 import methodEditorStyles from '../MethodEditor/MethodEditor.module.css';
 import styles from './DesignCanvas.module.css';
 
@@ -17,7 +18,7 @@ export function DesignCanvas() {
         <div className={methodEditorStyles.inner}>
           {selected ? (
             <>
-              <div className={methodEditorStyles.pathHeading}>{selected.path}</div>
+              <EndpointPathEditor path={selected.path} />
               <MethodPills path={selected.path} activeMethod={selected.method} />
               <MethodEditor endpoint={selected} />
             </>
