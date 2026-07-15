@@ -15,6 +15,7 @@ import {
   Keyboard,
   Download,
   Settings,
+  Cookie,
   CircleHelp,
 } from 'lucide-react';
 
@@ -53,5 +54,6 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'export', label: 'Export Defaults', keywords: 'export clean full filename yaml download', icon: Download },
   { key: 'notes', label: 'Notes', keywords: 'notes todo internal decisions x-apiforge', icon: Pencil },
   { key: 'other', label: 'Other Settings', keywords: 'misc other advanced', icon: Settings },
+  { key: 'cookies', label: 'Cookies', keywords: 'cookies privacy analytics marketing consent', icon: Cookie },
   { key: 'about', label: 'About…', keywords: 'about version credits apiforge', icon: CircleHelp },
 ];

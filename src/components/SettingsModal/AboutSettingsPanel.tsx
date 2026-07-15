@@ -1,5 +1,7 @@
 import { Layers } from 'lucide-react';
 import { APP_VERSION } from '../../lib/appInfo';
+import { LEGAL_DOCS } from '../../lib/legalDocs';
+import { useAppStore } from '../../state/useAppStore';
 import styles from './AboutSettingsPanel.module.css';
 
 const INFO_ROWS = [
@@ -13,6 +15,13 @@ const INFO_ROWS = [
 const LINKS = ['Terms', 'Privacy', 'Security', 'Community', 'Contact'];
 
 export function AboutSettingsPanel() {
+  const openDocDialog = useAppStore((s) => s.openDocDialog);
+
+  const linkClick = (label: string) => {
+    const doc = LEGAL_DOCS[label];
+    if (doc) openDocDialog(doc.title, doc.src);
+  };
+
   return (
     <>
       <div className={styles.brandRow}>
@@ -42,12 +51,16 @@ export function AboutSettingsPanel() {
       <div className={styles.linksBlock}>
         <div className={styles.linksRow}>
           {LINKS.map((label) => (
-            <button key={label} type="button" className={styles.link}>
+            <button key={label} type="button" className={styles.link} onClick={() => linkClick(label)}>
               {label}
             </button>
           ))}
         </div>
-        <button type="button" className={styles.faintLink}>
+        <button
+          type="button"
+          className={styles.faintLink}
+          onClick={() => linkClick('Do not share my personal information')}
+        >
           Do not share my personal information
         </button>
       </div>

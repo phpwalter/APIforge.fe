@@ -8,6 +8,7 @@ import { EditorPreferencesSettingsPanel } from './EditorPreferencesSettingsPanel
 import { SecuritySettingsPanel } from './SecuritySettingsPanel';
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { NotificationsSettingsPanel } from './NotificationsSettingsPanel';
+import { CookiesSettingsPanel } from './CookiesSettingsPanel';
 import { AboutSettingsPanel } from './AboutSettingsPanel';
 import styles from './SettingsModal.module.css';
 
@@ -18,6 +19,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   security: SecuritySettingsPanel,
   appearance: AppearanceSettingsPanel,
   notifications: NotificationsSettingsPanel,
+  cookies: CookiesSettingsPanel,
   about: AboutSettingsPanel,
 };
 

@@ -248,6 +248,29 @@ describe('useAppStore', () => {
     s = useAppStore.getState();
     expect(s.settingsOpen).toBe(false);
   });
+
+  it('opens the doc dialog with a title and src, and closes it', () => {
+    useAppStore.getState().openDocDialog('Terms', '/docs/terms.md');
+    let s = useAppStore.getState();
+    expect(s.docDialogOpen).toBe(true);
+    expect(s.docDialogTitle).toBe('Terms');
+    expect(s.docDialogSrc).toBe('/docs/terms.md');
+
+    useAppStore.getState().closeDocDialog();
+    s = useAppStore.getState();
+    expect(s.docDialogOpen).toBe(false);
+  });
+
+  it('updates and persists a cookie preference', () => {
+    useAppStore.getState().setCookiePref('analytics', true);
+    let s = useAppStore.getState();
+    expect(s.cookiePrefs.analytics).toBe(true);
+    expect(s.cookiePrefs.marketing).toBe(false);
+
+    useAppStore.getState().setCookiePref('marketing', true);
+    s = useAppStore.getState();
+    expect(s.cookiePrefs).toEqual({ analytics: true, marketing: true });
+  });
 });
 
 describe('initialsOf', () => {

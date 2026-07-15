@@ -1,0 +1,98 @@
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  max-width: 520px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+
+.rowLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rowHint {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.switch {
+  width: 36px;
+  height: 20px;
+  flex: none;
+  border-radius: 999px;
+  border: none;
+  background: var(--border-strong);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+}
+
+.switch[data-checked='true'] {
+  background: var(--accent);
+}
+
+.switch:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.switch[data-checked='true'] .switchThumb {
+  transform: translateX(16px);
+}
+
+.linksBlock {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}

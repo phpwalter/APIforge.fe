@@ -1,24 +1,24 @@
 import { Layers, Terminal, Sparkles } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { AuthModal } from '../Auth/AuthModal';
+import { DocDialog } from '../DocDialog/DocDialog';
 import { APP_VERSION } from '../../lib/appInfo';
+import { LEGAL_DOCS } from '../../lib/legalDocs';
 import styles from './LandingPage.module.css';
 
-const FOOTER_LINKS = [
-  'Terms',
-  'Privacy',
-  'Security',
-  'Status',
-  'Community',
-  'Docs',
-  'Contact',
-  'Manage cookies',
-];
+const FOOTER_LINKS = ['Terms', 'Privacy', 'Security', 'Status', 'Community', 'Docs', 'Contact', 'Cookies'];
 
 export function LandingPage() {
   const theme = useAppStore((s) => s.theme);
   const openAuth = useAppStore((s) => s.openAuth);
   const authOpen = useAppStore((s) => s.authOpen);
+  const docDialogOpen = useAppStore((s) => s.docDialogOpen);
+  const openDocDialog = useAppStore((s) => s.openDocDialog);
+
+  const linkClick = (label: string) => {
+    const doc = LEGAL_DOCS[label];
+    if (doc) openDocDialog(doc.title, doc.src);
+  };
 
   return (
     <div className="app" data-theme={theme} style={{ position: 'absolute', inset: 0 }}>
@@ -86,18 +86,23 @@ export function LandingPage() {
           <div className={styles.footerLinks}>
             <div className={styles.footerLinksRow}>
               {FOOTER_LINKS.map((label) => (
-                <button key={label} type="button" className={styles.footerLink}>
+                <button key={label} type="button" className={styles.footerLink} onClick={() => linkClick(label)}>
                   {label}
                 </button>
               ))}
             </div>
-            <button type="button" className={styles.footerLink}>
+            <button
+              type="button"
+              className={styles.footerLink}
+              onClick={() => linkClick('Do not share my personal information')}
+            >
               Do not share my personal information
             </button>
           </div>
         </footer>
       </div>
       {authOpen && <AuthModal />}
+      {docDialogOpen && <DocDialog />}
     </div>
   );
 }

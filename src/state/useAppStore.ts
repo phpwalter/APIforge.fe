@@ -11,6 +11,7 @@ import type {
 import type { ApiContact, ApiExternalDocs, ApiLicense } from '../types/spec';
 import { signOutProvider } from '../lib/api/auth';
 import { clearAuthToken } from '../lib/api/authToken';
+import { getCookiePrefs, setCookiePrefs, type CookiePrefs } from '../lib/cookiePrefs';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -124,6 +125,17 @@ interface AppState {
   exportOpen: boolean;
   openExportModal: () => void;
   closeExportModal: () => void;
+
+  // Generic markdown-doc review dialog (footer/About links: Terms, Privacy, Security, etc.)
+  docDialogOpen: boolean;
+  docDialogTitle: string;
+  docDialogSrc: string;
+  openDocDialog: (title: string, src: string) => void;
+  closeDocDialog: () => void;
+
+  // Cookie category preferences (Settings > Cookies). Persisted to localStorage.
+  cookiePrefs: CookiePrefs;
+  setCookiePref: (key: keyof CookiePrefs, value: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -248,6 +260,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   exportOpen: false,
   openExportModal: () => set({ exportOpen: true, moreMenuOpen: false }),
   closeExportModal: () => set({ exportOpen: false }),
+
+  docDialogOpen: false,
+  docDialogTitle: '',
+  docDialogSrc: '',
+  openDocDialog: (title, src) => set({ docDialogOpen: true, docDialogTitle: title, docDialogSrc: src }),
+  closeDocDialog: () => set({ docDialogOpen: false }),
+
+  cookiePrefs: getCookiePrefs(),
+  setCookiePref: (key, value) =>
+    set((s) => {
+      const next = { ...s.cookiePrefs, [key]: value };
+      setCookiePrefs(next);
+      return { cookiePrefs: next };
+    }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */
