@@ -1,6 +1,25 @@
+import { useState } from 'react';
 import { User, UserPlus, Keyboard, HelpCircle, ExternalLink, Sparkles, LogOut, User as UserBig } from 'lucide-react';
 import { initialsOf, useAppStore } from '../../state/useAppStore';
+import type { UserProfile } from '../../types/ui';
 import styles from './Topbar.module.css';
+
+/** The real photo when one loaded successfully, falling back to initials otherwise (no photo, or a broken URL). */
+function AvatarContent({ profile }: { profile: UserProfile }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  if (profile.avatarUrl && !imgFailed) {
+    return (
+      <img
+        src={profile.avatarUrl}
+        alt={profile.name}
+        className={styles.avatarImg}
+        referrerPolicy="no-referrer"
+        onError={() => setImgFailed(true)}
+      />
+    );
+  }
+  return <>{initialsOf(profile.name)}</>;
+}
 
 export function UserMenu() {
   const signedIn = useAppStore((s) => s.signedIn);
@@ -11,7 +30,6 @@ export function UserMenu() {
   const signIn = useAppStore((s) => s.openAuth);
   const signOut = useAppStore((s) => s.signOut);
 
-  const initials = initialsOf(userProfile.name);
   const accountClick = () => (signedIn ? toggleUserMenu() : signIn());
 
   return (
@@ -21,7 +39,9 @@ export function UserMenu() {
           <div className={styles.menuScrim} onClick={closeUserMenu} />
           <div className={styles.userMenu} role="menu">
             <div className={styles.userMenuHeader}>
-              <span className={styles.avatar}>{initials}</span>
+              <span className={styles.avatar}>
+                <AvatarContent profile={userProfile} />
+              </span>
               <div className={styles.avatarText}>
                 <div className={styles.avatarName}>{userProfile.name}</div>
                 <div className={styles.avatarEmail}>{userProfile.email}</div>
@@ -83,7 +103,7 @@ export function UserMenu() {
           title={`${userProfile.name} · Account`}
           onClick={accountClick}
         >
-          {initials}
+          <AvatarContent profile={userProfile} />
         </button>
       ) : (
         <button type="button" className={styles.signInBtn} title="Sign in" onClick={accountClick}>

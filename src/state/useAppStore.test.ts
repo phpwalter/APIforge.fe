@@ -1,9 +1,14 @@
 import { useAppStore, initialsOf } from './useAppStore';
 
+vi.mock('../lib/api/auth', () => ({
+  signOutProvider: vi.fn(() => Promise.resolve()),
+}));
+
 const initialState = useAppStore.getState();
 
 beforeEach(() => {
   useAppStore.setState(initialState, true);
+  vi.clearAllMocks();
 });
 
 describe('useAppStore', () => {
@@ -178,12 +183,41 @@ describe('useAppStore', () => {
     expect(s.signedIn).toBe(true);
     expect(s.userMenuOpen).toBe(false);
     expect(s.authOpen).toBe(false);
+    // Demo sign-in (providers without a real backend integration) still gets a fake identity.
+    expect(s.userProfile).toEqual({ name: 'James Taylor', email: 'james@acme-corp.com' });
 
     useAppStore.setState({ userMenuOpen: true });
     useAppStore.getState().signOut();
     s = useAppStore.getState();
     expect(s.signedIn).toBe(false);
     expect(s.userMenuOpen).toBe(false);
+  });
+
+  it('a demo sign-in (no real provider) never calls the backend signout endpoint', async () => {
+    const { signOutProvider } = await import('../lib/api/auth');
+    useAppStore.getState().signIn();
+    useAppStore.getState().signOut();
+    expect(signOutProvider).not.toHaveBeenCalled();
+  });
+
+  it('hydrateSession stores the real profile and provider from a completed OAuth round trip', () => {
+    useAppStore.getState().hydrateSession({ name: 'Ada Lovelace', email: 'ada@example.com' }, 'google');
+    const s = useAppStore.getState();
+    expect(s.signedIn).toBe(true);
+    expect(s.userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
+    expect(s.authProvider).toBe('google');
+  });
+
+  it('signing out of a hydrated real session calls the backend signout endpoint and clears the profile', async () => {
+    const { signOutProvider } = await import('../lib/api/auth');
+    useAppStore.getState().hydrateSession({ name: 'Ada Lovelace', email: 'ada@example.com' }, 'google');
+    useAppStore.getState().signOut();
+
+    expect(signOutProvider).toHaveBeenCalledWith('google');
+    const s = useAppStore.getState();
+    expect(s.signedIn).toBe(false);
+    expect(s.authProvider).toBe(null);
+    expect(s.userProfile).toEqual({ name: '', email: '' });
   });
 
   it('opens auth modal and closes other menus', () => {

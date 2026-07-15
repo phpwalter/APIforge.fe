@@ -1,9 +1,61 @@
+import { useEffect, useRef } from 'react';
 import { useAppStore } from './state/useAppStore';
 import { AppShell } from './components/Shell/AppShell';
 import { LandingPage } from './components/Landing/LandingPage';
+import { fetchMe, readAuthSessionFromLocation, type MeResponse } from './lib/api/auth';
+import { getAuthToken, setAuthToken, clearAuthToken } from './lib/api/authToken';
+import type { UserProfile } from './types/ui';
+
+function profileFrom(me: {
+  name?: string;
+  display_name?: string;
+  username?: string;
+  email?: string;
+  avatar_url?: string;
+}): UserProfile {
+  const name = me.name ?? me.display_name ?? me.username ?? me.email ?? 'Signed in user';
+  return { name, email: me.email ?? '', avatarUrl: me.avatar_url || undefined };
+}
 
 function App() {
   const signedIn = useAppStore((s) => s.signedIn);
+  const hydrateSession = useAppStore((s) => s.hydrateSession);
+  // StrictMode runs this effect twice in dev. Without this guard, the second run would find the
+  // auth_session param already stripped by the first, fall through to the "verify stored token"
+  // branch, and overwrite the rich profile we just hydrated with whatever thinner shape /auth/me
+  // happens to return.
+  const bootstrapped = useRef(false);
+
+  useEffect(() => {
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
+
+    // Back from a completed Google OAuth round trip — the backend hands the session back via a
+    // base64 query param rather than a cookie (this API is bearer-token only).
+    const session = readAuthSessionFromLocation(window.location.search);
+    if (session?.token?.access_token) {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('auth_session');
+      const query = params.toString();
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname + (query ? `?${query}` : '') + window.location.hash,
+      );
+
+      setAuthToken(session.token.access_token);
+      hydrateSession(profileFrom(session.user ?? {}), 'google');
+      return;
+    }
+
+    // Otherwise, a token from an earlier visit may still be valid — verify it against the server
+    // rather than trusting whatever profile was last cached, since it may be stale or revoked.
+    if (!getAuthToken()) return;
+    fetchMe()
+      .then((me: MeResponse) => hydrateSession(profileFrom(me), 'google'))
+      .catch(() => clearAuthToken());
+  }, [hydrateSession]);
+
   return signedIn ? <AppShell /> : <LandingPage />;
 }
 

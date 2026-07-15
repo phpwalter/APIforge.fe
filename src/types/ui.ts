@@ -16,6 +16,8 @@ export interface CanvasTabDef {
 export interface UserProfile {
   name: string;
   email: string;
+  /** Absent for the demo sign-in providers, which have no real backend to source a photo from. */
+  avatarUrl?: string;
 }
 
 /**

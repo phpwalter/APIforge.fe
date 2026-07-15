@@ -9,6 +9,8 @@ import type {
   UserProfile,
 } from '../types/ui';
 import type { ApiContact, ApiExternalDocs, ApiLicense } from '../types/spec';
+import { signOutProvider } from '../lib/api/auth';
+import { clearAuthToken } from '../lib/api/authToken';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -90,7 +92,12 @@ interface AppState {
   // Account
   signedIn: boolean;
   userProfile: UserProfile;
+  /** Which provider the current session is authenticated against, if any real (non-demo) one. */
+  authProvider: string | null;
+  /** Instant demo sign-in for providers without a real backend integration yet. */
   signIn: () => void;
+  /** Populates a real session after the backend's OAuth round trip resolves via GET /auth/me. */
+  hydrateSession: (profile: UserProfile, provider: string) => void;
   signOut: () => void;
 
   // Auth modal (provider-only — no username/password)
@@ -202,9 +209,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeUserMenu: () => set({ userMenuOpen: false }),
 
   signedIn: false,
-  userProfile: { name: 'James Taylor', email: 'james@acme-corp.com' },
-  signIn: () => set({ signedIn: true, userMenuOpen: false, authOpen: false }),
-  signOut: () => set({ signedIn: false, userMenuOpen: false }),
+  userProfile: { name: '', email: '' },
+  authProvider: null,
+  signIn: () =>
+    set({
+      signedIn: true,
+      userProfile: { name: 'James Taylor', email: 'james@acme-corp.com' },
+      userMenuOpen: false,
+      authOpen: false,
+      authProvider: null,
+    }),
+  hydrateSession: (profile, provider) =>
+    set({ signedIn: true, userProfile: profile, authProvider: provider, userMenuOpen: false, authOpen: false }),
+  signOut: () => {
+    const { authProvider } = get();
+    if (authProvider) {
+      signOutProvider(authProvider).catch(() => {});
+      clearAuthToken();
+    }
+    set({ signedIn: false, userProfile: { name: '', email: '' }, authProvider: null, userMenuOpen: false });
+  },
 
   authOpen: false,
   openAuth: () => set({ authOpen: true, moreMenuOpen: false, userMenuOpen: false }),
