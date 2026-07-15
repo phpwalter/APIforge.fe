@@ -30,7 +30,7 @@ interface RawOperation {
   security?: Record<string, unknown>[];
   parameters?: RawParameter[];
   requestBody?: { description?: string };
-  responses?: Record<string, { description?: string }>;
+  responses?: Record<string, RawResponse>;
 }
 
 interface RawParameter {
@@ -38,6 +38,23 @@ interface RawParameter {
   in?: string;
   required?: boolean;
   schema?: { nullable?: boolean; example?: unknown };
+}
+
+interface RawResponseHeader {
+  required?: boolean;
+  schema?: { nullable?: boolean; example?: unknown };
+}
+
+interface RawResponseSchema {
+  $ref?: string;
+  type?: string;
+  items?: { $ref?: string };
+}
+
+interface RawResponse {
+  description?: string;
+  headers?: Record<string, RawResponseHeader>;
+  content?: Record<string, { schema?: RawResponseSchema }>;
 }
 
 interface RawPathItem extends Record<string, unknown> {
@@ -178,6 +195,36 @@ function securityNamesFrom(security: Record<string, unknown>[] | undefined): str
   return [...names];
 }
 
+function refNameFromPointer(ref: string | undefined): string | undefined {
+  const m = ref ? /^#\/components\/schemas\/(.+)$/.exec(ref) : null;
+  return m ? m[1] : undefined;
+}
+
+function buildResponseHeaders(headers: Record<string, RawResponseHeader> | undefined): HeaderParam[] {
+  return Object.entries(headers ?? {}).map(([name, h]) => ({
+    id: makeId('hd'),
+    name,
+    required: !!h?.required,
+    nullable: !!h?.schema?.nullable,
+    example: h?.schema?.example !== undefined ? String(h.schema.example) : '',
+  }));
+}
+
+function responseBody(content: Record<string, { schema?: RawResponseSchema }> | undefined): {
+  schema: string;
+  schemaIsArray: boolean;
+} {
+  const bodySchema = content ? Object.values(content)[0]?.schema : undefined;
+  if (!bodySchema) return { schema: '', schemaIsArray: false };
+  if (bodySchema.type === 'array' && bodySchema.items?.$ref) {
+    return { schema: refNameFromPointer(bodySchema.items.$ref) ?? '', schemaIsArray: true };
+  }
+  if (bodySchema.$ref) {
+    return { schema: refNameFromPointer(bodySchema.$ref) ?? '', schemaIsArray: false };
+  }
+  return { schema: '', schemaIsArray: false };
+}
+
 function buildParamsAndHeaders(
   pathParams: RawParameter[],
   opParams: RawParameter[],
@@ -229,10 +276,9 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         id: makeId('res'),
         code,
         description: r?.description ?? '',
-        headers: [],
-        contentTypes: ['application/json'],
-        schema: '',
-        schemaIsArray: false,
+        headers: buildResponseHeaders(r?.headers),
+        contentTypes: r?.content ? Object.keys(r.content) : ['application/json'],
+        ...responseBody(r?.content),
       }));
 
       endpoints.push({
@@ -271,11 +317,6 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
   const JSON_SCHEMA_TYPES = new Set(['string', 'integer', 'number', 'boolean', 'array', 'object']);
   const toFieldType = (t: string | undefined): SchemaFieldType =>
     (t && JSON_SCHEMA_TYPES.has(t) ? t : 'string') as SchemaFieldType;
-
-  const refNameFromPointer = (ref: string | undefined): string | undefined => {
-    const m = ref ? /^#\/components\/schemas\/(.+)$/.exec(ref) : null;
-    return m ? m[1] : undefined;
-  };
 
   const rawSchemaEntries = Object.entries(doc.components?.schemas ?? {});
   // First pass: each schema's own effective type, so a $ref property pointing at a scalar

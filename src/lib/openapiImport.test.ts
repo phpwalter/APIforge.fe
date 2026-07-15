@@ -300,3 +300,65 @@ paths:
     expect(id).toMatchObject({ nullable: false, example: '' });
   });
 });
+
+describe('parseOpenApiDocument — response headers and body schema', () => {
+  const doc = `
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /securityTypes:
+    get:
+      summary: Retrieve all security scheme types
+      responses:
+        '302':
+          description: Response
+          headers:
+            X-API-Version:
+              required: true
+              schema:
+                type: string
+                example: v1
+            Content-Type:
+              required: true
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSecurityScheme'
+components:
+  schemas:
+    ApiSecurityScheme:
+      type: object
+      properties:
+        slug:
+          type: string
+`;
+
+  it('reads response headers into ResponseEntry.headers', () => {
+    const result = parseOpenApiDocument(doc, 'spec.yaml');
+    const response = result.endpoints[0].responses.find((r) => r.code === '302')!;
+    expect(response.headers).toHaveLength(2);
+    const version = response.headers.find((h) => h.name === 'X-API-Version')!;
+    expect(version).toMatchObject({ required: true, nullable: false, example: 'v1' });
+  });
+
+  it('reads a $ref response body schema into ResponseEntry.schema', () => {
+    const result = parseOpenApiDocument(doc, 'spec.yaml');
+    const response = result.endpoints[0].responses.find((r) => r.code === '302')!;
+    expect(response).toMatchObject({ schema: 'ApiSecurityScheme', schemaIsArray: false });
+  });
+
+  it('reads an array-of-$ref response body schema with schemaIsArray true', () => {
+    const arrayDoc = doc.replace(
+      "schema:\n                $ref: '#/components/schemas/ApiSecurityScheme'",
+      "schema:\n                type: array\n                items:\n                  $ref: '#/components/schemas/ApiSecurityScheme'",
+    );
+    const result = parseOpenApiDocument(arrayDoc, 'spec.yaml');
+    const response = result.endpoints[0].responses.find((r) => r.code === '302')!;
+    expect(response).toMatchObject({ schema: 'ApiSecurityScheme', schemaIsArray: true });
+  });
+});
