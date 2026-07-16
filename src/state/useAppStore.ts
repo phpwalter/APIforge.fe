@@ -160,6 +160,16 @@ interface AppState {
   setFileEncodingLineEnding: (v: LineEnding) => void;
   fileEncodingInsertFinalNewline: boolean;
   setFileEncodingInsertFinalNewline: (v: boolean) => void;
+
+  // Settings :: Editor Preferences :: Formatting — also not per-format. Indent Style: Tabs only
+  // applies where valid (JSON, and Monaco's own typing) — YAML forbids tab indentation, so it
+  // always uses spaces regardless of this setting (see resolveIndentUnit in restProjectionCanvas usage).
+  formattingIndentSize: 2 | 4;
+  setFormattingIndentSize: (v: 2 | 4) => void;
+  formattingIndentStyle: 'spaces' | 'tabs';
+  setFormattingIndentStyle: (v: 'spaces' | 'tabs') => void;
+  formattingWordWrap: boolean;
+  setFormattingWordWrap: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -320,6 +330,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   setFileEncodingLineEnding: (v) => set({ fileEncodingLineEnding: v }),
   fileEncodingInsertFinalNewline: true,
   setFileEncodingInsertFinalNewline: (v) => set({ fileEncodingInsertFinalNewline: v }),
+
+  formattingIndentSize: 2,
+  setFormattingIndentSize: (v) => set({ formattingIndentSize: v }),
+  formattingIndentStyle: 'spaces',
+  setFormattingIndentStyle: (v) => set({ formattingIndentStyle: v }),
+  formattingWordWrap: false,
+  setFormattingWordWrap: (v) => set({ formattingWordWrap: v }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

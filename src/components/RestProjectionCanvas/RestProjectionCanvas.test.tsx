@@ -190,6 +190,27 @@ describe('RestProjectionCanvas', () => {
     expect(copied).not.toMatch(/[^\r]\n/);
   });
 
+  it('generates JSON with the Formatting indent size and style preferences', async () => {
+    useAppStore.getState().setFormattingIndentSize(4);
+    const user = userEvent.setup();
+    render(<RestProjectionCanvas />);
+
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
+
+    const jsonArea = screen.getByLabelText('REST Projection document (JSON)') as HTMLTextAreaElement;
+    expect(jsonArea.value).toContain('\n    "openapi"');
+  });
+
+  it('generates YAML with 2-space indentation even when Indent Style is Tabs, since tab indentation is invalid YAML', async () => {
+    useAppStore.getState().setFormattingIndentStyle('tabs');
+    render(<RestProjectionCanvas />);
+
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+    await waitFor(() => {
+      expect(yamlArea.value).not.toContain('\t');
+    });
+  });
+
   it('commits a pending edit when the panel unmounts (e.g. switching to a different canvas tab), even though no blur ever fires', async () => {
     const { unmount } = render(<RestProjectionCanvas />);
     const textarea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;

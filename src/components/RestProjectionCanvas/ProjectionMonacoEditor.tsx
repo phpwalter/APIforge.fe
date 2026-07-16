@@ -13,6 +13,11 @@ interface ProjectionMonacoEditorProps {
   /** Off switches the model's language to plaintext — no tokens/colors, but also no schema validation, hover, or autocomplete while off. */
   highlightingEnabled: boolean;
   lineNumbersEnabled: boolean;
+  /** Visual width of a tab stop / auto-indent step — from Settings :: Editor Preferences :: Formatting. */
+  tabSize: number;
+  /** Whether pressing Tab inserts spaces (vs. a literal tab character) — always true for YAML, since tab indentation is invalid there. */
+  insertSpaces: boolean;
+  wordWrap: boolean;
   onChange: (value: string) => void;
   onCommit: (value: string) => void;
 }
@@ -30,7 +35,7 @@ export interface ProjectionMonacoEditorHandle {
  */
 export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, ProjectionMonacoEditorProps>(
   function ProjectionMonacoEditor(
-    { value, format, theme, wrapRef, highlightingEnabled, lineNumbersEnabled, onChange, onCommit },
+    { value, format, theme, wrapRef, highlightingEnabled, lineNumbersEnabled, tabSize, insertSpaces, wordWrap, onChange, onCommit },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -58,7 +63,9 @@ export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, P
         fontSize: 12.5,
         lineHeight: 1.7 * 12.5,
         scrollBeyondLastLine: false,
-        tabSize: 2,
+        tabSize,
+        insertSpaces,
+        wordWrap: wordWrap ? 'on' : 'off',
         lineNumbers: lineNumbersEnabled ? 'on' : 'off',
       });
       editorRef.current = editor;
@@ -101,6 +108,10 @@ export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, P
     useEffect(() => {
       editorRef.current?.updateOptions({ lineNumbers: lineNumbersEnabled ? 'on' : 'off' });
     }, [lineNumbersEnabled]);
+
+    useEffect(() => {
+      editorRef.current?.updateOptions({ tabSize, insertSpaces, wordWrap: wordWrap ? 'on' : 'off' });
+    }, [tabSize, insertSpaces, wordWrap]);
 
     useEffect(() => {
       const model = editorRef.current?.getModel();

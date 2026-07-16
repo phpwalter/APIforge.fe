@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildOpenApiDocument, documentToJson, documentToYaml, type BuildExportDocumentParams } from './openapiExport';
 import { buildRestProjectionOutline, uniqueInOrder, type OutlineNode } from './restProjectionOutline';
+import { resolveIndentUnit, jsonStringifyIndentArg } from './formatting';
 import type { Endpoint, Schema } from '../types/spec';
 import type { RestProjectionFormat } from '../types/ui';
+
+const DEFAULT_UNIT = { char: ' ' as const, length: 2 };
 
 function baseEndpoint(overrides: Partial<Endpoint> = {}): Endpoint {
   return {
@@ -110,7 +113,7 @@ describe('buildRestProjectionOutline', () => {
   for (const format of ['yaml', 'json'] as RestProjectionFormat[]) {
     describe(format, () => {
       const text = format === 'yaml' ? documentToYaml(doc) : documentToJson(doc);
-      const outline = buildRestProjectionOutline({ text, format, ...params });
+      const outline = buildRestProjectionOutline({ text, format, indentUnit: DEFAULT_UNIT, ...params });
 
       it('resolves General > info and openapi to their root lines', () => {
         const info = find(outline, 'general', 'general-info');
@@ -164,6 +167,7 @@ describe('buildRestProjectionOutline', () => {
     const outline = buildRestProjectionOutline({
       text: 'this is not a valid openapi document at all',
       format: 'yaml',
+      indentUnit: DEFAULT_UNIT,
       ...params,
     });
     expect(find(outline, 'general', 'general-info').line).toBeNull();
@@ -176,6 +180,7 @@ describe('buildRestProjectionOutline', () => {
     const outline = buildRestProjectionOutline({
       text: documentToYaml(buildOpenApiDocument(baseParams())),
       format: 'yaml',
+      indentUnit: DEFAULT_UNIT,
       tags: [],
       paths: [],
       operationIds: [],
@@ -185,5 +190,27 @@ describe('buildRestProjectionOutline', () => {
     });
     expect(find(outline, 'tags').children).toEqual([]);
     expect(find(outline, 'servers').children).toEqual([]);
+  });
+
+  it('resolves lines correctly for a 4-space YAML document (Formatting :: Indent Size)', () => {
+    const unit = resolveIndentUnit('yaml', 4, 'spaces');
+    const text = documentToYaml(doc, unit.length);
+    const outline = buildRestProjectionOutline({ text, format: 'yaml', indentUnit: unit, ...params });
+
+    expect(lineText(text, find(outline, 'general', 'general-openapi').line)).toContain('openapi');
+    expect(lineText(text, find(outline, 'paths', 'path-1').line)).toContain('/users/{id}');
+    expect(lineText(text, find(outline, 'components', 'schemas', 'schema-1').line)).toContain('Address');
+  });
+
+  it('resolves lines correctly for a tab-indented JSON document (Formatting :: Indent Style)', () => {
+    const unit = resolveIndentUnit('json', 2, 'tabs');
+    const text = documentToJson(doc, jsonStringifyIndentArg(unit));
+    const outline = buildRestProjectionOutline({ text, format: 'json', indentUnit: unit, ...params });
+
+    expect(lineText(text, find(outline, 'general', 'general-openapi').line)).toContain('openapi');
+    expect(lineText(text, find(outline, 'paths', 'path-1').line)).toContain('/users/{id}');
+    expect(lineText(text, find(outline, 'components', 'securitySchemes', 'securityScheme-0').line)).toContain(
+      'bearerAuth',
+    );
   });
 });

@@ -215,12 +215,14 @@ export function buildOpenApiDocument(params: BuildExportDocumentParams): Record<
   return doc;
 }
 
-export function documentToJson(doc: unknown): string {
-  return JSON.stringify(doc, null, 2);
+/** `indent` is either a space count or a literal string (e.g. `'\t'`) — same as `JSON.stringify`'s own third argument. */
+export function documentToJson(doc: unknown, indent: string | number = 2): string {
+  return JSON.stringify(doc, null, indent);
 }
 
-export function documentToYaml(doc: unknown): string {
-  return dumpYaml(doc, { noRefs: true, lineWidth: -1 });
+/** `indentSize` is spaces per nesting level — YAML has no valid tab-indentation form, so unlike JSON this only ever varies by width. */
+export function documentToYaml(doc: unknown, indentSize = 2): string {
+  return dumpYaml(doc, { noRefs: true, lineWidth: -1, indent: indentSize });
 }
 
 /** Slugifies a project title into a safe filename stem (e.g. "My API!" -> "my-api"). */

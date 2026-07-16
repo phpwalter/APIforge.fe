@@ -51,4 +51,15 @@ describe('ExportModal', () => {
     expect((content as string).endsWith('\n')).toBe(true);
     expect(content).not.toContain('\r\n');
   });
+
+  it('applies the Formatting indent size preference to the downloaded YAML', async () => {
+    useAppStore.getState().setFormattingIndentSize(4);
+    const user = userEvent.setup();
+    render(<ExportModal />);
+
+    await user.click(screen.getByRole('button', { name: /Full APIforge Export/ }));
+
+    const [, content] = downloadTextFile.mock.calls[0];
+    expect(content as string).toContain('\n    title:');
+  });
 });

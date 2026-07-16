@@ -12,6 +12,7 @@ import { CookiesSettingsPanel } from './CookiesSettingsPanel';
 import { AboutSettingsPanel } from './AboutSettingsPanel';
 import { FormatScopedComingSoonPanel } from './FormatScopedComingSoonPanel';
 import { FileEncodingSettingsPanel } from './FileEncodingSettingsPanel';
+import { FormattingSettingsPanel } from './FormattingSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
@@ -36,6 +37,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
     />
   ),
   fileEncoding: FileEncodingSettingsPanel,
+  formatting: FormattingSettingsPanel,
 };
 
 /** A category row plus the parent it belongs to (undefined for top-level rows) — used for search + lookup. */

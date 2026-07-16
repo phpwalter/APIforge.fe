@@ -7,6 +7,7 @@ import { buildOpenApiDocument, documentToJson, documentToYaml } from '../../lib/
 import { commitRestProjectionEdit } from '../../lib/restProjectionEdit';
 import { buildRestProjectionOutline, uniqueInOrder } from '../../lib/restProjectionOutline';
 import { applyLineEndingPrefs } from '../../lib/fileEncoding';
+import { resolveIndentUnit, resolveInsertSpaces, jsonStringifyIndentArg } from '../../lib/formatting';
 import type { RestProjectionFormat } from '../../types/ui';
 import type { ProjectionMonacoEditorHandle } from './ProjectionMonacoEditor';
 import { RestProjectionOutlinePanel } from './RestProjectionOutlinePanel';
@@ -40,6 +41,9 @@ export function RestProjectionCanvas() {
   const error = useAppStore((s) => s.restProjectionError);
   const fileEncodingLineEnding = useAppStore((s) => s.fileEncodingLineEnding);
   const fileEncodingInsertFinalNewline = useAppStore((s) => s.fileEncodingInsertFinalNewline);
+  const formattingIndentSize = useAppStore((s) => s.formattingIndentSize);
+  const formattingIndentStyle = useAppStore((s) => s.formattingIndentStyle);
+  const formattingWordWrap = useAppStore((s) => s.formattingWordWrap);
 
   const apiTitle = useAppStore((s) => s.apiTitle);
   const apiVersion = useAppStore((s) => s.apiVersion);
@@ -102,7 +106,10 @@ export function RestProjectionCanvas() {
       securityTypes: securityTypesState.status === 'ready' ? securityTypesState.types : [],
       variant: showMeta ? 'full' : 'clean',
     });
-    return format === 'json' ? documentToJson(doc) : documentToYaml(doc);
+    const indentUnit = resolveIndentUnit(format, formattingIndentSize, formattingIndentStyle);
+    return format === 'json'
+      ? documentToJson(doc, jsonStringifyIndentArg(indentUnit))
+      : documentToYaml(doc, indentUnit.length);
   }, [
     format,
     showMeta,
@@ -120,6 +127,8 @@ export function RestProjectionCanvas() {
     enabledSecuritySchemes,
     securityScopes,
     securityTypesState,
+    formattingIndentSize,
+    formattingIndentStyle,
   ]);
 
   const isEdited = manual[format] != null;
@@ -127,6 +136,11 @@ export function RestProjectionCanvas() {
   const lineCount = useMemo(() => displayText.split('\n').length, [displayText]);
   const highlightingEnabled = highlightingByFormat[format];
   const lineNumbersEnabled = lineNumbersByFormat[format];
+  const indentUnit = useMemo(
+    () => resolveIndentUnit(format, formattingIndentSize, formattingIndentStyle),
+    [format, formattingIndentSize, formattingIndentStyle],
+  );
+  const insertSpaces = resolveInsertSpaces(format, formattingIndentStyle);
 
   const commitEditor = (value: string) => {
     if (manual[format] != null) commitRestProjectionEdit(value, format);
@@ -149,6 +163,7 @@ export function RestProjectionCanvas() {
       buildRestProjectionOutline({
         text: displayText,
         format,
+        indentUnit,
         tags: outlineTags,
         paths: outlinePaths,
         operationIds: outlineOperationIds,
@@ -156,7 +171,17 @@ export function RestProjectionCanvas() {
         schemaNames: outlineSchemaNames,
         securitySchemeNames: outlineSecuritySchemeNames,
       }),
-    [displayText, format, outlineTags, outlinePaths, outlineOperationIds, outlineServers, outlineSchemaNames, outlineSecuritySchemeNames],
+    [
+      displayText,
+      format,
+      indentUnit,
+      outlineTags,
+      outlinePaths,
+      outlineOperationIds,
+      outlineServers,
+      outlineSchemaNames,
+      outlineSecuritySchemeNames,
+    ],
   );
   const revealInEditor = (line: number) => editorHandleRef.current?.revealLine(line);
 
@@ -249,6 +274,9 @@ export function RestProjectionCanvas() {
               wrapRef={wrapRef}
               highlightingEnabled={highlightingEnabled}
               lineNumbersEnabled={lineNumbersEnabled}
+              tabSize={indentUnit.length}
+              insertSpaces={insertSpaces}
+              wordWrap={formattingWordWrap}
               onChange={(value) => setManual(format, value)}
               onCommit={commitEditor}
             />

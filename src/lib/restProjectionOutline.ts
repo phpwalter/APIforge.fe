@@ -8,9 +8,17 @@ export interface OutlineNode {
   children?: OutlineNode[];
 }
 
+/** The literal indent unit the text was actually generated with — must match the Formatting preferences used to produce it, so line lookups land on the right row. */
+export interface OutlineIndentUnit {
+  char: ' ' | '\t';
+  /** Indent characters per nesting level (e.g. 2 or 4 for spaces; always 1 for tabs). */
+  length: number;
+}
+
 export interface BuildRestProjectionOutlineParams {
   text: string;
   format: RestProjectionFormat;
+  indentUnit: OutlineIndentUnit;
   /** Unique tag names, in first-seen order across endpoints. */
   tags: string[];
   /** Unique endpoint paths, in first-seen order — one entry per path even if it has multiple methods. */
@@ -52,21 +60,32 @@ export function uniqueInOrder(values: string[]): string[] {
   return out;
 }
 
-/** Root object properties sit at indent 0 in YAML, indent 2 in pretty-printed JSON (inside the outer `{`). */
-function rootIndent(format: RestProjectionFormat): number {
-  return format === 'json' ? 2 : 0;
+/** Root object properties sit at indent level 0 in YAML, level 1 in pretty-printed JSON (inside the outer `{`). */
+function rootIndent(format: RestProjectionFormat, unit: OutlineIndentUnit): number {
+  return format === 'json' ? unit.length : 0;
 }
 
-// Matches a `key:` line at exactly `indent` spaces — either a nested block header (colon at
-// end of line) or a scalar with an inline value (colon followed by whitespace and the value).
-function keyLineRegex(format: RestProjectionFormat, key: string, indent: number): RegExp {
+// Matches a `key:` line at exactly `count` indent characters — either a nested block header
+// (colon at end of line) or a scalar with an inline value (colon followed by the value).
+function keyLineRegex(format: RestProjectionFormat, key: string, count: number, unit: OutlineIndentUnit): RegExp {
   const esc = escapeRegExp(key);
-  return format === 'json' ? new RegExp(`^ {${indent}}"${esc}":(\\s|$)`) : new RegExp(`^ {${indent}}["']?${esc}["']?:(\\s|$)`);
+  const indentChar = escapeRegExp(unit.char);
+  return format === 'json'
+    ? new RegExp(`^${indentChar}{${count}}"${esc}":(\\s|$)`)
+    : new RegExp(`^${indentChar}{${count}}["']?${esc}["']?:(\\s|$)`);
 }
 
-/** Finds a `key:` line within [from, to) at exactly `indent` spaces, and its block's end (next line at <= indent). */
-function findKeyBounds(lines: string[], from: number, to: number, format: RestProjectionFormat, key: string, indent: number): Bounds | null {
-  const re = keyLineRegex(format, key, indent);
+/** Finds a `key:` line within [from, to) at exactly `count` indent characters, and its block's end (next line at <= that indent). */
+function findKeyBounds(
+  lines: string[],
+  from: number,
+  to: number,
+  format: RestProjectionFormat,
+  key: string,
+  count: number,
+  unit: OutlineIndentUnit,
+): Bounds | null {
+  const re = keyLineRegex(format, key, count, unit);
   let start = -1;
   for (let i = from; i < to; i++) {
     if (re.test(lines[i])) {
@@ -75,7 +94,8 @@ function findKeyBounds(lines: string[], from: number, to: number, format: RestPr
     }
   }
   if (start === -1) return null;
-  const endRe = new RegExp(`^ {0,${indent}}\\S`);
+  const indentChar = escapeRegExp(unit.char);
+  const endRe = new RegExp(`^${indentChar}{0,${count}}\\S`);
   let end = to;
   for (let i = start + 1; i < to; i++) {
     if (endRe.test(lines[i])) {
@@ -86,9 +106,17 @@ function findKeyBounds(lines: string[], from: number, to: number, format: RestPr
   return { start, end };
 }
 
-/** 1-based line number of a `key:` line within [from, to) at exactly `indent` spaces, or null. */
-function findKeyLine(lines: string[], from: number, to: number, format: RestProjectionFormat, key: string, indent: number): number | null {
-  const re = keyLineRegex(format, key, indent);
+/** 1-based line number of a `key:` line within [from, to) at exactly `count` indent characters, or null. */
+function findKeyLine(
+  lines: string[],
+  from: number,
+  to: number,
+  format: RestProjectionFormat,
+  key: string,
+  count: number,
+  unit: OutlineIndentUnit,
+): number | null {
+  const re = keyLineRegex(format, key, count, unit);
   for (let i = from; i < to; i++) {
     if (re.test(lines[i])) return i + 1;
   }
@@ -136,19 +164,19 @@ function findOperationIdLine(lines: string[], format: RestProjectionFormat, valu
  * user hand-edited the document into a different shape) gets `line: null` and is just non-clickable.
  */
 export function buildRestProjectionOutline(params: BuildRestProjectionOutlineParams): OutlineNode[] {
-  const { text, format, tags, paths, operationIds, servers, schemaNames, securitySchemeNames } = params;
+  const { text, format, indentUnit: unit, tags, paths, operationIds, servers, schemaNames, securitySchemeNames } = params;
   const lines = text.split('\n');
-  const indent0 = rootIndent(format);
-  const indent1 = indent0 + 2;
-  const indent2 = indent0 + 4;
+  const indent0 = rootIndent(format, unit);
+  const indent1 = indent0 + unit.length;
+  const indent2 = indent0 + unit.length * 2;
 
   const general: OutlineNode = {
     key: 'general',
     label: 'General',
     line: null,
     children: [
-      { key: 'general-info', label: 'info', line: findKeyLine(lines, 0, lines.length, format, 'info', indent0) },
-      { key: 'general-openapi', label: 'openapi', line: findKeyLine(lines, 0, lines.length, format, 'openapi', indent0) },
+      { key: 'general-info', label: 'info', line: findKeyLine(lines, 0, lines.length, format, 'info', indent0, unit) },
+      { key: 'general-openapi', label: 'openapi', line: findKeyLine(lines, 0, lines.length, format, 'openapi', indent0, unit) },
     ],
   };
 
@@ -159,7 +187,7 @@ export function buildRestProjectionOutline(params: BuildRestProjectionOutlinePar
     children: tags.map((tag, i) => ({ key: `tag-${i}-${tag}`, label: tag, line: findListItemLine(lines, format, tag) })),
   };
 
-  const pathsBounds = findKeyBounds(lines, 0, lines.length, format, 'paths', indent0);
+  const pathsBounds = findKeyBounds(lines, 0, lines.length, format, 'paths', indent0, unit);
   const pathsNode: OutlineNode = {
     key: 'paths',
     label: 'Paths',
@@ -167,7 +195,7 @@ export function buildRestProjectionOutline(params: BuildRestProjectionOutlinePar
     children: paths.map((path, i) => ({
       key: `path-${i}`,
       label: path,
-      line: pathsBounds ? findKeyLine(lines, pathsBounds.start + 1, pathsBounds.end, format, path, indent1) : null,
+      line: pathsBounds ? findKeyLine(lines, pathsBounds.start + 1, pathsBounds.end, format, path, indent1, unit) : null,
     })),
   };
 
@@ -178,7 +206,7 @@ export function buildRestProjectionOutline(params: BuildRestProjectionOutlinePar
     children: operationIds.map((id, i) => ({ key: `opid-${i}-${id}`, label: id, line: findOperationIdLine(lines, format, id) })),
   };
 
-  const serversBounds = findKeyBounds(lines, 0, lines.length, format, 'servers', indent0);
+  const serversBounds = findKeyBounds(lines, 0, lines.length, format, 'servers', indent0, unit);
   let serverCursor = serversBounds ? serversBounds.start + 1 : 0;
   const serversNode: OutlineNode = {
     key: 'servers',
@@ -191,12 +219,12 @@ export function buildRestProjectionOutline(params: BuildRestProjectionOutlinePar
     }),
   };
 
-  const componentsBounds = findKeyBounds(lines, 0, lines.length, format, 'components', indent0);
+  const componentsBounds = findKeyBounds(lines, 0, lines.length, format, 'components', indent0, unit);
   const schemasBounds = componentsBounds
-    ? findKeyBounds(lines, componentsBounds.start + 1, componentsBounds.end, format, 'schemas', indent1)
+    ? findKeyBounds(lines, componentsBounds.start + 1, componentsBounds.end, format, 'schemas', indent1, unit)
     : null;
   const securitySchemesBounds = componentsBounds
-    ? findKeyBounds(lines, componentsBounds.start + 1, componentsBounds.end, format, 'securitySchemes', indent1)
+    ? findKeyBounds(lines, componentsBounds.start + 1, componentsBounds.end, format, 'securitySchemes', indent1, unit)
     : null;
 
   const schemasNode: OutlineNode = {
@@ -206,7 +234,7 @@ export function buildRestProjectionOutline(params: BuildRestProjectionOutlinePar
     children: schemaNames.map((name, i) => ({
       key: `schema-${i}`,
       label: name,
-      line: schemasBounds ? findKeyLine(lines, schemasBounds.start + 1, schemasBounds.end, format, name, indent2) : null,
+      line: schemasBounds ? findKeyLine(lines, schemasBounds.start + 1, schemasBounds.end, format, name, indent2, unit) : null,
     })),
   };
 
@@ -218,7 +246,7 @@ export function buildRestProjectionOutline(params: BuildRestProjectionOutlinePar
       key: `securityScheme-${i}`,
       label: name,
       line: securitySchemesBounds
-        ? findKeyLine(lines, securitySchemesBounds.start + 1, securitySchemesBounds.end, format, name, indent2)
+        ? findKeyLine(lines, securitySchemesBounds.start + 1, securitySchemesBounds.end, format, name, indent2, unit)
         : null,
     })),
   };

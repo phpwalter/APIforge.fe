@@ -79,6 +79,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -98,6 +101,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -115,6 +121,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled={false}
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -134,6 +143,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={onChange}
         onCommit={vi.fn()}
       />,
@@ -160,6 +172,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={onCommit}
       />,
@@ -189,6 +204,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={onCommit}
       />,
@@ -209,6 +227,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -222,6 +243,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -240,6 +264,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -254,6 +281,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -271,6 +301,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -285,6 +318,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -301,6 +337,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -314,12 +353,52 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled={false}
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
     );
 
     expect(editor.updateOptions).toHaveBeenCalledWith({ lineNumbers: 'off' });
+  });
+
+  it('creates the editor with the given tabSize/insertSpaces/wordWrap, and updates them live when they change', () => {
+    const { rerender } = render(
+      <ProjectionMonacoEditor
+        value="a: 1"
+        format="yaml"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        tabSize={4}
+        insertSpaces
+        wordWrap={false}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(create.mock.calls[0][1]).toMatchObject({ tabSize: 4, insertSpaces: true, wordWrap: 'off' });
+
+    rerender(
+      <ProjectionMonacoEditor
+        value="a: 1"
+        format="yaml"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        tabSize={2}
+        insertSpaces={false}
+        wordWrap
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(editor.updateOptions).toHaveBeenCalledWith({ tabSize: 2, insertSpaces: false, wordWrap: 'on' });
   });
 
   it('switches the model language between the format language and plaintext when highlightingEnabled changes', () => {
@@ -331,6 +410,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -344,6 +426,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -362,6 +447,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -376,6 +464,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -398,6 +489,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -419,6 +513,9 @@ describe('ProjectionMonacoEditor', () => {
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
