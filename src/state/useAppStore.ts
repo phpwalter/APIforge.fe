@@ -14,6 +14,7 @@ import { signOutProvider } from '../lib/api/auth';
 import { clearAuthToken } from '../lib/api/authToken';
 import { getCookiePrefs, setCookiePrefs, type CookiePrefs } from '../lib/cookiePrefs';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
+import type { ColorScheme } from '../lib/colorScheme';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -175,6 +176,11 @@ interface AppState {
   setFormattingTrimTrailingWhitespace: (v: boolean) => void;
   formattingRemoveBlankLines: boolean;
   setFormattingRemoveBlankLines: (v: boolean) => void;
+
+  // Settings :: Editor Preferences :: Color Scheme — the REST Projection editor's own Monaco
+  // theme, independent of (but defaulting to follow) the app's Day/Night theme.
+  editorColorScheme: ColorScheme;
+  setEditorColorScheme: (v: ColorScheme) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -346,6 +352,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   setFormattingTrimTrailingWhitespace: (v) => set({ formattingTrimTrailingWhitespace: v }),
   formattingRemoveBlankLines: true,
   setFormattingRemoveBlankLines: (v) => set({ formattingRemoveBlankLines: v }),
+
+  editorColorScheme: 'auto',
+  setEditorColorScheme: (v) => set({ editorColorScheme: v }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

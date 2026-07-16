@@ -8,6 +8,7 @@ import { commitRestProjectionEdit } from '../../lib/restProjectionEdit';
 import { buildRestProjectionOutline, uniqueInOrder } from '../../lib/restProjectionOutline';
 import { applyLineEndingPrefs } from '../../lib/fileEncoding';
 import { resolveIndentUnit, resolveInsertSpaces, jsonStringifyIndentArg, applyWhitespaceCleanup } from '../../lib/formatting';
+import { resolveMonacoTheme } from '../../lib/colorScheme';
 import type { RestProjectionFormat } from '../../types/ui';
 import type { ProjectionMonacoEditorHandle } from './ProjectionMonacoEditor';
 import { RestProjectionOutlinePanel } from './RestProjectionOutlinePanel';
@@ -46,6 +47,7 @@ export function RestProjectionCanvas() {
   const formattingWordWrap = useAppStore((s) => s.formattingWordWrap);
   const formattingTrimTrailingWhitespace = useAppStore((s) => s.formattingTrimTrailingWhitespace);
   const formattingRemoveBlankLines = useAppStore((s) => s.formattingRemoveBlankLines);
+  const editorColorScheme = useAppStore((s) => s.editorColorScheme);
 
   const apiTitle = useAppStore((s) => s.apiTitle);
   const apiVersion = useAppStore((s) => s.apiVersion);
@@ -143,6 +145,7 @@ export function RestProjectionCanvas() {
     [format, formattingIndentSize, formattingIndentStyle],
   );
   const insertSpaces = resolveInsertSpaces(format, formattingIndentStyle);
+  const monacoTheme = resolveMonacoTheme(editorColorScheme, theme);
 
   const commitEditor = (value: string) => {
     if (manual[format] != null) commitRestProjectionEdit(value, format);
@@ -276,7 +279,7 @@ export function RestProjectionCanvas() {
               ref={editorHandleRef}
               value={displayText}
               format={format}
-              theme={theme}
+              monacoTheme={monacoTheme}
               wrapRef={wrapRef}
               highlightingEnabled={highlightingEnabled}
               lineNumbersEnabled={lineNumbersEnabled}

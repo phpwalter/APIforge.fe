@@ -48,9 +48,9 @@ describe('SettingsModal — nested nav', () => {
     render(<SettingsModal />);
 
     await user.click(screen.getByRole('button', { name: /Editor Preferences/ }));
-    await user.click(screen.getByRole('button', { name: 'Color Scheme' }));
+    await user.click(screen.getByRole('button', { name: 'Color Style' }));
 
-    expect(screen.getByRole('button', { name: 'Color Scheme' })).toHaveAttribute('data-active', 'true');
+    expect(screen.getByRole('button', { name: 'Color Style' })).toHaveAttribute('data-active', 'true');
     expect(screen.getByText('YAML')).toBeInTheDocument(); // FormatScopedComingSoonPanel's format tabs
     // Parent stays expanded.
     expect(screen.getByRole('button', { name: 'File Encoding' })).toBeInTheDocument();

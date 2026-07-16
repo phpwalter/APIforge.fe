@@ -56,7 +56,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
       {
         key: 'colorScheme',
         label: 'Color Scheme',
-        keywords: 'color scheme theme yaml json',
+        keywords: 'color scheme theme yaml json dark light high contrast auto monaco',
         icon: Palette,
       },
       {

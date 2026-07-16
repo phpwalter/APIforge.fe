@@ -24,12 +24,14 @@ vi.mock('./ProjectionMonacoEditor', () => ({
       {
         value,
         format,
+        monacoTheme,
         wrapRef,
         onChange,
         onCommit,
       }: {
         value: string;
         format: string;
+        monacoTheme: string;
         wrapRef: RefObject<HTMLDivElement | null>;
         onChange: (value: string) => void;
         onCommit: (value: string) => void;
@@ -40,6 +42,7 @@ vi.mock('./ProjectionMonacoEditor', () => ({
       return (
         <textarea
           aria-label={`REST Projection document (${format.toUpperCase()})`}
+          data-monaco-theme={monacoTheme}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={(e) => {
@@ -209,6 +212,22 @@ describe('RestProjectionCanvas', () => {
     await waitFor(() => {
       expect(yamlArea.value).not.toContain('\t');
     });
+  });
+
+  it('resolves the Monaco theme from the Color Scheme preference, defaulting to Auto (follows the app theme)', () => {
+    render(<RestProjectionCanvas />);
+
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+    // The app theme defaults to dark, so Auto resolves to vs-dark.
+    expect(yamlArea).toHaveAttribute('data-monaco-theme', 'vs-dark');
+  });
+
+  it('overrides the Monaco theme when Color Scheme is set to an explicit theme, regardless of the app theme', () => {
+    useAppStore.getState().setEditorColorScheme('hc-light');
+    render(<RestProjectionCanvas />);
+
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+    expect(yamlArea).toHaveAttribute('data-monaco-theme', 'hc-light');
   });
 
   it('applies the Formatting whitespace cleanup preferences to what gets copied', async () => {

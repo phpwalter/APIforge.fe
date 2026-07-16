@@ -2,12 +2,14 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { RefObject } from 'react';
 import { setupMonacoOpenApiEditors } from '../../lib/monaco/setup';
 import type { RestProjectionFormat } from '../../types/ui';
+import type { MonacoThemeId } from '../../lib/colorScheme';
 import styles from './RestProjectionCanvas.module.css';
 
 interface ProjectionMonacoEditorProps {
   value: string;
   format: RestProjectionFormat;
-  theme: 'dark' | 'light';
+  /** Resolved Monaco theme id — Settings :: Editor Preferences :: Color Scheme, with 'auto' already resolved against the app's Day/Night theme. */
+  monacoTheme: MonacoThemeId;
   /** The panel's own root element — a blur that lands back inside it (our toolbar) doesn't count as "leaving the editor". */
   wrapRef: RefObject<HTMLDivElement | null>;
   /** Off switches the model's language to plaintext — no tokens/colors, but also no schema validation, hover, or autocomplete while off. */
@@ -35,7 +37,7 @@ export interface ProjectionMonacoEditorHandle {
  */
 export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, ProjectionMonacoEditorProps>(
   function ProjectionMonacoEditor(
-    { value, format, theme, wrapRef, highlightingEnabled, lineNumbersEnabled, tabSize, insertSpaces, wordWrap, onChange, onCommit },
+    { value, format, monacoTheme, wrapRef, highlightingEnabled, lineNumbersEnabled, tabSize, insertSpaces, wordWrap, onChange, onCommit },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -58,7 +60,7 @@ export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, P
         model,
         automaticLayout: true,
         minimap: { enabled: false },
-        theme: theme === 'dark' ? 'vs-dark' : 'vs',
+        theme: monacoTheme,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 12.5,
         lineHeight: 1.7 * 12.5,
@@ -102,8 +104,8 @@ export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, P
 
     useEffect(() => {
       // Global (there's only ever one Monaco instance mounted at a time, since the panel shows one format).
-      setupMonacoOpenApiEditors().editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
-    }, [theme]);
+      setupMonacoOpenApiEditors().editor.setTheme(monacoTheme);
+    }, [monacoTheme]);
 
     useEffect(() => {
       editorRef.current?.updateOptions({ lineNumbers: lineNumbersEnabled ? 'on' : 'off' });

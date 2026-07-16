@@ -75,7 +75,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="openapi: 3.1.0"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -89,7 +89,28 @@ describe('ProjectionMonacoEditor', () => {
 
     expect(createModel).toHaveBeenCalledWith('openapi: 3.1.0', 'yaml', 'file:///openapi.yaml');
     expect(create).toHaveBeenCalledTimes(1);
-    expect(create.mock.calls[0][1]).toMatchObject({ lineNumbers: 'on' });
+    expect(create.mock.calls[0][1]).toMatchObject({ lineNumbers: 'on', theme: 'vs-dark' });
+  });
+
+  it('creates the editor with whichever resolved Monaco theme it is given, including high-contrast themes', () => {
+    render(
+      <ProjectionMonacoEditor
+        value="openapi: 3.1.0"
+        format="yaml"
+        monacoTheme="hc-black"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(create.mock.calls[0][1]).toMatchObject({ theme: 'hc-black' });
+    expect(setTheme).toHaveBeenCalledWith('hc-black');
   });
 
   it('creates a JSON model with its own URI when format is json', () => {
@@ -97,7 +118,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="{}"
         format="json"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -117,7 +138,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="openapi: 3.1.0"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled={false}
@@ -139,7 +160,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -168,7 +189,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
@@ -200,7 +221,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
@@ -223,7 +244,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -239,7 +260,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 2"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -260,7 +281,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -277,7 +298,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -292,12 +313,12 @@ describe('ProjectionMonacoEditor', () => {
     expect(model.setValue).not.toHaveBeenCalled();
   });
 
-  it('switches the global Monaco theme when the theme prop changes', () => {
+  it('switches the global Monaco theme when the monacoTheme prop changes', () => {
     const { rerender } = render(
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -314,7 +335,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="light"
+        monacoTheme="vs"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -333,7 +354,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -349,7 +370,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled={false}
@@ -369,7 +390,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -386,7 +407,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -406,7 +427,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -422,7 +443,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled
@@ -443,7 +464,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="openapi: 3.1.0"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -460,7 +481,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="{}"
         format="json"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -485,7 +506,7 @@ describe('ProjectionMonacoEditor', () => {
         ref={handleRef}
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -509,7 +530,7 @@ describe('ProjectionMonacoEditor', () => {
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
-        theme="dark"
+        monacoTheme="vs-dark"
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled

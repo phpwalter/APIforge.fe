@@ -13,6 +13,7 @@ import { AboutSettingsPanel } from './AboutSettingsPanel';
 import { FormatScopedComingSoonPanel } from './FormatScopedComingSoonPanel';
 import { FileEncodingSettingsPanel } from './FileEncodingSettingsPanel';
 import { FormattingSettingsPanel } from './FormattingSettingsPanel';
+import { ColorSchemeSettingsPanel } from './ColorSchemeSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
@@ -24,12 +25,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   notifications: NotificationsSettingsPanel,
   cookies: CookiesSettingsPanel,
   about: AboutSettingsPanel,
-  colorScheme: () => (
-    <FormatScopedComingSoonPanel
-      title="Color Scheme"
-      description="Choose the editor color scheme used for the REST Projection YAML and JSON views."
-    />
-  ),
+  colorScheme: ColorSchemeSettingsPanel,
   colorStyle: () => (
     <FormatScopedComingSoonPanel
       title="Color Style"
