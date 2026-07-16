@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import type { IndentSize, IndentStyle } from '../../lib/formatting';
 import styles from './FormattingSettingsPanel.module.css';
@@ -9,6 +10,10 @@ export function FormattingSettingsPanel() {
   const setIndentStyle = useAppStore((s) => s.setFormattingIndentStyle);
   const wordWrap = useAppStore((s) => s.formattingWordWrap);
   const setWordWrap = useAppStore((s) => s.setFormattingWordWrap);
+  const trimTrailingWhitespace = useAppStore((s) => s.formattingTrimTrailingWhitespace);
+  const setTrimTrailingWhitespace = useAppStore((s) => s.setFormattingTrimTrailingWhitespace);
+  const removeBlankLines = useAppStore((s) => s.formattingRemoveBlankLines);
+  const setRemoveBlankLines = useAppStore((s) => s.setFormattingRemoveBlankLines);
 
   return (
     <>
@@ -83,6 +88,32 @@ export function FormattingSettingsPanel() {
           </button>
         </div>
         <div className={styles.hint}>Wraps long lines to fit the editor width instead of scrolling horizontally.</div>
+      </div>
+
+      <div>
+        <div className={styles.sectionLabel}>Clean Up on Copy &amp; Export</div>
+        <div className={styles.checkboxColumn}>
+          <button
+            type="button"
+            className={styles.checkboxRow}
+            onClick={() => setTrimTrailingWhitespace(!trimTrailingWhitespace)}
+          >
+            <span className={styles.checkbox} data-checked={trimTrailingWhitespace}>
+              {trimTrailingWhitespace && <Check size={13} />}
+            </span>
+            Remove spaces at end of line
+          </button>
+          <button type="button" className={styles.checkboxRow} onClick={() => setRemoveBlankLines(!removeBlankLines)}>
+            <span className={styles.checkbox} data-checked={removeBlankLines}>
+              {removeBlankLines && <Check size={13} />}
+            </span>
+            Remove blank lines
+          </button>
+        </div>
+        <div className={styles.hint}>
+          Applied when copying to the clipboard or downloading an export — never to the live editor content while
+          you&apos;re editing.
+        </div>
       </div>
     </>
   );

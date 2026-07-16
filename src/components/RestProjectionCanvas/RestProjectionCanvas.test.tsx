@@ -211,6 +211,36 @@ describe('RestProjectionCanvas', () => {
     });
   });
 
+  it('applies the Formatting whitespace cleanup preferences to what gets copied', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText');
+    render(<RestProjectionCanvas />);
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+
+    fireEvent.change(yamlArea, { target: { value: 'openapi: 3.1.0  \n\ninfo:\n  title: Test   \n' } });
+    await user.click(screen.getByRole('button', { name: 'Copy to clipboard' }));
+
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).not.toMatch(/ \n/);
+    expect(copied).not.toContain('\n\n');
+  });
+
+  it('leaves trailing whitespace and blank lines alone when both cleanup checkboxes are off', async () => {
+    useAppStore.getState().setFormattingTrimTrailingWhitespace(false);
+    useAppStore.getState().setFormattingRemoveBlankLines(false);
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText');
+    render(<RestProjectionCanvas />);
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+
+    fireEvent.change(yamlArea, { target: { value: 'openapi: 3.1.0  \n\ninfo:\n  title: Test\n' } });
+    await user.click(screen.getByRole('button', { name: 'Copy to clipboard' }));
+
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain('openapi: 3.1.0  \n');
+    expect(copied).toContain('\n\n');
+  });
+
   it('commits a pending edit when the panel unmounts (e.g. switching to a different canvas tab), even though no blur ever fires', async () => {
     const { unmount } = render(<RestProjectionCanvas />);
     const textarea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;

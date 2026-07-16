@@ -22,3 +22,21 @@ export function jsonStringifyIndentArg(unit: OutlineIndentUnit): string | number
 export function resolveInsertSpaces(format: RestProjectionFormat, indentStyle: IndentStyle): boolean {
   return format === 'yaml' || indentStyle === 'spaces';
 }
+
+export interface WhitespaceCleanupPrefs {
+  trimTrailingWhitespace: boolean;
+  removeBlankLines: boolean;
+}
+
+/**
+ * Cleans up trailing whitespace and/or blank lines a hand-edit may have introduced. Safe for both
+ * YAML and JSON — neither format gives blank lines or trailing spaces any structural meaning.
+ * Applied at copy/export time only, not to the live editable text, so it never mutates the
+ * document out from under the user mid-edit.
+ */
+export function applyWhitespaceCleanup(text: string, prefs: WhitespaceCleanupPrefs): string {
+  let lines = text.split('\n');
+  if (prefs.trimTrailingWhitespace) lines = lines.map((line) => line.replace(/[ \t]+$/, ''));
+  if (prefs.removeBlankLines) lines = lines.filter((line) => line.trim() !== '');
+  return lines.join('\n');
+}

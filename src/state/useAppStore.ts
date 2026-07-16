@@ -170,6 +170,11 @@ interface AppState {
   setFormattingIndentStyle: (v: 'spaces' | 'tabs') => void;
   formattingWordWrap: boolean;
   setFormattingWordWrap: (v: boolean) => void;
+  // Whitespace cleanup applied at copy/export time only (never to the live editable text).
+  formattingTrimTrailingWhitespace: boolean;
+  setFormattingTrimTrailingWhitespace: (v: boolean) => void;
+  formattingRemoveBlankLines: boolean;
+  setFormattingRemoveBlankLines: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -337,6 +342,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setFormattingIndentStyle: (v) => set({ formattingIndentStyle: v }),
   formattingWordWrap: false,
   setFormattingWordWrap: (v) => set({ formattingWordWrap: v }),
+  formattingTrimTrailingWhitespace: true,
+  setFormattingTrimTrailingWhitespace: (v) => set({ formattingTrimTrailingWhitespace: v }),
+  formattingRemoveBlankLines: true,
+  setFormattingRemoveBlankLines: (v) => set({ formattingRemoveBlankLines: v }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

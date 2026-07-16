@@ -17,13 +17,15 @@ describe('FormattingSettingsPanel', () => {
     expect(screen.queryByRole('button', { name: 'JSON' })).not.toBeInTheDocument();
   });
 
-  it('defaults to 2 spaces, Spaces style, and Word Wrap off', () => {
+  it('defaults to 2 spaces, Spaces style, Word Wrap off, and both cleanup checkboxes on', () => {
     render(<FormattingSettingsPanel />);
 
     expect(useAppStore.getState().formattingIndentSize).toBe(2);
     expect(useAppStore.getState().formattingIndentStyle).toBe('spaces');
     expect(useAppStore.getState().formattingWordWrap).toBe(false);
     expect(screen.getByRole('button', { name: 'Off' })).toHaveAttribute('data-active', 'true');
+    expect(useAppStore.getState().formattingTrimTrailingWhitespace).toBe(true);
+    expect(useAppStore.getState().formattingRemoveBlankLines).toBe(true);
   });
 
   it('switches indent size between 2 and 4 spaces', async () => {
@@ -64,5 +66,26 @@ describe('FormattingSettingsPanel', () => {
 
     await user.click(offBtn);
     expect(useAppStore.getState().formattingWordWrap).toBe(false);
+  });
+
+  it('toggles "Remove spaces at end of line" independently of "Remove blank lines"', async () => {
+    const user = userEvent.setup();
+    render(<FormattingSettingsPanel />);
+
+    const trimBtn = screen.getByRole('button', { name: 'Remove spaces at end of line' });
+    const blankBtn = screen.getByRole('button', { name: 'Remove blank lines' });
+    expect(trimBtn.querySelector('span')).toHaveAttribute('data-checked', 'true');
+    expect(blankBtn.querySelector('span')).toHaveAttribute('data-checked', 'true');
+
+    await user.click(trimBtn);
+    expect(useAppStore.getState().formattingTrimTrailingWhitespace).toBe(false);
+    expect(useAppStore.getState().formattingRemoveBlankLines).toBe(true);
+    expect(trimBtn.querySelector('span')).toHaveAttribute('data-checked', 'false');
+
+    await user.click(blankBtn);
+    expect(useAppStore.getState().formattingRemoveBlankLines).toBe(false);
+
+    await user.click(trimBtn);
+    expect(useAppStore.getState().formattingTrimTrailingWhitespace).toBe(true);
   });
 });

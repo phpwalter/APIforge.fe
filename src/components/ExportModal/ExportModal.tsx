@@ -10,7 +10,7 @@ import {
   slugifyFilename,
 } from '../../lib/openapiExport';
 import { applyLineEndingPrefs, withByteOrderMark } from '../../lib/fileEncoding';
-import { resolveIndentUnit } from '../../lib/formatting';
+import { resolveIndentUnit, applyWhitespaceCleanup } from '../../lib/formatting';
 import styles from './ExportModal.module.css';
 
 type FetchState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; types: SecurityTypeDto[] };
@@ -31,6 +31,8 @@ export function ExportModal() {
   const insertFinalNewline = useAppStore((s) => s.fileEncodingInsertFinalNewline);
   const formattingIndentSize = useAppStore((s) => s.formattingIndentSize);
   const formattingIndentStyle = useAppStore((s) => s.formattingIndentStyle);
+  const formattingTrimTrailingWhitespace = useAppStore((s) => s.formattingTrimTrailingWhitespace);
+  const formattingRemoveBlankLines = useAppStore((s) => s.formattingRemoveBlankLines);
 
   const endpoints = useSpecStore((s) => s.endpoints);
   const schemas = useSpecStore((s) => s.schemas);
@@ -68,7 +70,11 @@ export function ExportModal() {
     const slug = slugifyFilename(apiTitle);
     const filename = variant === 'full' ? `${slug}.apiforge.yaml` : `${slug}.yaml`;
     const indentSize = resolveIndentUnit('yaml', formattingIndentSize, formattingIndentStyle).length;
-    const yaml = applyLineEndingPrefs(documentToYaml(doc, indentSize), { lineEnding, insertFinalNewline });
+    const cleaned = applyWhitespaceCleanup(documentToYaml(doc, indentSize), {
+      trimTrailingWhitespace: formattingTrimTrailingWhitespace,
+      removeBlankLines: formattingRemoveBlankLines,
+    });
+    const yaml = applyLineEndingPrefs(cleaned, { lineEnding, insertFinalNewline });
     downloadTextFile(filename, withByteOrderMark(yaml, characterEncoding), 'application/yaml');
     closeExportModal();
   };

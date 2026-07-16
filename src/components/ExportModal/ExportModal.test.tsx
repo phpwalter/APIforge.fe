@@ -8,10 +8,16 @@ vi.mock('../../lib/api/securityTypes', () => ({
   fetchSecurityTypes: vi.fn(() => Promise.resolve([])),
 }));
 
-const { downloadTextFile } = vi.hoisted(() => ({ downloadTextFile: vi.fn() }));
+const { downloadTextFile, documentToYaml } = vi.hoisted(() => ({
+  downloadTextFile: vi.fn(),
+  documentToYaml: vi.fn<(doc: unknown, indentSize?: number) => string>(),
+}));
 vi.mock('../../lib/openapiExport', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/openapiExport')>();
-  return { ...actual, downloadTextFile };
+  // Default to the real serializer — only overridden per-test (see the whitespace cleanup test
+  // below), since the generator itself never produces trailing whitespace or blank lines to clean.
+  documentToYaml.mockImplementation(actual.documentToYaml);
+  return { ...actual, downloadTextFile, documentToYaml };
 });
 
 const initialAppState = useAppStore.getState();
@@ -61,5 +67,31 @@ describe('ExportModal', () => {
 
     const [, content] = downloadTextFile.mock.calls[0];
     expect(content as string).toContain('\n    title:');
+  });
+
+  it('applies the Formatting whitespace cleanup preferences to the downloaded file', async () => {
+    documentToYaml.mockReturnValueOnce('openapi: 3.1.0  \n\ninfo:\n  title: Test   \n');
+    const user = userEvent.setup();
+    render(<ExportModal />);
+
+    await user.click(screen.getByRole('button', { name: /Full APIforge Export/ }));
+
+    const [, content] = downloadTextFile.mock.calls[0];
+    expect(content as string).not.toMatch(/ \n/);
+    expect(content as string).not.toContain('\n\n');
+  });
+
+  it('leaves trailing whitespace and blank lines alone when both cleanup checkboxes are off', async () => {
+    useAppStore.getState().setFormattingTrimTrailingWhitespace(false);
+    useAppStore.getState().setFormattingRemoveBlankLines(false);
+    documentToYaml.mockReturnValueOnce('openapi: 3.1.0  \n\ninfo:\n  title: Test\n');
+    const user = userEvent.setup();
+    render(<ExportModal />);
+
+    await user.click(screen.getByRole('button', { name: /Full APIforge Export/ }));
+
+    const [, content] = downloadTextFile.mock.calls[0];
+    expect(content as string).toContain('openapi: 3.1.0  \n');
+    expect(content as string).toContain('\n\n');
   });
 });

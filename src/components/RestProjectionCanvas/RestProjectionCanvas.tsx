@@ -7,7 +7,7 @@ import { buildOpenApiDocument, documentToJson, documentToYaml } from '../../lib/
 import { commitRestProjectionEdit } from '../../lib/restProjectionEdit';
 import { buildRestProjectionOutline, uniqueInOrder } from '../../lib/restProjectionOutline';
 import { applyLineEndingPrefs } from '../../lib/fileEncoding';
-import { resolveIndentUnit, resolveInsertSpaces, jsonStringifyIndentArg } from '../../lib/formatting';
+import { resolveIndentUnit, resolveInsertSpaces, jsonStringifyIndentArg, applyWhitespaceCleanup } from '../../lib/formatting';
 import type { RestProjectionFormat } from '../../types/ui';
 import type { ProjectionMonacoEditorHandle } from './ProjectionMonacoEditor';
 import { RestProjectionOutlinePanel } from './RestProjectionOutlinePanel';
@@ -44,6 +44,8 @@ export function RestProjectionCanvas() {
   const formattingIndentSize = useAppStore((s) => s.formattingIndentSize);
   const formattingIndentStyle = useAppStore((s) => s.formattingIndentStyle);
   const formattingWordWrap = useAppStore((s) => s.formattingWordWrap);
+  const formattingTrimTrailingWhitespace = useAppStore((s) => s.formattingTrimTrailingWhitespace);
+  const formattingRemoveBlankLines = useAppStore((s) => s.formattingRemoveBlankLines);
 
   const apiTitle = useAppStore((s) => s.apiTitle);
   const apiVersion = useAppStore((s) => s.apiVersion);
@@ -186,7 +188,11 @@ export function RestProjectionCanvas() {
   const revealInEditor = (line: number) => editorHandleRef.current?.revealLine(line);
 
   const copy = () => {
-    const text = applyLineEndingPrefs(displayText, {
+    const cleaned = applyWhitespaceCleanup(displayText, {
+      trimTrailingWhitespace: formattingTrimTrailingWhitespace,
+      removeBlankLines: formattingRemoveBlankLines,
+    });
+    const text = applyLineEndingPrefs(cleaned, {
       lineEnding: fileEncodingLineEnding,
       insertFinalNewline: fileEncodingInsertFinalNewline,
     });

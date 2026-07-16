@@ -1,4 +1,4 @@
-import { resolveIndentUnit, jsonStringifyIndentArg, resolveInsertSpaces } from './formatting';
+import { resolveIndentUnit, jsonStringifyIndentArg, resolveInsertSpaces, applyWhitespaceCleanup } from './formatting';
 
 describe('resolveIndentUnit', () => {
   it('resolves a space unit of the configured size for spaces style', () => {
@@ -35,5 +35,43 @@ describe('resolveInsertSpaces', () => {
   it('follows the preference for JSON', () => {
     expect(resolveInsertSpaces('json', 'spaces')).toBe(true);
     expect(resolveInsertSpaces('json', 'tabs')).toBe(false);
+  });
+});
+
+describe('applyWhitespaceCleanup', () => {
+  it('trims trailing spaces and tabs from every line when trimTrailingWhitespace is on', () => {
+    const text = 'a: 1  \nb: 2\t\nc: 3';
+    expect(applyWhitespaceCleanup(text, { trimTrailingWhitespace: true, removeBlankLines: false })).toBe(
+      'a: 1\nb: 2\nc: 3',
+    );
+  });
+
+  it('leaves trailing whitespace alone when trimTrailingWhitespace is off', () => {
+    const text = 'a: 1  \nb: 2';
+    expect(applyWhitespaceCleanup(text, { trimTrailingWhitespace: false, removeBlankLines: false })).toBe(text);
+  });
+
+  it('removes blank and whitespace-only lines when removeBlankLines is on', () => {
+    const text = 'a: 1\n\nb: 2\n   \nc: 3';
+    expect(applyWhitespaceCleanup(text, { trimTrailingWhitespace: false, removeBlankLines: true })).toBe(
+      'a: 1\nb: 2\nc: 3',
+    );
+  });
+
+  it('leaves blank lines alone when removeBlankLines is off', () => {
+    const text = 'a: 1\n\nb: 2';
+    expect(applyWhitespaceCleanup(text, { trimTrailingWhitespace: false, removeBlankLines: false })).toBe(text);
+  });
+
+  it('applies both cleanups together', () => {
+    const text = 'a: 1  \n\nb: 2\t\n   \nc: 3';
+    expect(applyWhitespaceCleanup(text, { trimTrailingWhitespace: true, removeBlankLines: true })).toBe(
+      'a: 1\nb: 2\nc: 3',
+    );
+  });
+
+  it('is a no-op on already-clean text', () => {
+    const text = 'a: 1\nb: 2\nc: 3';
+    expect(applyWhitespaceCleanup(text, { trimTrailingWhitespace: true, removeBlankLines: true })).toBe(text);
   });
 });
