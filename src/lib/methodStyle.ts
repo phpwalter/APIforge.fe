@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Plus, ArrowUpToLine, Pencil, Trash, SlidersHorizontal, Info, Route, Braces } from 'lucide-react';
+import { ArrowDownToLine, Plus, ArrowUpToLine, Pencil, Trash, SlidersHorizontal, Info, MapPinSearch, Braces } from 'lucide-react';
 import type { ComponentType } from 'react';
 import type { HttpMethod } from '../types/spec';
 
@@ -22,7 +22,7 @@ const METHOD_ICONS: Partial<Record<HttpMethod, ComponentType<{ size?: number }>>
   DELETE: Trash,
   OPTIONS: SlidersHorizontal,
   HEAD: Info,
-  TRACE: Route,
+  TRACE: MapPinSearch,
 };
 
 export function methodIcon(method: HttpMethod): ComponentType<{ size?: number }> {

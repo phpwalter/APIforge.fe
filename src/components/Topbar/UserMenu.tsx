@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, UserPlus, Keyboard, HelpCircle, ExternalLink, Sparkles, LogOut, User as UserBig } from 'lucide-react';
+import { User, UserPlus, Keyboard, HelpCircle, ExternalLink, Info, LogOut, User as UserBig } from 'lucide-react';
 import { initialsOf, useAppStore } from '../../state/useAppStore';
 import type { UserProfile } from '../../types/ui';
 import styles from './Topbar.module.css';
@@ -79,7 +79,7 @@ export function UserMenu() {
             </button>
             <button type="button" className={styles.menuItem}>
               <span className={styles.menuItemIcon}>
-                <Sparkles size={16} />
+                <Info size={16} />
               </span>
               <span className={styles.menuItemTrailing}>What&apos;s New</span>
               <span className={styles.menuItemExternal}>
