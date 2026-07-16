@@ -87,41 +87,62 @@ describe('RestProjectionCanvas', () => {
     expect(useAppStore.getState().restProjectionShowMeta).toBe(true);
   });
 
-  it('turns syntax highlighting off and on via the toolbar button (JSON/XML only — YAML has its own Monaco highlighting)', async () => {
+  it('turns syntax highlighting off and on via the toolbar button, available on every format including YAML', async () => {
     const user = userEvent.setup();
     render(<RestProjectionCanvas />);
 
-    // The toggle only applies to the JSON/XML textarea+highlight.js view.
-    expect(screen.queryByTitle('Turn off syntax highlighting')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'JSON' }));
-
-    expect(useAppStore.getState().highlightingEnabled).toBe(true);
+    // Present on YAML too — YamlMonacoEditor.test.tsx covers the Monaco-side wiring.
+    expect(useAppStore.getState().restProjectionHighlighting.yaml).toBe(true);
     const offToggle = screen.getByRole('button', { name: 'Turn off syntax highlighting' });
     expect(offToggle).toHaveAttribute('data-active', 'true');
 
     await user.click(offToggle);
-    expect(useAppStore.getState().highlightingEnabled).toBe(false);
+    expect(useAppStore.getState().restProjectionHighlighting.yaml).toBe(false);
     const onToggle = screen.getByRole('button', { name: 'Turn on syntax highlighting' });
     expect(onToggle).toHaveAttribute('data-active', 'false');
 
     await user.click(onToggle);
-    expect(useAppStore.getState().highlightingEnabled).toBe(true);
+    expect(useAppStore.getState().restProjectionHighlighting.yaml).toBe(true);
   });
 
-  it('shows a line-number gutter by default for JSON/XML, toggleable via the toolbar button (not shown for YAML)', async () => {
+  it('keeps syntax highlighting and line numbers independent per format — toggling one tab does not affect the others', async () => {
     const user = userEvent.setup();
     render(<RestProjectionCanvas />);
 
-    expect(screen.queryByTitle('Hide line numbers')).not.toBeInTheDocument();
+    // Turn off highlighting for YAML only.
+    await user.click(screen.getByRole('button', { name: 'Turn off syntax highlighting' }));
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: false, json: true, xml: true });
+
+    // JSON still shows its own toggle as on.
+    await user.click(screen.getByRole('button', { name: 'JSON' }));
+    expect(screen.getByRole('button', { name: 'Turn off syntax highlighting' })).toHaveAttribute('data-active', 'true');
+
+    // Turn off line numbers for JSON only.
+    await user.click(screen.getByRole('button', { name: 'Hide line numbers' }));
+    expect(useAppStore.getState().restProjectionLineNumbers).toEqual({ yaml: true, json: false, xml: true });
+
+    // XML still has its own line-numbers toggle on, and YAML's highlighting toggle is still off.
+    await user.click(screen.getByRole('button', { name: 'XML' }));
+    expect(screen.getByRole('button', { name: 'Hide line numbers' })).toHaveAttribute('data-active', 'true');
+    await user.click(screen.getByRole('button', { name: 'YAML' }));
+    expect(screen.getByRole('button', { name: 'Turn on syntax highlighting' })).toHaveAttribute('data-active', 'false');
+  });
+
+  it('shows a line-number gutter by default for JSON/XML, toggleable via the toolbar button (button also present for YAML, wired to Monaco directly)', async () => {
+    const user = userEvent.setup();
+    render(<RestProjectionCanvas />);
+
+    // Present on YAML too, though the custom .gutter div is JSON/XML-only — Monaco has its own.
+    expect(screen.getByRole('button', { name: 'Hide line numbers' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'JSON' }));
 
-    expect(useAppStore.getState().restProjectionLineNumbers).toBe(true);
+    expect(useAppStore.getState().restProjectionLineNumbers.json).toBe(true);
     const hideToggle = screen.getByRole('button', { name: 'Hide line numbers' });
     expect(hideToggle).toHaveAttribute('data-active', 'true');
     expect(screen.getByText('1')).toBeInTheDocument();
 
     await user.click(hideToggle);
-    expect(useAppStore.getState().restProjectionLineNumbers).toBe(false);
+    expect(useAppStore.getState().restProjectionLineNumbers.json).toBe(false);
     expect(screen.getByRole('button', { name: 'Show line numbers' })).toHaveAttribute('data-active', 'false');
     expect(screen.queryByText('1')).not.toBeInTheDocument();
   });

@@ -8,6 +8,9 @@ interface YamlMonacoEditorProps {
   theme: 'dark' | 'light';
   /** The panel's own root element — a blur that lands back inside it (our toolbar) doesn't count as "leaving the editor". */
   wrapRef: RefObject<HTMLDivElement | null>;
+  /** Off switches the model's language to plaintext — no tokens/colors, but also no schema validation, hover, or autocomplete while off. */
+  highlightingEnabled: boolean;
+  lineNumbersEnabled: boolean;
   onChange: (value: string) => void;
   onCommit: (value: string) => void;
 }
@@ -18,7 +21,15 @@ interface YamlMonacoEditorProps {
  * monaco-yaml once the schema is registered — see lib/monaco/setup.ts). JSON and XML still use
  * the plain textarea + highlight.js overlay; only YAML gets the full editor for now.
  */
-export function YamlMonacoEditor({ value, theme, wrapRef, onChange, onCommit }: YamlMonacoEditorProps) {
+export function YamlMonacoEditor({
+  value,
+  theme,
+  wrapRef,
+  highlightingEnabled,
+  lineNumbersEnabled,
+  onChange,
+  onCommit,
+}: YamlMonacoEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null);
   const onChangeRef = useRef(onChange);
@@ -30,7 +41,11 @@ export function YamlMonacoEditor({ value, theme, wrapRef, onChange, onCommit }: 
     if (!containerRef.current) return;
     const monaco = setupMonacoOpenApiYaml();
 
-    const model = monaco.editor.createModel(value, 'yaml', monaco.Uri.parse('file:///openapi.yaml'));
+    const model = monaco.editor.createModel(
+      value,
+      highlightingEnabled ? 'yaml' : 'plaintext',
+      monaco.Uri.parse('file:///openapi.yaml'),
+    );
     const editor = monaco.editor.create(containerRef.current, {
       model,
       automaticLayout: true,
@@ -41,6 +56,7 @@ export function YamlMonacoEditor({ value, theme, wrapRef, onChange, onCommit }: 
       lineHeight: 1.7 * 12.5,
       scrollBeyondLastLine: false,
       tabSize: 2,
+      lineNumbers: lineNumbersEnabled ? 'on' : 'off',
     });
     editorRef.current = editor;
     // Monaco's own initial paint doesn't reliably fire when mounted behind a Suspense boundary
@@ -76,6 +92,16 @@ export function YamlMonacoEditor({ value, theme, wrapRef, onChange, onCommit }: 
     // Global (there's only ever one Monaco instance mounted, since it's YAML-tab-only).
     setupMonacoOpenApiYaml().editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
   }, [theme]);
+
+  useEffect(() => {
+    editorRef.current?.updateOptions({ lineNumbers: lineNumbersEnabled ? 'on' : 'off' });
+  }, [lineNumbersEnabled]);
+
+  useEffect(() => {
+    const model = editorRef.current?.getModel();
+    const monaco = setupMonacoOpenApiYaml();
+    if (model) monaco.editor.setModelLanguage(model, highlightingEnabled ? 'yaml' : 'plaintext');
+  }, [highlightingEnabled]);
 
   return <div ref={containerRef} className={styles.monacoContainer} />;
 }

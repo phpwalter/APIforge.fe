@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Copy, CopyCheck, ListOrdered, Paintbrush } from 'lucide-react';
+import { Copy, CopyCheck, ListOrdered, Palette } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
 import { fetchSecurityTypes, type SecurityTypeDto } from '../../lib/api/securityTypes';
@@ -25,14 +25,14 @@ const FILENAME_FOR_FORMAT: Record<RestProjectionFormat, string> = {
 
 export function RestProjectionCanvas() {
   const theme = useAppStore((s) => s.theme);
-  const highlightingEnabled = useAppStore((s) => s.highlightingEnabled);
-  const setHighlightingEnabled = useAppStore((s) => s.setHighlightingEnabled);
+  const highlightingByFormat = useAppStore((s) => s.restProjectionHighlighting);
+  const setHighlightingForFormat = useAppStore((s) => s.setRestProjectionHighlighting);
   const format = useAppStore((s) => s.restProjectionFormat);
   const setFormat = useAppStore((s) => s.setRestProjectionFormat);
   const showMeta = useAppStore((s) => s.restProjectionShowMeta);
   const toggleShowMeta = useAppStore((s) => s.toggleRestProjectionMeta);
-  const lineNumbersEnabled = useAppStore((s) => s.restProjectionLineNumbers);
-  const toggleLineNumbers = useAppStore((s) => s.toggleRestProjectionLineNumbers);
+  const lineNumbersByFormat = useAppStore((s) => s.restProjectionLineNumbers);
+  const setLineNumbersForFormat = useAppStore((s) => s.setRestProjectionLineNumbers);
   const manual = useAppStore((s) => s.restProjectionManual);
   const setManual = useAppStore((s) => s.setRestProjectionManual);
   const error = useAppStore((s) => s.restProjectionError);
@@ -125,10 +125,11 @@ export function RestProjectionCanvas() {
   const isEdited = manual[format] != null;
   const displayText = manual[format] ?? generatedText;
   const lineCount = useMemo(() => displayText.split('\n').length, [displayText]);
+  const highlightingEnabled = highlightingByFormat[format];
+  const lineNumbersEnabled = lineNumbersByFormat[format];
   // hljs.highlight() only takes a few ms even for a large generated doc, so this runs
   // synchronously in-render rather than being deferred — a deferred (low-priority) update can
   // itself sit for seconds under React's scheduler, which made format switching feel laggy.
-  // Not needed for YAML — Monaco does its own tokenizing/highlighting there.
   const highlightedHtml = useMemo(
     () => (format === 'yaml' ? '' : highlightCode(displayText, format, highlightingEnabled)),
     [displayText, format, highlightingEnabled],
@@ -166,28 +167,24 @@ export function RestProjectionCanvas() {
         <span className={styles.filename}>{FILENAME_FOR_FORMAT[format]}</span>
         <span className={styles.stateBadge}>{isEdited ? 'edited' : 'generated'}</span>
         <div className={styles.spacer} />
-        {format !== 'yaml' && (
-          <>
-            <button
-              type="button"
-              className={styles.iconToggle}
-              data-active={highlightingEnabled}
-              title={highlightingEnabled ? 'Turn off syntax highlighting' : 'Turn on syntax highlighting'}
-              onClick={() => setHighlightingEnabled(!highlightingEnabled)}
-            >
-              <Paintbrush size={14} />
-            </button>
-            <button
-              type="button"
-              className={styles.iconToggle}
-              data-active={lineNumbersEnabled}
-              title={lineNumbersEnabled ? 'Hide line numbers' : 'Show line numbers'}
-              onClick={toggleLineNumbers}
-            >
-              <ListOrdered size={14} />
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          className={styles.iconToggle}
+          data-active={highlightingEnabled}
+          title={highlightingEnabled ? 'Turn off syntax highlighting' : 'Turn on syntax highlighting'}
+          onClick={() => setHighlightingForFormat(format, !highlightingEnabled)}
+        >
+          <Palette size={14} />
+        </button>
+        <button
+          type="button"
+          className={styles.iconToggle}
+          data-active={lineNumbersEnabled}
+          title={lineNumbersEnabled ? 'Hide line numbers' : 'Show line numbers'}
+          onClick={() => setLineNumbersForFormat(format, !lineNumbersEnabled)}
+        >
+          <ListOrdered size={14} />
+        </button>
         <button
           type="button"
           className={styles.toolbarBtn}
@@ -232,6 +229,8 @@ export function RestProjectionCanvas() {
               value={displayText}
               theme={theme}
               wrapRef={wrapRef}
+              highlightingEnabled={highlightingEnabled}
+              lineNumbersEnabled={lineNumbersEnabled}
               onChange={(value) => setManual('yaml', value)}
               onCommit={commitYaml}
             />

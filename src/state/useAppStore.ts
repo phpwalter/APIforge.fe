@@ -32,10 +32,6 @@ interface AppState {
   toggleTheme: () => void;
   setThemeMode: (mode: ThemeMode) => void;
 
-  // Settings :: Appearance — syntax highlighting in the REST Projection views (not yet built).
-  highlightingEnabled: boolean;
-  setHighlightingEnabled: (v: boolean) => void;
-
   // Project identity (topbar "project settings" pill)
   apiTitle: string;
   apiVersion: string;
@@ -144,9 +140,11 @@ interface AppState {
   setRestProjectionFormat: (format: RestProjectionFormat) => void;
   restProjectionShowMeta: boolean;
   toggleRestProjectionMeta: () => void;
-  // Line-number gutter for the JSON/XML textarea view (YAML's Monaco editor always shows its own).
-  restProjectionLineNumbers: boolean;
-  toggleRestProjectionLineNumbers: () => void;
+  // Syntax highlighting and line numbers are per-format — toggling one off for YAML doesn't affect JSON/XML.
+  restProjectionHighlighting: Record<RestProjectionFormat, boolean>;
+  setRestProjectionHighlighting: (format: RestProjectionFormat, v: boolean) => void;
+  restProjectionLineNumbers: Record<RestProjectionFormat, boolean>;
+  setRestProjectionLineNumbers: (format: RestProjectionFormat, v: boolean) => void;
   restProjectionManual: Record<RestProjectionFormat, string | null>;
   setRestProjectionManual: (format: RestProjectionFormat, text: string) => void;
   restProjectionError: string | null;
@@ -164,9 +162,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ themeMode: next, theme: resolveTheme(next) });
   },
   setThemeMode: (mode) => set({ themeMode: mode, theme: resolveTheme(mode) }),
-
-  highlightingEnabled: true,
-  setHighlightingEnabled: (v) => set({ highlightingEnabled: v }),
 
   apiTitle: 'Untitled API',
   apiVersion: '1.0.0',
@@ -295,8 +290,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRestProjectionFormat: (format) => set({ restProjectionFormat: format }),
   restProjectionShowMeta: false,
   toggleRestProjectionMeta: () => set((s) => ({ restProjectionShowMeta: !s.restProjectionShowMeta })),
-  restProjectionLineNumbers: true,
-  toggleRestProjectionLineNumbers: () => set((s) => ({ restProjectionLineNumbers: !s.restProjectionLineNumbers })),
+  restProjectionHighlighting: { yaml: true, json: true, xml: true },
+  setRestProjectionHighlighting: (format, v) =>
+    set((s) => ({ restProjectionHighlighting: { ...s.restProjectionHighlighting, [format]: v } })),
+  restProjectionLineNumbers: { yaml: true, json: true, xml: true },
+  setRestProjectionLineNumbers: (format, v) =>
+    set((s) => ({ restProjectionLineNumbers: { ...s.restProjectionLineNumbers, [format]: v } })),
   restProjectionManual: { yaml: null, json: null, xml: null },
   setRestProjectionManual: (format, text) =>
     set((s) => ({ restProjectionManual: { ...s.restProjectionManual, [format]: text } })),

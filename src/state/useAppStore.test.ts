@@ -65,12 +65,12 @@ describe('useAppStore', () => {
     });
   });
 
-  it('defaults syntax highlighting on and can be toggled off', () => {
-    expect(useAppStore.getState().highlightingEnabled).toBe(true);
-    useAppStore.getState().setHighlightingEnabled(false);
-    expect(useAppStore.getState().highlightingEnabled).toBe(false);
-    useAppStore.getState().setHighlightingEnabled(true);
-    expect(useAppStore.getState().highlightingEnabled).toBe(true);
+  it('defaults syntax highlighting on for every REST Projection format, toggleable independently', () => {
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: true, xml: true });
+    useAppStore.getState().setRestProjectionHighlighting('json', false);
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: false, xml: true });
+    useAppStore.getState().setRestProjectionHighlighting('json', true);
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: true, xml: true });
   });
 
   it('updates project info', () => {

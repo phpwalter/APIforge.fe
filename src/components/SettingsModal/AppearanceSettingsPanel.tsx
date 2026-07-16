@@ -6,8 +6,15 @@ export function AppearanceSettingsPanel() {
   const themeMode = useAppStore((s) => s.themeMode);
   const theme = useAppStore((s) => s.theme);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
-  const highlightingEnabled = useAppStore((s) => s.highlightingEnabled);
-  const setHighlightingEnabled = useAppStore((s) => s.setHighlightingEnabled);
+  const highlightingByFormat = useAppStore((s) => s.restProjectionHighlighting);
+  const setHighlightingForFormat = useAppStore((s) => s.setRestProjectionHighlighting);
+  const allHighlightingOn = highlightingByFormat.yaml && highlightingByFormat.json && highlightingByFormat.xml;
+  const allHighlightingOff = !highlightingByFormat.yaml && !highlightingByFormat.json && !highlightingByFormat.xml;
+  const setAllHighlighting = (v: boolean) => {
+    setHighlightingForFormat('yaml', v);
+    setHighlightingForFormat('json', v);
+    setHighlightingForFormat('xml', v);
+  };
 
   const syncChecked = themeMode === 'system';
   const manualChecked = !syncChecked;
@@ -121,22 +128,23 @@ export function AppearanceSettingsPanel() {
           <button
             type="button"
             className={styles.highlightPill}
-            data-active={highlightingEnabled}
-            onClick={() => setHighlightingEnabled(true)}
+            data-active={allHighlightingOn}
+            onClick={() => setAllHighlighting(true)}
           >
             On
           </button>
           <button
             type="button"
             className={styles.highlightPill}
-            data-active={!highlightingEnabled}
-            onClick={() => setHighlightingEnabled(false)}
+            data-active={allHighlightingOff}
+            onClick={() => setAllHighlighting(false)}
           >
             Off
           </button>
         </div>
         <div className={styles.highlightHint}>
-          Colors keys, strings, numbers &amp; punctuation in the REST Projection YAML/JSON/XML views.
+          Colors keys, strings, numbers &amp; punctuation in the REST Projection YAML/JSON/XML views. Each format
+          also has its own toggle in the REST Projection toolbar.
         </div>
       </div>
     </>

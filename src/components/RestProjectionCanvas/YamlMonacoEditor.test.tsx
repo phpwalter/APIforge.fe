@@ -8,6 +8,7 @@ import { YamlMonacoEditor } from './YamlMonacoEditor';
 // runtime, which jsdom can't provide.
 const listeners: { change: Array<() => void>; blur: Array<() => void> } = { change: [], blur: [] };
 let modelValue = '';
+let modelLanguage = 'yaml';
 const model = {
   getValue: vi.fn(() => modelValue),
   setValue: vi.fn((v: string) => {
@@ -27,18 +28,23 @@ const editor = {
   }),
   layout: vi.fn(),
   render: vi.fn(),
+  updateOptions: vi.fn(),
   dispose: vi.fn(),
 };
-const createModel = vi.fn((value: string) => {
+const createModel = vi.fn((value: string, language: string) => {
   modelValue = value;
+  modelLanguage = language;
   return model;
 });
 const create = vi.fn(() => editor);
 const setTheme = vi.fn();
+const setModelLanguage = vi.fn((_model: unknown, language: string) => {
+  modelLanguage = language;
+});
 
 vi.mock('../../lib/monaco/setup', () => ({
   setupMonacoOpenApiYaml: () => ({
-    editor: { createModel, create, setTheme },
+    editor: { createModel, create, setTheme, setModelLanguage },
     Uri: { parse: (s: string) => s },
   }),
 }));
@@ -56,6 +62,7 @@ beforeEach(() => {
   listeners.change = [];
   listeners.blur = [];
   modelValue = '';
+  modelLanguage = 'yaml';
   vi.clearAllMocks();
 });
 
@@ -66,6 +73,8 @@ describe('YamlMonacoEditor', () => {
         value="openapi: 3.1.0"
         theme="dark"
         wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -73,12 +82,38 @@ describe('YamlMonacoEditor', () => {
 
     expect(createModel).toHaveBeenCalledWith('openapi: 3.1.0', 'yaml', 'file:///openapi.yaml');
     expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0][1]).toMatchObject({ lineNumbers: 'on' });
+  });
+
+  it('creates the model as plaintext when highlighting is off, and with line numbers off', () => {
+    render(
+      <YamlMonacoEditor
+        value="openapi: 3.1.0"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled={false}
+        lineNumbersEnabled={false}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(createModel).toHaveBeenCalledWith('openapi: 3.1.0', 'plaintext', 'file:///openapi.yaml');
+    expect(create.mock.calls[0][1]).toMatchObject({ lineNumbers: 'off' });
   });
 
   it('calls onChange with the model value whenever the content changes', () => {
     const onChange = vi.fn();
     render(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={createRef()} onChange={onChange} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={onChange}
+        onCommit={vi.fn()}
+      />,
     );
 
     fireChange('a: 2');
@@ -95,7 +130,15 @@ describe('YamlMonacoEditor', () => {
 
     const onCommit = vi.fn();
     render(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={wrapRef} onChange={vi.fn()} onCommit={onCommit} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={wrapRef}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={onCommit}
+      />,
     );
     fireChange('a: 2');
     fireBlur();
@@ -115,7 +158,15 @@ describe('YamlMonacoEditor', () => {
 
     const onCommit = vi.fn();
     render(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={wrapRef} onChange={vi.fn()} onCommit={onCommit} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={wrapRef}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={onCommit}
+      />,
     );
     fireChange('a: 2');
     fireBlur();
@@ -126,11 +177,27 @@ describe('YamlMonacoEditor', () => {
 
   it('pushes an external value change (e.g. after a commit regenerates the doc) into the model', () => {
     const { rerender } = render(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={createRef()} onChange={vi.fn()} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
 
     rerender(
-      <YamlMonacoEditor value="a: 2" theme="dark" wrapRef={createRef()} onChange={vi.fn()} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 2"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
 
     expect(model.setValue).toHaveBeenCalledWith('a: 2');
@@ -139,12 +206,28 @@ describe('YamlMonacoEditor', () => {
   it('does not call setValue when the model already matches the incoming value (avoids clobbering the cursor mid-type)', () => {
     modelValue = 'a: 1';
     const { rerender } = render(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={createRef()} onChange={vi.fn()} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
     model.setValue.mockClear();
 
     rerender(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={createRef()} onChange={vi.fn()} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
 
     expect(model.setValue).not.toHaveBeenCalled();
@@ -152,19 +235,100 @@ describe('YamlMonacoEditor', () => {
 
   it('switches the global Monaco theme when the theme prop changes', () => {
     const { rerender } = render(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={createRef()} onChange={vi.fn()} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
     expect(setTheme).toHaveBeenCalledWith('vs-dark');
 
     rerender(
-      <YamlMonacoEditor value="a: 1" theme="light" wrapRef={createRef()} onChange={vi.fn()} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="light"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
     expect(setTheme).toHaveBeenCalledWith('vs');
   });
 
+  it('toggles Monaco line numbers on/off when lineNumbersEnabled changes', () => {
+    const { rerender } = render(
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    rerender(
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled={false}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(editor.updateOptions).toHaveBeenCalledWith({ lineNumbers: 'off' });
+  });
+
+  it('switches the model language between yaml and plaintext when highlightingEnabled changes', () => {
+    const { rerender } = render(
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    rerender(
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled={false}
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(setModelLanguage).toHaveBeenCalledWith(model, 'plaintext');
+    expect(modelLanguage).toBe('plaintext');
+  });
+
   it('disposes the editor and model on unmount', () => {
     const { unmount } = render(
-      <YamlMonacoEditor value="a: 1" theme="dark" wrapRef={createRef()} onChange={vi.fn()} onCommit={vi.fn()} />,
+      <YamlMonacoEditor
+        value="a: 1"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
     );
 
     unmount();
