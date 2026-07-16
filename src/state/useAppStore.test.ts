@@ -66,11 +66,11 @@ describe('useAppStore', () => {
   });
 
   it('defaults syntax highlighting on for every REST Projection format, toggleable independently', () => {
-    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: true, xml: true });
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: true });
     useAppStore.getState().setRestProjectionHighlighting('json', false);
-    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: false, xml: true });
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: false });
     useAppStore.getState().setRestProjectionHighlighting('json', true);
-    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: true, xml: true });
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: true, json: true });
   });
 
   it('updates project info', () => {
@@ -282,16 +282,16 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().restProjectionShowMeta).toBe(true);
   });
 
-  it('tracks a per-format manual edit independently, and clears all three together', () => {
+  it('tracks a per-format manual edit independently, and clears both together', () => {
     useAppStore.getState().setRestProjectionManual('yaml', 'openapi: 3.1.0');
     useAppStore.getState().setRestProjectionManual('json', '{}');
     let s = useAppStore.getState();
-    expect(s.restProjectionManual).toEqual({ yaml: 'openapi: 3.1.0', json: '{}', xml: null });
+    expect(s.restProjectionManual).toEqual({ yaml: 'openapi: 3.1.0', json: '{}' });
 
     useAppStore.getState().setRestProjectionError('Could not parse this document.');
     useAppStore.getState().clearRestProjectionManual();
     s = useAppStore.getState();
-    expect(s.restProjectionManual).toEqual({ yaml: null, json: null, xml: null });
+    expect(s.restProjectionManual).toEqual({ yaml: null, json: null });
     expect(s.restProjectionError).toBeNull();
   });
 });

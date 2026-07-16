@@ -9,25 +9,27 @@ vi.mock('../../lib/api/securityTypes', () => ({
   fetchSecurityTypes: vi.fn(() => Promise.resolve([])),
 }));
 
-// The real YamlMonacoEditor needs a browser Monaco can run in — not available under jsdom.
+// The real ProjectionMonacoEditor needs a browser Monaco can run in — not available under jsdom.
 // This stand-in mirrors its actual contract (a controlled textarea, and the same "don't commit
 // when blurring back into our own toolbar" boundary check) so the parent's wiring is still
-// exercised meaningfully. YamlMonacoEditor's own Monaco-specific behavior is covered separately
-// in YamlMonacoEditor.test.tsx with mocked monaco-editor/monaco-yaml.
-vi.mock('./YamlMonacoEditor', () => ({
-  YamlMonacoEditor: ({
+// exercised meaningfully. ProjectionMonacoEditor's own Monaco-specific behavior is covered
+// separately in ProjectionMonacoEditor.test.tsx with mocked monaco-editor/monaco-yaml.
+vi.mock('./ProjectionMonacoEditor', () => ({
+  ProjectionMonacoEditor: ({
     value,
+    format,
     wrapRef,
     onChange,
     onCommit,
   }: {
     value: string;
+    format: string;
     wrapRef: RefObject<HTMLDivElement | null>;
     onChange: (value: string) => void;
     onCommit: (value: string) => void;
   }) => (
     <textarea
-      aria-label="REST Projection document (YAML)"
+      aria-label={`REST Projection document (${format.toUpperCase()})`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={(e) => {
@@ -60,7 +62,7 @@ describe('RestProjectionCanvas', () => {
     });
   });
 
-  it('switches format and regenerates the content for JSON and XML', async () => {
+  it('switches format and regenerates the content for JSON', async () => {
     const user = userEvent.setup();
     render(<RestProjectionCanvas />);
 
@@ -68,11 +70,14 @@ describe('RestProjectionCanvas', () => {
     expect(screen.getByText('openapi.json')).toBeInTheDocument();
     const jsonArea = screen.getByLabelText('REST Projection document (JSON)') as HTMLTextAreaElement;
     expect(jsonArea.value).toContain('"openapi"');
+  });
 
-    await user.click(screen.getByRole('button', { name: 'XML' }));
-    expect(screen.getByText('openapi.xml')).toBeInTheDocument();
-    const xmlArea = screen.getByLabelText('REST Projection document (XML)') as HTMLTextAreaElement;
-    expect(xmlArea.value).toContain('<openapi>');
+  it('only offers YAML and JSON in the format switcher', () => {
+    render(<RestProjectionCanvas />);
+
+    expect(screen.getByRole('button', { name: 'YAML' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'JSON' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'XML' })).not.toBeInTheDocument();
   });
 
   it('toggles x-apiforge metadata visibility', async () => {
@@ -91,7 +96,7 @@ describe('RestProjectionCanvas', () => {
     const user = userEvent.setup();
     render(<RestProjectionCanvas />);
 
-    // Present on YAML too — YamlMonacoEditor.test.tsx covers the Monaco-side wiring.
+    // Present on YAML too — ProjectionMonacoEditor.test.tsx covers the Monaco-side wiring.
     expect(useAppStore.getState().restProjectionHighlighting.yaml).toBe(true);
     const offToggle = screen.getByRole('button', { name: 'Turn off syntax highlighting' });
     expect(offToggle).toHaveAttribute('data-active', 'true');
@@ -105,13 +110,13 @@ describe('RestProjectionCanvas', () => {
     expect(useAppStore.getState().restProjectionHighlighting.yaml).toBe(true);
   });
 
-  it('keeps syntax highlighting and line numbers independent per format — toggling one tab does not affect the others', async () => {
+  it('keeps syntax highlighting and line numbers independent per format — toggling one tab does not affect the other', async () => {
     const user = userEvent.setup();
     render(<RestProjectionCanvas />);
 
     // Turn off highlighting for YAML only.
     await user.click(screen.getByRole('button', { name: 'Turn off syntax highlighting' }));
-    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: false, json: true, xml: true });
+    expect(useAppStore.getState().restProjectionHighlighting).toEqual({ yaml: false, json: true });
 
     // JSON still shows its own toggle as on.
     await user.click(screen.getByRole('button', { name: 'JSON' }));
@@ -119,32 +124,28 @@ describe('RestProjectionCanvas', () => {
 
     // Turn off line numbers for JSON only.
     await user.click(screen.getByRole('button', { name: 'Hide line numbers' }));
-    expect(useAppStore.getState().restProjectionLineNumbers).toEqual({ yaml: true, json: false, xml: true });
+    expect(useAppStore.getState().restProjectionLineNumbers).toEqual({ yaml: true, json: false });
 
-    // XML still has its own line-numbers toggle on, and YAML's highlighting toggle is still off.
-    await user.click(screen.getByRole('button', { name: 'XML' }));
-    expect(screen.getByRole('button', { name: 'Hide line numbers' })).toHaveAttribute('data-active', 'true');
+    // YAML's line numbers and highlighting toggles are unaffected by the JSON-only changes above.
     await user.click(screen.getByRole('button', { name: 'YAML' }));
+    expect(screen.getByRole('button', { name: 'Hide line numbers' })).toHaveAttribute('data-active', 'true');
     expect(screen.getByRole('button', { name: 'Turn on syntax highlighting' })).toHaveAttribute('data-active', 'false');
   });
 
-  it('shows a line-number gutter by default for JSON/XML, toggleable via the toolbar button (button also present for YAML, wired to Monaco directly)', async () => {
+  it('toggles line numbers via the toolbar button, independently per format', async () => {
     const user = userEvent.setup();
     render(<RestProjectionCanvas />);
 
-    // Present on YAML too, though the custom .gutter div is JSON/XML-only — Monaco has its own.
     expect(screen.getByRole('button', { name: 'Hide line numbers' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'JSON' }));
 
     expect(useAppStore.getState().restProjectionLineNumbers.json).toBe(true);
     const hideToggle = screen.getByRole('button', { name: 'Hide line numbers' });
     expect(hideToggle).toHaveAttribute('data-active', 'true');
-    expect(screen.getByText('1')).toBeInTheDocument();
 
     await user.click(hideToggle);
     expect(useAppStore.getState().restProjectionLineNumbers.json).toBe(false);
     expect(screen.getByRole('button', { name: 'Show line numbers' })).toHaveAttribute('data-active', 'false');
-    expect(screen.queryByText('1')).not.toBeInTheDocument();
   });
 
   it('copies the current document to the clipboard and briefly shows a "copied" state', async () => {
@@ -177,7 +178,7 @@ describe('RestProjectionCanvas', () => {
       expect(useAppStore.getState().apiTitle).toBe('Unmount Commit');
     });
     expect(useSpecStore.getState().endpoints.map((e) => e.path)).toEqual(['/ping']);
-    expect(useAppStore.getState().restProjectionManual).toEqual({ yaml: null, json: null, xml: null });
+    expect(useAppStore.getState().restProjectionManual).toEqual({ yaml: null, json: null });
   });
 
   it('commits a valid edit back into the spec store on blur, and clears the "edited" state', async () => {
@@ -212,7 +213,7 @@ describe('RestProjectionCanvas', () => {
     expect(textarea.value).toBe('not: [valid');
   });
 
-  it('switching format tabs mid-edit does not commit the pending edit or leak it into the other formats', async () => {
+  it('switching format tabs mid-edit does not commit the pending edit or leak it into the other format', async () => {
     const user = userEvent.setup();
     render(<RestProjectionCanvas />);
     const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
@@ -231,8 +232,7 @@ describe('RestProjectionCanvas', () => {
 
     // Switching back to YAML shows the untouched pending edit, still uncommitted.
     await user.click(screen.getByRole('button', { name: 'YAML' }));
-    expect(yamlArea.value).toBe('scratch: text');
+    expect(screen.getByLabelText('REST Projection document (YAML)')).toHaveValue('scratch: text');
     expect(screen.getByText('edited')).toBeInTheDocument();
   });
-
 });

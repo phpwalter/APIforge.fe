@@ -6,14 +6,13 @@ import type { RestProjectionFormat } from '../types/ui';
 const FILENAME_FOR_FORMAT: Record<RestProjectionFormat, string> = {
   yaml: 'openapi.yaml',
   json: 'openapi.json',
-  xml: 'openapi.xml',
 };
 
 /**
  * Commits a hand-edited REST Projection doc back into the canvas model — the same
  * parse → importSpec → setProjectInfo pipeline `importHandler.ts` uses for a dropped file,
  * so a projection edit behaves exactly like importing a new document. On success this clears
- * every format's pending manual edit (all three views regenerate from the new model); on
+ * every format's pending manual edit (both views regenerate from the new model); on
  * failure the edit is left in place and the parse error is surfaced in the footer.
  */
 export function commitRestProjectionEdit(text: string, format: RestProjectionFormat): void {

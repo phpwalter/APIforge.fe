@@ -140,7 +140,7 @@ interface AppState {
   setRestProjectionFormat: (format: RestProjectionFormat) => void;
   restProjectionShowMeta: boolean;
   toggleRestProjectionMeta: () => void;
-  // Syntax highlighting and line numbers are per-format — toggling one off for YAML doesn't affect JSON/XML.
+  // Syntax highlighting and line numbers are per-format — toggling one off for YAML doesn't affect JSON.
   restProjectionHighlighting: Record<RestProjectionFormat, boolean>;
   setRestProjectionHighlighting: (format: RestProjectionFormat, v: boolean) => void;
   restProjectionLineNumbers: Record<RestProjectionFormat, boolean>;
@@ -290,19 +290,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRestProjectionFormat: (format) => set({ restProjectionFormat: format }),
   restProjectionShowMeta: false,
   toggleRestProjectionMeta: () => set((s) => ({ restProjectionShowMeta: !s.restProjectionShowMeta })),
-  restProjectionHighlighting: { yaml: true, json: true, xml: true },
+  restProjectionHighlighting: { yaml: true, json: true },
   setRestProjectionHighlighting: (format, v) =>
     set((s) => ({ restProjectionHighlighting: { ...s.restProjectionHighlighting, [format]: v } })),
-  restProjectionLineNumbers: { yaml: true, json: true, xml: true },
+  restProjectionLineNumbers: { yaml: true, json: true },
   setRestProjectionLineNumbers: (format, v) =>
     set((s) => ({ restProjectionLineNumbers: { ...s.restProjectionLineNumbers, [format]: v } })),
-  restProjectionManual: { yaml: null, json: null, xml: null },
+  restProjectionManual: { yaml: null, json: null },
   setRestProjectionManual: (format, text) =>
     set((s) => ({ restProjectionManual: { ...s.restProjectionManual, [format]: text } })),
   restProjectionError: null,
   setRestProjectionError: (message) => set({ restProjectionError: message }),
   clearRestProjectionManual: () =>
-    set({ restProjectionManual: { yaml: null, json: null, xml: null }, restProjectionError: null }),
+    set({ restProjectionManual: { yaml: null, json: null }, restProjectionError: null }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

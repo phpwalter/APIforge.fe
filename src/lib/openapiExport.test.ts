@@ -3,12 +3,10 @@ import { load as loadYaml } from 'js-yaml';
 import {
   buildOpenApiDocument,
   documentToJson,
-  documentToXml,
   documentToYaml,
   slugifyFilename,
   type BuildExportDocumentParams,
 } from './openapiExport';
-import { parseOpenApiDocument } from './openapiImport';
 import type { SecurityTypeDto } from './api/securityTypes';
 import type { Endpoint, Schema, SchemaFieldCustom } from '../types/spec';
 
@@ -325,37 +323,6 @@ describe('serialization', () => {
     expect(JSON.parse(documentToJson(doc))).toEqual(doc);
   });
 
-  it('sanitizes keys that are not valid XML names, keeping the original in a `key` attribute', () => {
-    const endpoint = baseEndpoint({
-      path: '/users/{id}',
-      responses: [{ id: 'res_1', code: '200', description: 'OK', headers: [], contentTypes: ['application/json'], schema: '', schemaIsArray: false }],
-    });
-    const doc = buildOpenApiDocument(baseParams({ endpoints: [endpoint] }));
-    const xml = documentToXml(doc);
-
-    expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(xml).toContain('<_users__id_ key="/users/{id}">');
-    expect(xml).toContain('<_200 key="200">');
-    // A key that's already a valid XML name (e.g. "get", "responses") isn't wrapped.
-    expect(xml).toContain('<get>');
-    expect(xml).not.toContain('key="get"');
-  });
-
-  it('round-trips through XML via the parseOpenApiDocument XML reader', () => {
-    const endpoint = baseEndpoint({
-      path: '/users/{id}',
-      summary: 'Get a user',
-      tags: ['admin', 'users'],
-      responses: [{ id: 'res_1', code: '200', description: 'OK', headers: [], contentTypes: ['application/json'], schema: '', schemaIsArray: false }],
-    });
-    const doc = buildOpenApiDocument(baseParams({ endpoints: [endpoint] }));
-    const xml = documentToXml(doc);
-
-    const parsed = parseOpenApiDocument(xml, 'openapi.xml');
-    expect(parsed.endpoints).toHaveLength(1);
-    expect(parsed.endpoints[0]).toMatchObject({ path: '/users/{id}', method: 'GET', summary: 'Get a user', tags: ['admin', 'users'] });
-    expect(parsed.endpoints[0].responses[0]).toMatchObject({ code: '200', description: 'OK' });
-  });
 });
 
 describe('slugifyFilename', () => {

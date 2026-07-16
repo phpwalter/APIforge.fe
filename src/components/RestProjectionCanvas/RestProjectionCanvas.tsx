@@ -3,24 +3,22 @@ import { Copy, CopyCheck, ListOrdered, Palette } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
 import { fetchSecurityTypes, type SecurityTypeDto } from '../../lib/api/securityTypes';
-import { buildOpenApiDocument, documentToJson, documentToXml, documentToYaml } from '../../lib/openapiExport';
-import { highlightCode } from '../../lib/highlight';
+import { buildOpenApiDocument, documentToJson, documentToYaml } from '../../lib/openapiExport';
 import { commitRestProjectionEdit } from '../../lib/restProjectionEdit';
 import type { RestProjectionFormat } from '../../types/ui';
 import styles from './RestProjectionCanvas.module.css';
 
-// Monaco is a large dependency — only pull it into a chunk when the YAML tab actually renders.
-const YamlMonacoEditor = lazy(() =>
-  import('./YamlMonacoEditor').then((m) => ({ default: m.YamlMonacoEditor })),
+// Monaco is a large dependency — only pull it into a chunk when the REST Projection tab actually renders.
+const ProjectionMonacoEditor = lazy(() =>
+  import('./ProjectionMonacoEditor').then((m) => ({ default: m.ProjectionMonacoEditor })),
 );
 
 type SecurityTypesState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; types: SecurityTypeDto[] };
 
-const FORMATS: RestProjectionFormat[] = ['yaml', 'json', 'xml'];
+const FORMATS: RestProjectionFormat[] = ['yaml', 'json'];
 const FILENAME_FOR_FORMAT: Record<RestProjectionFormat, string> = {
   yaml: 'openapi.yaml',
   json: 'openapi.json',
-  xml: 'openapi.xml',
 };
 
 export function RestProjectionCanvas() {
@@ -56,9 +54,6 @@ export function RestProjectionCanvas() {
   const [copyFeedback, setCopyFeedback] = useState(false);
 
   const wrapRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const gutterRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     fetchSecurityTypes()
@@ -67,9 +62,9 @@ export function RestProjectionCanvas() {
   }, []);
 
   // Switching to a different canvas tab (Design/Schema/Swagger/Diagnostics) unmounts this
-  // component without ever firing a native blur on the textarea, so the onBlur commit below
-  // wouldn't otherwise run — commit whatever's pending on unmount too, so "apply on leaving
-  // this editor" holds regardless of how the user leaves it.
+  // component without ever firing a Monaco blur event, so the onCommit below wouldn't otherwise
+  // run — commit whatever's pending on unmount too, so "apply on leaving this editor" holds
+  // regardless of how the user leaves it.
   const pendingCommitRef = useRef<{ manual: typeof manual; format: RestProjectionFormat }>({ manual, format });
   pendingCommitRef.current = { manual, format };
   useEffect(
@@ -100,9 +95,7 @@ export function RestProjectionCanvas() {
       securityTypes: securityTypesState.status === 'ready' ? securityTypesState.types : [],
       variant: showMeta ? 'full' : 'clean',
     });
-    if (format === 'json') return documentToJson(doc);
-    if (format === 'xml') return documentToXml(doc);
-    return documentToYaml(doc);
+    return format === 'json' ? documentToJson(doc) : documentToYaml(doc);
   }, [
     format,
     showMeta,
@@ -127,26 +120,9 @@ export function RestProjectionCanvas() {
   const lineCount = useMemo(() => displayText.split('\n').length, [displayText]);
   const highlightingEnabled = highlightingByFormat[format];
   const lineNumbersEnabled = lineNumbersByFormat[format];
-  // hljs.highlight() only takes a few ms even for a large generated doc, so this runs
-  // synchronously in-render rather than being deferred — a deferred (low-priority) update can
-  // itself sit for seconds under React's scheduler, which made format switching feel laggy.
-  const highlightedHtml = useMemo(
-    () => (format === 'yaml' ? '' : highlightCode(displayText, format, highlightingEnabled)),
-    [displayText, format, highlightingEnabled],
-  );
 
-  const commitYaml = (value: string) => {
-    if (manual.yaml != null) commitRestProjectionEdit(value, 'yaml');
-  };
-
-  const syncScroll = () => {
-    if (overlayRef.current && textareaRef.current) {
-      overlayRef.current.scrollTop = textareaRef.current.scrollTop;
-      overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
-    }
-    if (gutterRef.current && textareaRef.current) {
-      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
+  const commitEditor = (value: string) => {
+    if (manual[format] != null) commitRestProjectionEdit(value, format);
   };
 
   const copy = () => {
@@ -222,55 +198,19 @@ export function RestProjectionCanvas() {
         </div>
       </div>
 
-      <div className={styles.codeWrap} data-gutter={format !== 'yaml' && lineNumbersEnabled}>
-        {format === 'yaml' ? (
-          <Suspense fallback={<div className={styles.editorLoading}>Loading editor…</div>}>
-            <YamlMonacoEditor
-              value={displayText}
-              theme={theme}
-              wrapRef={wrapRef}
-              highlightingEnabled={highlightingEnabled}
-              lineNumbersEnabled={lineNumbersEnabled}
-              onChange={(value) => setManual('yaml', value)}
-              onCommit={commitYaml}
-            />
-          </Suspense>
-        ) : (
-          <>
-            {lineNumbersEnabled && (
-              <div ref={gutterRef} className={styles.gutter}>
-                {Array.from({ length: lineCount }, (_, i) => (
-                  <div key={i} className={styles.gutterLine}>
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div ref={overlayRef} className={styles.overlay}>
-              <pre className={styles.pre}>
-                <code className={styles.code} dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
-              </pre>
-            </div>
-            <textarea
-              ref={textareaRef}
-              className={styles.textarea}
-              aria-label={`REST Projection document (${format.toUpperCase()})`}
-              spellCheck={false}
-              wrap="off"
-              value={displayText}
-              onChange={(e) => setManual(format, e.target.value)}
-              onBlur={(e) => {
-                // Clicking our own toolbar (syntax highlighting, Copy, x-apiforge toggle, format switch) blurs
-                // the textarea first — don't treat that as "click outside" and commit; only a real
-                // blur to somewhere outside this panel applies the edit.
-                const next = e.relatedTarget as Node | null;
-                if (next && wrapRef.current?.contains(next)) return;
-                if (manual[format] != null) commitRestProjectionEdit(manual[format]!, format);
-              }}
-              onScroll={syncScroll}
-            />
-          </>
-        )}
+      <div className={styles.codeWrap}>
+        <Suspense fallback={<div className={styles.editorLoading}>Loading editor…</div>}>
+          <ProjectionMonacoEditor
+            value={displayText}
+            format={format}
+            theme={theme}
+            wrapRef={wrapRef}
+            highlightingEnabled={highlightingEnabled}
+            lineNumbersEnabled={lineNumbersEnabled}
+            onChange={(value) => setManual(format, value)}
+            onCommit={commitEditor}
+          />
+        </Suspense>
       </div>
 
       <div className={styles.footer}>

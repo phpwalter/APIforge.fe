@@ -38,7 +38,7 @@ describe('commitRestProjectionEdit', () => {
     expect(appState.apiTitle).toBe('Edited API');
     expect(appState.apiVersion).toBe('2.0.0');
     expect(appState.apiOpenapiVersion).toBe('3.1.0');
-    expect(appState.restProjectionManual).toEqual({ yaml: null, json: null, xml: null });
+    expect(appState.restProjectionManual).toEqual({ yaml: null, json: null });
     expect(appState.restProjectionError).toBeNull();
   });
 

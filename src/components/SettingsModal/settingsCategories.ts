@@ -56,19 +56,19 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
       {
         key: 'colorScheme',
         label: 'Color Scheme',
-        keywords: 'color scheme theme yaml json xml',
+        keywords: 'color scheme theme yaml json',
         icon: Palette,
       },
       {
         key: 'colorStyle',
         label: 'Color Style',
-        keywords: 'color style syntax highlight yaml json xml',
+        keywords: 'color style syntax highlight yaml json',
         icon: SwatchBook,
       },
       {
         key: 'fileEncoding',
         label: 'File Encoding',
-        keywords: 'file encoding charset utf yaml json xml',
+        keywords: 'file encoding charset utf yaml json',
         icon: Binary,
       },
       { key: 'formatting', label: 'Formatting', keywords: 'formatting indent tabs spaces wrap', icon: AlignLeft },

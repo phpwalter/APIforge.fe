@@ -1,11 +1,11 @@
 import { render } from '@testing-library/react';
 import { createRef } from 'react';
-import { YamlMonacoEditor } from './YamlMonacoEditor';
+import { ProjectionMonacoEditor } from './ProjectionMonacoEditor';
 
-// YamlMonacoEditor's only monaco-specific dependency is setupMonacoOpenApiYaml() — mock it with a
-// minimal fake `monaco` namespace so these tests exercise the component's own wiring (model
-// creation, change/blur listeners, external-value sync, disposal) without needing a real Monaco
-// runtime, which jsdom can't provide.
+// ProjectionMonacoEditor's only monaco-specific dependency is setupMonacoOpenApiEditors() — mock
+// it with a minimal fake `monaco` namespace so these tests exercise the component's own wiring
+// (model creation, change/blur listeners, external-value sync, disposal) without needing a real
+// Monaco runtime, which jsdom can't provide.
 const listeners: { change: Array<() => void>; blur: Array<() => void> } = { change: [], blur: [] };
 let modelValue = '';
 let modelLanguage = 'yaml';
@@ -43,7 +43,7 @@ const setModelLanguage = vi.fn((_model: unknown, language: string) => {
 });
 
 vi.mock('../../lib/monaco/setup', () => ({
-  setupMonacoOpenApiYaml: () => ({
+  setupMonacoOpenApiEditors: () => ({
     editor: { createModel, create, setTheme, setModelLanguage },
     Uri: { parse: (s: string) => s },
   }),
@@ -66,11 +66,12 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('YamlMonacoEditor', () => {
-  it('creates the model as YAML with the given initial value', () => {
+describe('ProjectionMonacoEditor', () => {
+  it('creates the model in the given format language with the initial value', () => {
     render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="openapi: 3.1.0"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -85,10 +86,28 @@ describe('YamlMonacoEditor', () => {
     expect(create.mock.calls[0][1]).toMatchObject({ lineNumbers: 'on' });
   });
 
+  it('creates a JSON model with its own URI when format is json', () => {
+    render(
+      <ProjectionMonacoEditor
+        value="{}"
+        format="json"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(createModel).toHaveBeenCalledWith('{}', 'json', 'file:///openapi.json');
+  });
+
   it('creates the model as plaintext when highlighting is off, and with line numbers off', () => {
     render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="openapi: 3.1.0"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled={false}
@@ -105,8 +124,9 @@ describe('YamlMonacoEditor', () => {
   it('calls onChange with the model value whenever the content changes', () => {
     const onChange = vi.fn();
     render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -130,8 +150,9 @@ describe('YamlMonacoEditor', () => {
 
     const onCommit = vi.fn();
     render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={wrapRef}
         highlightingEnabled
@@ -158,8 +179,9 @@ describe('YamlMonacoEditor', () => {
 
     const onCommit = vi.fn();
     render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={wrapRef}
         highlightingEnabled
@@ -177,8 +199,9 @@ describe('YamlMonacoEditor', () => {
 
   it('pushes an external value change (e.g. after a commit regenerates the doc) into the model', () => {
     const { rerender } = render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -189,8 +212,9 @@ describe('YamlMonacoEditor', () => {
     );
 
     rerender(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 2"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -206,8 +230,9 @@ describe('YamlMonacoEditor', () => {
   it('does not call setValue when the model already matches the incoming value (avoids clobbering the cursor mid-type)', () => {
     modelValue = 'a: 1';
     const { rerender } = render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -219,8 +244,9 @@ describe('YamlMonacoEditor', () => {
     model.setValue.mockClear();
 
     rerender(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -235,8 +261,9 @@ describe('YamlMonacoEditor', () => {
 
   it('switches the global Monaco theme when the theme prop changes', () => {
     const { rerender } = render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -248,8 +275,9 @@ describe('YamlMonacoEditor', () => {
     expect(setTheme).toHaveBeenCalledWith('vs-dark');
 
     rerender(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="light"
         wrapRef={createRef()}
         highlightingEnabled
@@ -263,8 +291,9 @@ describe('YamlMonacoEditor', () => {
 
   it('toggles Monaco line numbers on/off when lineNumbersEnabled changes', () => {
     const { rerender } = render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -275,8 +304,9 @@ describe('YamlMonacoEditor', () => {
     );
 
     rerender(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -289,10 +319,11 @@ describe('YamlMonacoEditor', () => {
     expect(editor.updateOptions).toHaveBeenCalledWith({ lineNumbers: 'off' });
   });
 
-  it('switches the model language between yaml and plaintext when highlightingEnabled changes', () => {
+  it('switches the model language between the format language and plaintext when highlightingEnabled changes', () => {
     const { rerender } = render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled
@@ -303,8 +334,9 @@ describe('YamlMonacoEditor', () => {
     );
 
     rerender(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled={false}
@@ -318,10 +350,45 @@ describe('YamlMonacoEditor', () => {
     expect(modelLanguage).toBe('plaintext');
   });
 
+  it('recreates the editor with a new model when the format prop changes (switching REST Projection tabs)', () => {
+    const { rerender } = render(
+      <ProjectionMonacoEditor
+        value="openapi: 3.1.0"
+        format="yaml"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(create).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <ProjectionMonacoEditor
+        value="{}"
+        format="json"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(editor.dispose).toHaveBeenCalledTimes(1);
+    expect(model.dispose).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(createModel).toHaveBeenLastCalledWith('{}', 'json', 'file:///openapi.json');
+  });
+
   it('disposes the editor and model on unmount', () => {
     const { unmount } = render(
-      <YamlMonacoEditor
+      <ProjectionMonacoEditor
         value="a: 1"
+        format="yaml"
         theme="dark"
         wrapRef={createRef()}
         highlightingEnabled

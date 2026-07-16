@@ -25,7 +25,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   colorScheme: () => (
     <FormatScopedComingSoonPanel
       title="Color Scheme"
-      description="Choose the editor color scheme used for the REST Projection YAML, JSON, and XML views."
+      description="Choose the editor color scheme used for the REST Projection YAML and JSON views."
     />
   ),
   colorStyle: () => (

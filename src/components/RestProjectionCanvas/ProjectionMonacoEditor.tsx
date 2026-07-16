@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import { setupMonacoOpenApiYaml } from '../../lib/monaco/setup';
+import { setupMonacoOpenApiEditors } from '../../lib/monaco/setup';
+import type { RestProjectionFormat } from '../../types/ui';
 import styles from './RestProjectionCanvas.module.css';
 
-interface YamlMonacoEditorProps {
+interface ProjectionMonacoEditorProps {
   value: string;
+  format: RestProjectionFormat;
   theme: 'dark' | 'light';
   /** The panel's own root element — a blur that lands back inside it (our toolbar) doesn't count as "leaving the editor". */
   wrapRef: RefObject<HTMLDivElement | null>;
@@ -16,20 +18,21 @@ interface YamlMonacoEditorProps {
 }
 
 /**
- * A real YAML editor for the REST Projection panel: Monaco + monaco-yaml, validating against the
- * official OpenAPI 3.1 JSON Schema (hover, autocomplete, and Shift+Alt+F formatting come from
- * monaco-yaml once the schema is registered — see lib/monaco/setup.ts). JSON and XML still use
- * the plain textarea + highlight.js overlay; only YAML gets the full editor for now.
+ * A real code editor for the REST Projection panel: Monaco, validating both the YAML (via
+ * monaco-yaml) and JSON (via Monaco's built-in JSON language service) views against the official
+ * OpenAPI 3.1 JSON Schema (hover, autocomplete, and Shift+Alt+F formatting come from the schema
+ * once registered — see lib/monaco/setup.ts).
  */
-export function YamlMonacoEditor({
+export function ProjectionMonacoEditor({
   value,
+  format,
   theme,
   wrapRef,
   highlightingEnabled,
   lineNumbersEnabled,
   onChange,
   onCommit,
-}: YamlMonacoEditorProps) {
+}: ProjectionMonacoEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null);
   const onChangeRef = useRef(onChange);
@@ -39,12 +42,12 @@ export function YamlMonacoEditor({
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const monaco = setupMonacoOpenApiYaml();
+    const monaco = setupMonacoOpenApiEditors();
 
     const model = monaco.editor.createModel(
       value,
-      highlightingEnabled ? 'yaml' : 'plaintext',
-      monaco.Uri.parse('file:///openapi.yaml'),
+      highlightingEnabled ? format : 'plaintext',
+      monaco.Uri.parse(`file:///openapi.${format}`),
     );
     const editor = monaco.editor.create(containerRef.current, {
       model,
@@ -79,9 +82,11 @@ export function YamlMonacoEditor({
       model.dispose();
       editorRef.current = null;
     };
-    // Only re-run for a genuinely new editor instance — value/theme are synced by the effects below.
+    // Only re-run when the format changes (a genuinely new model/editor) — value/theme/toggles are
+    // synced by the effects below, and re-running this for those would recreate the editor and
+    // drop focus/undo-history on every toggle click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [format]);
 
   useEffect(() => {
     const model = editorRef.current?.getModel();
@@ -89,8 +94,8 @@ export function YamlMonacoEditor({
   }, [value]);
 
   useEffect(() => {
-    // Global (there's only ever one Monaco instance mounted, since it's YAML-tab-only).
-    setupMonacoOpenApiYaml().editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
+    // Global (there's only ever one Monaco instance mounted at a time, since the panel shows one format).
+    setupMonacoOpenApiEditors().editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
   }, [theme]);
 
   useEffect(() => {
@@ -99,9 +104,9 @@ export function YamlMonacoEditor({
 
   useEffect(() => {
     const model = editorRef.current?.getModel();
-    const monaco = setupMonacoOpenApiYaml();
-    if (model) monaco.editor.setModelLanguage(model, highlightingEnabled ? 'yaml' : 'plaintext');
-  }, [highlightingEnabled]);
+    const monaco = setupMonacoOpenApiEditors();
+    if (model) monaco.editor.setModelLanguage(model, highlightingEnabled ? format : 'plaintext');
+  }, [format, highlightingEnabled]);
 
   return <div ref={containerRef} className={styles.monacoContainer} />;
 }

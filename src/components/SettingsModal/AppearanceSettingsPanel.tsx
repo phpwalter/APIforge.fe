@@ -8,12 +8,11 @@ export function AppearanceSettingsPanel() {
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const highlightingByFormat = useAppStore((s) => s.restProjectionHighlighting);
   const setHighlightingForFormat = useAppStore((s) => s.setRestProjectionHighlighting);
-  const allHighlightingOn = highlightingByFormat.yaml && highlightingByFormat.json && highlightingByFormat.xml;
-  const allHighlightingOff = !highlightingByFormat.yaml && !highlightingByFormat.json && !highlightingByFormat.xml;
+  const allHighlightingOn = highlightingByFormat.yaml && highlightingByFormat.json;
+  const allHighlightingOff = !highlightingByFormat.yaml && !highlightingByFormat.json;
   const setAllHighlighting = (v: boolean) => {
     setHighlightingForFormat('yaml', v);
     setHighlightingForFormat('json', v);
-    setHighlightingForFormat('xml', v);
   };
 
   const syncChecked = themeMode === 'system';
@@ -143,8 +142,8 @@ export function AppearanceSettingsPanel() {
           </button>
         </div>
         <div className={styles.highlightHint}>
-          Colors keys, strings, numbers &amp; punctuation in the REST Projection YAML/JSON/XML views. Each format
-          also has its own toggle in the REST Projection toolbar.
+          Colors keys, strings, numbers &amp; punctuation in the REST Projection YAML/JSON views. Each format also
+          has its own toggle in the REST Projection toolbar.
         </div>
       </div>
     </>

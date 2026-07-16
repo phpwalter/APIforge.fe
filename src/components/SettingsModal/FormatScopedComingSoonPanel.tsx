@@ -3,7 +3,7 @@ import type { RestProjectionFormat } from '../../types/ui';
 import settingsStyles from './SettingsModal.module.css';
 import styles from './FormatScopedComingSoonPanel.module.css';
 
-const FORMATS: RestProjectionFormat[] = ['yaml', 'json', 'xml'];
+const FORMATS: RestProjectionFormat[] = ['yaml', 'json'];
 
 interface FormatScopedComingSoonPanelProps {
   title: string;
