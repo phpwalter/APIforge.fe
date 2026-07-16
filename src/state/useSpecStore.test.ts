@@ -1,4 +1,11 @@
-import { useSpecStore, methodsForPath, EP_PANEL_MIN_WIDTH, EP_PANEL_MAX_WIDTH } from './useSpecStore';
+import {
+  useSpecStore,
+  methodsForPath,
+  EP_PANEL_MIN_WIDTH,
+  EP_PANEL_MAX_WIDTH,
+  OUTLINE_PANEL_MIN_WIDTH,
+  OUTLINE_PANEL_MAX_WIDTH,
+} from './useSpecStore';
 import type { Endpoint, Schema } from '../types/spec';
 
 const initialState = useSpecStore.getState();
@@ -324,6 +331,39 @@ describe('useSpecStore', () => {
 
     useSpecStore.getState().setPanelWidth(EP_PANEL_MAX_WIDTH + 100);
     expect(useSpecStore.getState().panelWidth).toBe(EP_PANEL_MAX_WIDTH);
+  });
+
+  it('clamps the REST Projection outline panel width, and toggles its collapsed/resizing state', () => {
+    useSpecStore.getState().setRestProjectionOutlinePanelWidth(OUTLINE_PANEL_MIN_WIDTH - 100);
+    expect(useSpecStore.getState().restProjectionOutlinePanelWidth).toBe(OUTLINE_PANEL_MIN_WIDTH);
+
+    useSpecStore.getState().setRestProjectionOutlinePanelWidth(OUTLINE_PANEL_MAX_WIDTH + 100);
+    expect(useSpecStore.getState().restProjectionOutlinePanelWidth).toBe(OUTLINE_PANEL_MAX_WIDTH);
+
+    expect(useSpecStore.getState().restProjectionOutlinePanelCollapsed).toBe(false);
+    useSpecStore.getState().toggleRestProjectionOutlinePanelCollapsed();
+    expect(useSpecStore.getState().restProjectionOutlinePanelCollapsed).toBe(true);
+
+    expect(useSpecStore.getState().resizingRestProjectionOutlinePanel).toBe(false);
+    useSpecStore.getState().setResizingRestProjectionOutlinePanel(true);
+    expect(useSpecStore.getState().resizingRestProjectionOutlinePanel).toBe(true);
+  });
+
+  it('toggles REST Projection outline nodes from their per-key default (general/components start expanded, others start collapsed), independently of each other', () => {
+    expect(useSpecStore.getState().restProjectionOutlineExpanded.tags).toBeUndefined();
+    expect(useSpecStore.getState().restProjectionOutlineExpanded.general).toBeUndefined();
+
+    // Tags starts collapsed — first toggle expands it.
+    useSpecStore.getState().toggleRestProjectionOutlineExpanded('tags');
+    expect(useSpecStore.getState().restProjectionOutlineExpanded.tags).toBe(true);
+    expect(useSpecStore.getState().restProjectionOutlineExpanded.paths).toBeUndefined();
+
+    useSpecStore.getState().toggleRestProjectionOutlineExpanded('tags');
+    expect(useSpecStore.getState().restProjectionOutlineExpanded.tags).toBe(false);
+
+    // General starts expanded — first toggle collapses it.
+    useSpecStore.getState().toggleRestProjectionOutlineExpanded('general');
+    expect(useSpecStore.getState().restProjectionOutlineExpanded.general).toBe(false);
   });
 
   it('adds a schema with a unique auto-generated name', () => {

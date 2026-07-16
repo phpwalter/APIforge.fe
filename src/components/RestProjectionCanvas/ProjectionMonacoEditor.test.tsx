@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { createRef } from 'react';
-import { ProjectionMonacoEditor } from './ProjectionMonacoEditor';
+import { ProjectionMonacoEditor, type ProjectionMonacoEditorHandle } from './ProjectionMonacoEditor';
 
 // ProjectionMonacoEditor's only monaco-specific dependency is setupMonacoOpenApiEditors() — mock
 // it with a minimal fake `monaco` namespace so these tests exercise the component's own wiring
@@ -29,6 +29,9 @@ const editor = {
   layout: vi.fn(),
   render: vi.fn(),
   updateOptions: vi.fn(),
+  revealLineInCenter: vi.fn(),
+  setPosition: vi.fn(),
+  focus: vi.fn(),
   dispose: vi.fn(),
 };
 const createModel = vi.fn((value: string, language: string) => {
@@ -382,6 +385,29 @@ describe('ProjectionMonacoEditor', () => {
     expect(model.dispose).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledTimes(2);
     expect(createModel).toHaveBeenLastCalledWith('{}', 'json', 'file:///openapi.json');
+  });
+
+  it('exposes revealLine via the ref, which reveals, positions, and focuses the editor at that line', () => {
+    const handleRef = createRef<ProjectionMonacoEditorHandle>();
+    render(
+      <ProjectionMonacoEditor
+        ref={handleRef}
+        value="a: 1"
+        format="yaml"
+        theme="dark"
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    handleRef.current?.revealLine(7);
+
+    expect(editor.revealLineInCenter).toHaveBeenCalledWith(7);
+    expect(editor.setPosition).toHaveBeenCalledWith({ lineNumber: 7, column: 1 });
+    expect(editor.focus).toHaveBeenCalledTimes(1);
   });
 
   it('disposes the editor and model on unmount', () => {

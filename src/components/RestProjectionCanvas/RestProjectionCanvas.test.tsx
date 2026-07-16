@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { RefObject } from 'react';
+import { forwardRef, useImperativeHandle, type Ref, type RefObject } from 'react';
 import { RestProjectionCanvas } from './RestProjectionCanvas';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
@@ -9,35 +9,47 @@ vi.mock('../../lib/api/securityTypes', () => ({
   fetchSecurityTypes: vi.fn(() => Promise.resolve([])),
 }));
 
+// Spy the outline panel's jump-to-line calls land on — asserted separately from the mocked
+// editor's own DOM, since revealLine has no visible effect on a plain textarea stand-in.
+const revealLineSpy = vi.fn();
+
 // The real ProjectionMonacoEditor needs a browser Monaco can run in — not available under jsdom.
-// This stand-in mirrors its actual contract (a controlled textarea, and the same "don't commit
-// when blurring back into our own toolbar" boundary check) so the parent's wiring is still
-// exercised meaningfully. ProjectionMonacoEditor's own Monaco-specific behavior is covered
-// separately in ProjectionMonacoEditor.test.tsx with mocked monaco-editor/monaco-yaml.
+// This stand-in mirrors its actual contract (a controlled textarea, the same "don't commit
+// when blurring back into our own toolbar" boundary check, and the revealLine ref handle) so the
+// parent's wiring is still exercised meaningfully. ProjectionMonacoEditor's own Monaco-specific
+// behavior is covered separately in ProjectionMonacoEditor.test.tsx with mocked monaco-editor/monaco-yaml.
 vi.mock('./ProjectionMonacoEditor', () => ({
-  ProjectionMonacoEditor: ({
-    value,
-    format,
-    wrapRef,
-    onChange,
-    onCommit,
-  }: {
-    value: string;
-    format: string;
-    wrapRef: RefObject<HTMLDivElement | null>;
-    onChange: (value: string) => void;
-    onCommit: (value: string) => void;
-  }) => (
-    <textarea
-      aria-label={`REST Projection document (${format.toUpperCase()})`}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={(e) => {
-        const next = e.relatedTarget as Node | null;
-        if (next && wrapRef.current?.contains(next)) return;
-        onCommit(e.target.value);
-      }}
-    />
+  ProjectionMonacoEditor: forwardRef(
+    (
+      {
+        value,
+        format,
+        wrapRef,
+        onChange,
+        onCommit,
+      }: {
+        value: string;
+        format: string;
+        wrapRef: RefObject<HTMLDivElement | null>;
+        onChange: (value: string) => void;
+        onCommit: (value: string) => void;
+      },
+      ref: Ref<{ revealLine: (line: number) => void }>,
+    ) => {
+      useImperativeHandle(ref, () => ({ revealLine: revealLineSpy }), []);
+      return (
+        <textarea
+          aria-label={`REST Projection document (${format.toUpperCase()})`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => {
+            const next = e.relatedTarget as Node | null;
+            if (next && wrapRef.current?.contains(next)) return;
+            onCommit(e.target.value);
+          }}
+        />
+      );
+    },
   ),
 }));
 
@@ -48,6 +60,7 @@ beforeEach(() => {
   useAppStore.setState(initialAppState, true);
   useSpecStore.setState(initialSpecState, true);
   useSpecStore.getState().loadSampleProject();
+  revealLineSpy.mockClear();
 });
 
 describe('RestProjectionCanvas', () => {
@@ -234,5 +247,23 @@ describe('RestProjectionCanvas', () => {
     await user.click(screen.getByRole('button', { name: 'YAML' }));
     expect(screen.getByLabelText('REST Projection document (YAML)')).toHaveValue('scratch: text');
     expect(screen.getByText('edited')).toBeInTheDocument();
+  });
+
+  it('renders the document outline panel with real spec data, and clicking a leaf reveals it in the editor', async () => {
+    const user = userEvent.setup();
+    render(<RestProjectionCanvas />);
+
+    expect(screen.getByText('OpenAPI')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'General' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tags' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Paths' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Components' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Tags' }));
+    const usersTag = await screen.findByRole('button', { name: 'Users' });
+    await user.click(usersTag);
+
+    expect(revealLineSpy).toHaveBeenCalledTimes(1);
+    expect(revealLineSpy.mock.calls[0][0]).toEqual(expect.any(Number));
   });
 });

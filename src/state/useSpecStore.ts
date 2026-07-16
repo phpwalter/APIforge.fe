@@ -14,6 +14,7 @@ import { DEFAULT_CODE_FOR_CLASS, type ResponseClass } from '../lib/responseClass
 import { findPrimitive } from '../lib/primitives';
 import { fieldSubtreeEnd, fieldSiblingBounds } from '../lib/schemaTree';
 import type { SchemaCompileFormat } from '../lib/schemaCompile';
+import { isOutlineGroupDefaultExpanded } from '../lib/restProjectionOutline';
 
 const EP_PANEL_MIN_WIDTH = 220;
 const EP_PANEL_MAX_WIDTH = 480;
@@ -26,6 +27,10 @@ const SCHEMA_PANEL_DEFAULT_WIDTH = 175;
 const COMPILE_PANEL_MIN_WIDTH = 135;
 const COMPILE_PANEL_MAX_WIDTH = 560;
 const COMPILE_PANEL_DEFAULT_WIDTH = 175;
+
+const OUTLINE_PANEL_MIN_WIDTH = 180;
+const OUTLINE_PANEL_MAX_WIDTH = 420;
+const OUTLINE_PANEL_DEFAULT_WIDTH = 220;
 
 function uniquePath(existingPaths: string[], base: string): string {
   if (!existingPaths.includes(base)) return base;
@@ -312,6 +317,16 @@ interface SpecState {
   setCompilePanelWidth: (w: number) => void;
   toggleCompilePanelCollapsed: () => void;
   setResizingCompilePanel: (v: boolean) => void;
+
+  // REST Projection outline panel (left-anchored document nav tree)
+  restProjectionOutlineExpanded: Record<string, boolean>;
+  toggleRestProjectionOutlineExpanded: (key: string) => void;
+  restProjectionOutlinePanelWidth: number;
+  restProjectionOutlinePanelCollapsed: boolean;
+  resizingRestProjectionOutlinePanel: boolean;
+  setRestProjectionOutlinePanelWidth: (w: number) => void;
+  toggleRestProjectionOutlinePanelCollapsed: () => void;
+  setResizingRestProjectionOutlinePanel: (v: boolean) => void;
 }
 
 const sampleEndpoints: Endpoint[] = [
@@ -1221,6 +1236,21 @@ export const useSpecStore = create<SpecState>((set, get) => ({
     set({ compilePanelWidth: clamp(COMPILE_PANEL_MIN_WIDTH, COMPILE_PANEL_MAX_WIDTH, w) }),
   toggleCompilePanelCollapsed: () => set((s) => ({ compilePanelCollapsed: !s.compilePanelCollapsed })),
   setResizingCompilePanel: (v) => set({ resizingCompilePanel: v }),
+
+  restProjectionOutlineExpanded: {},
+  toggleRestProjectionOutlineExpanded: (key) =>
+    set((s) => {
+      const current = s.restProjectionOutlineExpanded[key] ?? isOutlineGroupDefaultExpanded(key);
+      return { restProjectionOutlineExpanded: { ...s.restProjectionOutlineExpanded, [key]: !current } };
+    }),
+  restProjectionOutlinePanelWidth: OUTLINE_PANEL_DEFAULT_WIDTH,
+  restProjectionOutlinePanelCollapsed: false,
+  resizingRestProjectionOutlinePanel: false,
+  setRestProjectionOutlinePanelWidth: (w) =>
+    set({ restProjectionOutlinePanelWidth: clamp(OUTLINE_PANEL_MIN_WIDTH, OUTLINE_PANEL_MAX_WIDTH, w) }),
+  toggleRestProjectionOutlinePanelCollapsed: () =>
+    set((s) => ({ restProjectionOutlinePanelCollapsed: !s.restProjectionOutlinePanelCollapsed })),
+  setResizingRestProjectionOutlinePanel: (v) => set({ resizingRestProjectionOutlinePanel: v }),
 }));
 
 export function methodsForPath(endpoints: Endpoint[], path: string): HttpMethod[] {
@@ -1237,4 +1267,6 @@ export {
   SCHEMA_PANEL_MAX_WIDTH,
   COMPILE_PANEL_MIN_WIDTH,
   COMPILE_PANEL_MAX_WIDTH,
+  OUTLINE_PANEL_MIN_WIDTH,
+  OUTLINE_PANEL_MAX_WIDTH,
 };
