@@ -26,6 +26,37 @@
   margin-bottom: 8px;
 }
 
+.sectionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sectionRow .sectionLabel {
+  margin-bottom: 0;
+}
+
+.resetAllBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 4px;
+  border-radius: 5px;
+}
+
+.resetAllBtn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
 .hint {
   font-size: 10.5px;
   color: var(--text-faint);
@@ -44,9 +75,39 @@
 }
 
 .rightColumn {
-  flex: 1;
-  min-width: 300px;
+  flex: none;
+  width: 350px;
   height: 360px;
+}
+
+.colorSchemeField {
+  width: 213px;
+  margin-left: auto;
+}
+
+.fieldLabel {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-bottom: 5px;
+}
+
+.select {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--inset);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.select:focus {
+  border-color: var(--accent);
 }
 
 .itemColumn {

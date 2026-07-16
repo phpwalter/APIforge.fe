@@ -14,7 +14,7 @@ import { signOutProvider } from '../lib/api/auth';
 import { clearAuthToken } from '../lib/api/authToken';
 import { getCookiePrefs, setCookiePrefs, type CookiePrefs } from '../lib/cookiePrefs';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
-import type { ColorScheme, MonacoThemeId } from '../lib/colorScheme';
+import { MONACO_THEME_IDS, type ColorScheme, type MonacoThemeId } from '../lib/colorScheme';
 import {
   DEFAULT_COLOR_STYLE_CUSTOM_COLORS,
   DEFAULT_COLOR_STYLE_PREFS,
@@ -198,6 +198,10 @@ interface AppState {
   // color tuned for Dark shouldn't silently apply to Light too. `color: null` resets to default.
   colorStyleCustomColors: ColorStyleCustomColors;
   setColorStyleCustomColor: (theme: MonacoThemeId, item: ColorStyleItem, color: string | null) => void;
+  /** Writes (or clears) a color identically across every base theme — backs the "All Color Schemes" option. */
+  setColorStyleCustomColorAll: (item: ColorStyleItem, color: string | null) => void;
+  /** Restores every Color Style toggle to on, and clears every custom color for the given theme ('all' clears every theme). */
+  resetColorStyle: (theme: MonacoThemeId | 'all') => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -384,6 +388,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       else forTheme[item] = color;
       return { colorStyleCustomColors: { ...s.colorStyleCustomColors, [theme]: forTheme } };
     }),
+  setColorStyleCustomColorAll: (item, color) =>
+    set((s) => {
+      const next = { ...s.colorStyleCustomColors };
+      for (const theme of MONACO_THEME_IDS) {
+        const forTheme = { ...next[theme] };
+        if (color == null) delete forTheme[item];
+        else forTheme[item] = color;
+        next[theme] = forTheme;
+      }
+      return { colorStyleCustomColors: next };
+    }),
+  resetColorStyle: (theme) =>
+    set((s) => ({
+      colorStyle: DEFAULT_COLOR_STYLE_PREFS,
+      colorStyleCustomColors:
+        theme === 'all'
+          ? Object.fromEntries(MONACO_THEME_IDS.map((t) => [t, {}])) as typeof s.colorStyleCustomColors
+          : { ...s.colorStyleCustomColors, [theme]: {} },
+    })),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

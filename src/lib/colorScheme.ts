@@ -4,6 +4,8 @@ export type ColorScheme = 'auto' | 'vs' | 'vs-dark' | 'hc-black' | 'hc-light';
 /** The concrete Monaco theme id a ColorScheme resolves to — never 'auto'. */
 export type MonacoThemeId = 'vs' | 'vs-dark' | 'hc-black' | 'hc-light';
 
+export const MONACO_THEME_IDS: MonacoThemeId[] = ['vs', 'vs-dark', 'hc-black', 'hc-light'];
+
 export interface ColorSchemeOption {
   value: ColorScheme;
   label: string;

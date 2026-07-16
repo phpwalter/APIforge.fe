@@ -117,4 +117,106 @@ describe('ColorStyleSettingsPanel', () => {
     expect(useAppStore.getState().colorStyleCustomColors['vs-dark']).toMatchObject({ strings: '#ff8800' });
     expect(useAppStore.getState().colorStyleCustomColors.vs.strings).toBeUndefined();
   });
+
+  it('Reset restores every toggle to on and clears every custom color for the current theme', async () => {
+    const user = userEvent.setup();
+    render(<ColorStyleSettingsPanel />);
+
+    await user.click(screen.getByRole('button', { name: /^Strings/ }));
+    fireEvent.change(screen.getByTitle('Keys color'), { target: { value: '#ff8800' } });
+    fireEvent.change(screen.getByTitle('Background color'), { target: { value: '#101010' } });
+    expect(useAppStore.getState().colorStyle.strings).toBe(false);
+    expect(useAppStore.getState().colorStyleCustomColors['vs-dark']).toEqual({ keys: '#ff8800', background: '#101010' });
+
+    await user.click(screen.getByRole('button', { name: 'Reset' }));
+
+    expect(useAppStore.getState().colorStyle).toEqual({
+      keys: true,
+      strings: true,
+      numbers: true,
+      literals: true,
+      comments: true,
+    });
+    expect(useAppStore.getState().colorStyleCustomColors['vs-dark']).toEqual({});
+  });
+
+  it('Reset does not touch custom colors saved for a different theme', async () => {
+    useAppStore.getState().setColorStyleCustomColor('vs', 'strings', '#00ff88');
+    const user = userEvent.setup();
+    render(<ColorStyleSettingsPanel />);
+
+    fireEvent.change(screen.getByTitle('Keys color'), { target: { value: '#ff8800' } });
+    await user.click(screen.getByRole('button', { name: 'Reset' }));
+
+    expect(useAppStore.getState().colorStyleCustomColors['vs-dark']).toEqual({});
+    expect(useAppStore.getState().colorStyleCustomColors.vs).toEqual({ strings: '#00ff88' });
+  });
+
+  describe('Color Scheme selector', () => {
+    it('offers Light/Dark/High Contrast Dark/High Contrast Light/All Color Schemes, defaulting to the active theme', () => {
+      render(<ColorStyleSettingsPanel />);
+
+      const select = screen.getByRole('combobox') as HTMLSelectElement;
+      expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
+        'Light',
+        'Dark',
+        'High Contrast Dark',
+        'High Contrast Light',
+        'All Color Schemes',
+      ]);
+      // App theme defaults to dark and Color Scheme defaults to Auto, so the active theme is vs-dark.
+      expect(select.value).toBe('vs-dark');
+    });
+
+    it('editing a different Color Scheme reads/writes that theme\'s palette without changing the real active theme', async () => {
+      const user = userEvent.setup();
+      render(<ColorStyleSettingsPanel />);
+
+      await user.selectOptions(screen.getByRole('combobox'), 'Light');
+      fireEvent.change(screen.getByTitle('Strings color'), { target: { value: '#00ff88' } });
+
+      expect(useAppStore.getState().colorStyleCustomColors.vs.strings).toBe('#00ff88');
+      expect(useAppStore.getState().colorStyleCustomColors['vs-dark'].strings).toBeUndefined();
+      // The real Settings :: Color Scheme setting is untouched.
+      expect(useAppStore.getState().editorColorScheme).toBe('auto');
+    });
+
+    it('"All Color Schemes" writes a picked color identically to every base theme', async () => {
+      const user = userEvent.setup();
+      render(<ColorStyleSettingsPanel />);
+
+      await user.selectOptions(screen.getByRole('combobox'), 'All Color Schemes');
+      fireEvent.change(screen.getByTitle('Strings color'), { target: { value: '#00ff88' } });
+
+      const colors = useAppStore.getState().colorStyleCustomColors;
+      expect(colors.vs.strings).toBe('#00ff88');
+      expect(colors['vs-dark'].strings).toBe('#00ff88');
+      expect(colors['hc-black'].strings).toBe('#00ff88');
+      expect(colors['hc-light'].strings).toBe('#00ff88');
+    });
+
+    it('"All Color Schemes" clears a color from every theme on reset', async () => {
+      useAppStore.getState().setColorStyleCustomColor('vs', 'strings', '#111111');
+      useAppStore.getState().setColorStyleCustomColor('hc-black', 'strings', '#222222');
+      const user = userEvent.setup();
+      render(<ColorStyleSettingsPanel />);
+
+      await user.selectOptions(screen.getByRole('combobox'), 'All Color Schemes');
+      const resetBtn = await screen.findByTitle(/Reset Strings/);
+      await user.click(resetBtn);
+
+      const colors = useAppStore.getState().colorStyleCustomColors;
+      expect(colors.vs.strings).toBeUndefined();
+      expect(colors['hc-black'].strings).toBeUndefined();
+    });
+
+    it('previews with the real active theme while "All Color Schemes" is selected, since Monaco can only render one theme at a time', async () => {
+      const user = userEvent.setup();
+      render(<ColorStyleSettingsPanel />);
+
+      await user.selectOptions(screen.getByRole('combobox'), 'All Color Schemes');
+
+      expect(screen.getByTestId('color-style-preview')).toHaveAttribute('data-monaco-theme', 'vs-dark');
+    });
+  });
 });
