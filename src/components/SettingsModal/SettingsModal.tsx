@@ -10,10 +10,10 @@ import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { NotificationsSettingsPanel } from './NotificationsSettingsPanel';
 import { CookiesSettingsPanel } from './CookiesSettingsPanel';
 import { AboutSettingsPanel } from './AboutSettingsPanel';
-import { FormatScopedComingSoonPanel } from './FormatScopedComingSoonPanel';
 import { FileEncodingSettingsPanel } from './FileEncodingSettingsPanel';
 import { FormattingSettingsPanel } from './FormattingSettingsPanel';
 import { ColorSchemeSettingsPanel } from './ColorSchemeSettingsPanel';
+import { ColorStyleSettingsPanel } from './ColorStyleSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
@@ -26,12 +26,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   cookies: CookiesSettingsPanel,
   about: AboutSettingsPanel,
   colorScheme: ColorSchemeSettingsPanel,
-  colorStyle: () => (
-    <FormatScopedComingSoonPanel
-      title="Color Style"
-      description="Fine-tune which token types (keys, strings, numbers, literals) get their own color."
-    />
-  ),
+  colorStyle: ColorStyleSettingsPanel,
   fileEncoding: FileEncodingSettingsPanel,
   formatting: FormattingSettingsPanel,
 };

@@ -62,7 +62,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
       {
         key: 'colorStyle',
         label: 'Color Style',
-        keywords: 'color style syntax highlight yaml json',
+        keywords: 'color style syntax highlight yaml json keys strings numbers literals comments tokens',
         icon: SwatchBook,
       },
       {

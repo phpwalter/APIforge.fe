@@ -48,6 +48,7 @@ export function RestProjectionCanvas() {
   const formattingTrimTrailingWhitespace = useAppStore((s) => s.formattingTrimTrailingWhitespace);
   const formattingRemoveBlankLines = useAppStore((s) => s.formattingRemoveBlankLines);
   const editorColorScheme = useAppStore((s) => s.editorColorScheme);
+  const colorStyle = useAppStore((s) => s.colorStyle);
 
   const apiTitle = useAppStore((s) => s.apiTitle);
   const apiVersion = useAppStore((s) => s.apiVersion);
@@ -280,6 +281,7 @@ export function RestProjectionCanvas() {
               value={displayText}
               format={format}
               monacoTheme={monacoTheme}
+              colorStylePrefs={colorStyle}
               wrapRef={wrapRef}
               highlightingEnabled={highlightingEnabled}
               lineNumbersEnabled={lineNumbersEnabled}

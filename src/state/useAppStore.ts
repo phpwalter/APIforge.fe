@@ -15,6 +15,7 @@ import { clearAuthToken } from '../lib/api/authToken';
 import { getCookiePrefs, setCookiePrefs, type CookiePrefs } from '../lib/cookiePrefs';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
 import type { ColorScheme } from '../lib/colorScheme';
+import { DEFAULT_COLOR_STYLE_PREFS, type ColorStyleCategory, type ColorStylePrefs } from '../lib/colorStyle';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -181,6 +182,11 @@ interface AppState {
   // theme, independent of (but defaulting to follow) the app's Day/Night theme.
   editorColorScheme: ColorScheme;
   setEditorColorScheme: (v: ColorScheme) => void;
+
+  // Settings :: Editor Preferences :: Color Style — per-token-type color toggles, layered on top
+  // of whichever Color Scheme is active. Applies to YAML and JSON alike.
+  colorStyle: ColorStylePrefs;
+  setColorStyleCategory: (category: ColorStyleCategory, v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -355,6 +361,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   editorColorScheme: 'auto',
   setEditorColorScheme: (v) => set({ editorColorScheme: v }),
+
+  colorStyle: DEFAULT_COLOR_STYLE_PREFS,
+  setColorStyleCategory: (category, v) => set((s) => ({ colorStyle: { ...s.colorStyle, [category]: v } })),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

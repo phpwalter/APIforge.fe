@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { createRef } from 'react';
 import { ProjectionMonacoEditor, type ProjectionMonacoEditorHandle } from './ProjectionMonacoEditor';
+import { DEFAULT_COLOR_STYLE_PREFS } from '../../lib/colorStyle';
 
 // ProjectionMonacoEditor's only monaco-specific dependency is setupMonacoOpenApiEditors() — mock
 // it with a minimal fake `monaco` namespace so these tests exercise the component's own wiring
@@ -41,13 +42,14 @@ const createModel = vi.fn((value: string, language: string) => {
 });
 const create = vi.fn(() => editor);
 const setTheme = vi.fn();
+const defineTheme = vi.fn();
 const setModelLanguage = vi.fn((_model: unknown, language: string) => {
   modelLanguage = language;
 });
 
 vi.mock('../../lib/monaco/setup', () => ({
   setupMonacoOpenApiEditors: () => ({
-    editor: { createModel, create, setTheme, setModelLanguage },
+    editor: { createModel, create, setTheme, defineTheme, setModelLanguage },
     Uri: { parse: (s: string) => s },
   }),
 }));
@@ -76,6 +78,7 @@ describe('ProjectionMonacoEditor', () => {
         value="openapi: 3.1.0"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -89,7 +92,9 @@ describe('ProjectionMonacoEditor', () => {
 
     expect(createModel).toHaveBeenCalledWith('openapi: 3.1.0', 'yaml', 'file:///openapi.yaml');
     expect(create).toHaveBeenCalledTimes(1);
-    expect(create.mock.calls[0][1]).toMatchObject({ lineNumbers: 'on', theme: 'vs-dark' });
+    // Creates a derived theme (base + Color Style overrides) rather than using the base theme id directly.
+    expect(create.mock.calls[0][1]).toMatchObject({ lineNumbers: 'on', theme: 'apiforge-projection' });
+    expect(defineTheme).toHaveBeenCalledWith('apiforge-projection', expect.objectContaining({ base: 'vs-dark' }));
   });
 
   it('creates the editor with whichever resolved Monaco theme it is given, including high-contrast themes', () => {
@@ -98,6 +103,7 @@ describe('ProjectionMonacoEditor', () => {
         value="openapi: 3.1.0"
         format="yaml"
         monacoTheme="hc-black"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -109,8 +115,33 @@ describe('ProjectionMonacoEditor', () => {
       />,
     );
 
-    expect(create.mock.calls[0][1]).toMatchObject({ theme: 'hc-black' });
-    expect(setTheme).toHaveBeenCalledWith('hc-black');
+    expect(create.mock.calls[0][1]).toMatchObject({ theme: 'apiforge-projection' });
+    expect(defineTheme).toHaveBeenCalledWith('apiforge-projection', expect.objectContaining({ base: 'hc-black' }));
+    expect(setTheme).toHaveBeenCalledWith('apiforge-projection');
+  });
+
+  it('includes Color Style overrides in the defined theme rules when a category is toggled off', () => {
+    render(
+      <ProjectionMonacoEditor
+        value="openapi: 3.1.0"
+        format="yaml"
+        monacoTheme="vs-dark"
+        colorStylePrefs={{ ...DEFAULT_COLOR_STYLE_PREFS, comments: false }}
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(defineTheme).toHaveBeenCalledWith(
+      'apiforge-projection',
+      expect.objectContaining({ rules: expect.arrayContaining([{ token: 'comment', foreground: 'D4D4D4' }]) }),
+    );
   });
 
   it('creates a JSON model with its own URI when format is json', () => {
@@ -119,6 +150,7 @@ describe('ProjectionMonacoEditor', () => {
         value="{}"
         format="json"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -139,6 +171,7 @@ describe('ProjectionMonacoEditor', () => {
         value="openapi: 3.1.0"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled={false}
@@ -161,6 +194,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -190,6 +224,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
@@ -222,6 +257,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
@@ -245,6 +281,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -261,6 +298,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 2"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -282,6 +320,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -299,6 +338,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -319,6 +359,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -329,13 +370,15 @@ describe('ProjectionMonacoEditor', () => {
         onCommit={vi.fn()}
       />,
     );
-    expect(setTheme).toHaveBeenCalledWith('vs-dark');
+    expect(defineTheme).toHaveBeenCalledWith('apiforge-projection', expect.objectContaining({ base: 'vs-dark' }));
+    expect(setTheme).toHaveBeenCalledWith('apiforge-projection');
 
     rerender(
       <ProjectionMonacoEditor
         value="a: 1"
         format="yaml"
         monacoTheme="vs"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -346,7 +389,7 @@ describe('ProjectionMonacoEditor', () => {
         onCommit={vi.fn()}
       />,
     );
-    expect(setTheme).toHaveBeenCalledWith('vs');
+    expect(defineTheme).toHaveBeenLastCalledWith('apiforge-projection', expect.objectContaining({ base: 'vs' }));
   });
 
   it('toggles Monaco line numbers on/off when lineNumbersEnabled changes', () => {
@@ -355,6 +398,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -371,6 +415,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled={false}
@@ -391,6 +436,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -408,6 +454,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -428,6 +475,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -444,6 +492,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled
@@ -465,6 +514,7 @@ describe('ProjectionMonacoEditor', () => {
         value="openapi: 3.1.0"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -482,6 +532,7 @@ describe('ProjectionMonacoEditor', () => {
         value="{}"
         format="json"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -507,6 +558,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -531,6 +583,7 @@ describe('ProjectionMonacoEditor', () => {
         value="a: 1"
         format="yaml"
         monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled

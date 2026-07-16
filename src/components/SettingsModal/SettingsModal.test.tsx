@@ -51,9 +51,20 @@ describe('SettingsModal — nested nav', () => {
     await user.click(screen.getByRole('button', { name: 'Color Style' }));
 
     expect(screen.getByRole('button', { name: 'Color Style' })).toHaveAttribute('data-active', 'true');
-    expect(screen.getByText('YAML')).toBeInTheDocument(); // FormatScopedComingSoonPanel's format tabs
+    expect(screen.getByText('Token Types')).toBeInTheDocument(); // ColorStyleSettingsPanel's own content
     // Parent stays expanded.
     expect(screen.getByRole('button', { name: 'File Encoding' })).toBeInTheDocument();
+  });
+
+  it('shows the generic "Coming Soon" fallback for a child with no dedicated panel yet (Keyboard Shortcuts)', async () => {
+    const user = userEvent.setup();
+    render(<SettingsModal />);
+
+    await user.click(screen.getByRole('button', { name: /Editor Preferences/ }));
+    await user.click(screen.getByRole('button', { name: 'Keyboard Shortcuts' }));
+
+    expect(screen.getByRole('button', { name: 'Keyboard Shortcuts' })).toHaveAttribute('data-active', 'true');
+    expect(screen.getByText('Coming Soon')).toBeInTheDocument();
   });
 
   it('searching for a child label auto-expands its parent and shows a filtered child list', async () => {

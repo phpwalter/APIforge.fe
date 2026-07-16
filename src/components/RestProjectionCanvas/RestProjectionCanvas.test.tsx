@@ -25,6 +25,7 @@ vi.mock('./ProjectionMonacoEditor', () => ({
         value,
         format,
         monacoTheme,
+        colorStylePrefs,
         wrapRef,
         onChange,
         onCommit,
@@ -32,6 +33,7 @@ vi.mock('./ProjectionMonacoEditor', () => ({
         value: string;
         format: string;
         monacoTheme: string;
+        colorStylePrefs: Record<string, boolean>;
         wrapRef: RefObject<HTMLDivElement | null>;
         onChange: (value: string) => void;
         onCommit: (value: string) => void;
@@ -43,6 +45,7 @@ vi.mock('./ProjectionMonacoEditor', () => ({
         <textarea
           aria-label={`REST Projection document (${format.toUpperCase()})`}
           data-monaco-theme={monacoTheme}
+          data-color-style={JSON.stringify(colorStylePrefs)}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={(e) => {
@@ -228,6 +231,27 @@ describe('RestProjectionCanvas', () => {
 
     const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
     expect(yamlArea).toHaveAttribute('data-monaco-theme', 'hc-light');
+  });
+
+  it('passes the Color Style preferences through to the editor, defaulting to every category on', () => {
+    render(<RestProjectionCanvas />);
+
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+    expect(JSON.parse(yamlArea.getAttribute('data-color-style')!)).toEqual({
+      keys: true,
+      strings: true,
+      numbers: true,
+      literals: true,
+      comments: true,
+    });
+  });
+
+  it('reflects a Color Style category toggled off in what gets passed to the editor', () => {
+    useAppStore.getState().setColorStyleCategory('comments', false);
+    render(<RestProjectionCanvas />);
+
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+    expect(JSON.parse(yamlArea.getAttribute('data-color-style')!)).toMatchObject({ comments: false, keys: true });
   });
 
   it('applies the Formatting whitespace cleanup preferences to what gets copied', async () => {
