@@ -144,6 +144,9 @@ interface AppState {
   setRestProjectionFormat: (format: RestProjectionFormat) => void;
   restProjectionShowMeta: boolean;
   toggleRestProjectionMeta: () => void;
+  // Line-number gutter for the JSON/XML textarea view (YAML's Monaco editor always shows its own).
+  restProjectionLineNumbers: boolean;
+  toggleRestProjectionLineNumbers: () => void;
   restProjectionManual: Record<RestProjectionFormat, string | null>;
   setRestProjectionManual: (format: RestProjectionFormat, text: string) => void;
   restProjectionError: string | null;
@@ -292,6 +295,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRestProjectionFormat: (format) => set({ restProjectionFormat: format }),
   restProjectionShowMeta: false,
   toggleRestProjectionMeta: () => set((s) => ({ restProjectionShowMeta: !s.restProjectionShowMeta })),
+  restProjectionLineNumbers: true,
+  toggleRestProjectionLineNumbers: () => set((s) => ({ restProjectionLineNumbers: !s.restProjectionLineNumbers })),
   restProjectionManual: { yaml: null, json: null, xml: null },
   setRestProjectionManual: (format, text) =>
     set((s) => ({ restProjectionManual: { ...s.restProjectionManual, [format]: text } })),

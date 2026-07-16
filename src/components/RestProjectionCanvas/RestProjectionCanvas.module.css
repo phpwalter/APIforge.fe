@@ -32,6 +32,26 @@
   flex: 1;
 }
 
+.iconToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-faint);
+}
+
+.iconToggle[data-active='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .metaToggle {
   display: flex;
   align-items: center;
@@ -93,6 +113,9 @@
 }
 
 .toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 12px;
   background: transparent;
   border: 1px solid var(--border);
@@ -115,57 +138,98 @@
   overflow: hidden;
 }
 
+.monacoContainer {
+  position: absolute;
+  inset: 0;
+}
+
+.editorLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--inset);
+  color: var(--text-faint);
+  font-size: 12.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.gutter {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 46px;
+  overflow: hidden;
+  background: var(--inset);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-faint);
+  user-select: none;
+}
+
+.gutterLine {
+  padding-right: 10px;
+  text-align: right;
+  white-space: pre;
+}
+
 .overlay {
   position: absolute;
   inset: 0;
   overflow: auto;
   background: var(--inset);
   padding: 16px 18px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12.5px;
-  line-height: 1.7;
   pointer-events: none;
 }
 
-.lineRow {
-  display: flex;
+.codeWrap[data-gutter='true'] .overlay {
+  left: 46px;
 }
 
-.gutter {
-  flex: none;
-  text-align: right;
-  padding-right: 10px;
-  color: var(--text-faint);
-  user-select: none;
+.pre {
+  margin: 0;
 }
 
-.runs {
-  min-width: 0;
-  flex: 1;
-}
-
-.run {
+.code {
+  display: block;
   white-space: pre;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
   color: var(--code-plain);
 }
 
-.run[data-token='key'] {
+/* highlight.js token classes (yaml/json/xml), mapped onto the app's existing code-view tokens. */
+.code :global(.hljs-attr) {
   color: var(--code-key);
 }
 
-.run[data-token='string'] {
+.code :global(.hljs-name),
+.code :global(.hljs-tag) {
+  color: var(--code-key);
+}
+
+.code :global(.hljs-string) {
   color: var(--code-string);
 }
 
-.run[data-token='number'] {
+.code :global(.hljs-number) {
   color: var(--code-number);
 }
 
-.run[data-token='literal'] {
+.code :global(.hljs-literal),
+.code :global(.hljs-type) {
   color: var(--code-literal);
 }
 
-.run[data-token='punct'] {
+.code :global(.hljs-punctuation),
+.code :global(.hljs-meta),
+.code :global(.hljs-bullet),
+.code :global(.hljs-symbol),
+.code :global(.hljs-comment) {
   color: var(--code-punct);
 }
 
@@ -186,6 +250,10 @@
   line-height: 1.7;
   white-space: pre;
   overflow-wrap: normal;
+}
+
+.codeWrap[data-gutter='true'] .textarea {
+  padding-left: 46px;
 }
 
 .footer {

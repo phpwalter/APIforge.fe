@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Copy, CopyCheck, ListOrdered, Paintbrush } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
 import { fetchSecurityTypes, type SecurityTypeDto } from '../../lib/api/securityTypes';
 import { buildOpenApiDocument, documentToJson, documentToXml, documentToYaml } from '../../lib/openapiExport';
-import { computeCodeLines } from '../../lib/codeHighlight';
+import { highlightCode } from '../../lib/highlight';
 import { commitRestProjectionEdit } from '../../lib/restProjectionEdit';
 import type { RestProjectionFormat } from '../../types/ui';
 import styles from './RestProjectionCanvas.module.css';
+
+// Monaco is a large dependency — only pull it into a chunk when the YAML tab actually renders.
+const YamlMonacoEditor = lazy(() =>
+  import('./YamlMonacoEditor').then((m) => ({ default: m.YamlMonacoEditor })),
+);
 
 type SecurityTypesState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; types: SecurityTypeDto[] };
 
@@ -18,15 +24,18 @@ const FILENAME_FOR_FORMAT: Record<RestProjectionFormat, string> = {
 };
 
 export function RestProjectionCanvas() {
+  const theme = useAppStore((s) => s.theme);
   const highlightingEnabled = useAppStore((s) => s.highlightingEnabled);
+  const setHighlightingEnabled = useAppStore((s) => s.setHighlightingEnabled);
   const format = useAppStore((s) => s.restProjectionFormat);
   const setFormat = useAppStore((s) => s.setRestProjectionFormat);
   const showMeta = useAppStore((s) => s.restProjectionShowMeta);
   const toggleShowMeta = useAppStore((s) => s.toggleRestProjectionMeta);
+  const lineNumbersEnabled = useAppStore((s) => s.restProjectionLineNumbers);
+  const toggleLineNumbers = useAppStore((s) => s.toggleRestProjectionLineNumbers);
   const manual = useAppStore((s) => s.restProjectionManual);
   const setManual = useAppStore((s) => s.setRestProjectionManual);
   const error = useAppStore((s) => s.restProjectionError);
-  const clearManual = useAppStore((s) => s.clearRestProjectionManual);
 
   const apiTitle = useAppStore((s) => s.apiTitle);
   const apiVersion = useAppStore((s) => s.apiVersion);
@@ -46,7 +55,9 @@ export function RestProjectionCanvas() {
   const [securityTypesState, setSecurityTypesState] = useState<SecurityTypesState>({ status: 'loading' });
   const [copyFeedback, setCopyFeedback] = useState(false);
 
+  const wrapRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -54,6 +65,20 @@ export function RestProjectionCanvas() {
       .then((types) => setSecurityTypesState({ status: 'ready', types }))
       .catch(() => setSecurityTypesState({ status: 'error' }));
   }, []);
+
+  // Switching to a different canvas tab (Design/Schema/Swagger/Diagnostics) unmounts this
+  // component without ever firing a native blur on the textarea, so the onBlur commit below
+  // wouldn't otherwise run — commit whatever's pending on unmount too, so "apply on leaving
+  // this editor" holds regardless of how the user leaves it.
+  const pendingCommitRef = useRef<{ manual: typeof manual; format: RestProjectionFormat }>({ manual, format });
+  pendingCommitRef.current = { manual, format };
+  useEffect(
+    () => () => {
+      const { manual: m, format: f } = pendingCommitRef.current;
+      if (m[f] != null) commitRestProjectionEdit(m[f]!, f);
+    },
+    [],
+  );
 
   const generatedText = useMemo(() => {
     const doc = buildOpenApiDocument({
@@ -99,34 +124,78 @@ export function RestProjectionCanvas() {
 
   const isEdited = manual[format] != null;
   const displayText = manual[format] ?? generatedText;
-  const lines = useMemo(
-    () => computeCodeLines(displayText, format, highlightingEnabled),
+  const lineCount = useMemo(() => displayText.split('\n').length, [displayText]);
+  // hljs.highlight() only takes a few ms even for a large generated doc, so this runs
+  // synchronously in-render rather than being deferred — a deferred (low-priority) update can
+  // itself sit for seconds under React's scheduler, which made format switching feel laggy.
+  // Not needed for YAML — Monaco does its own tokenizing/highlighting there.
+  const highlightedHtml = useMemo(
+    () => (format === 'yaml' ? '' : highlightCode(displayText, format, highlightingEnabled)),
     [displayText, format, highlightingEnabled],
   );
-  const gutterWidth = String(lines.length).length;
+
+  const commitYaml = (value: string) => {
+    if (manual.yaml != null) commitRestProjectionEdit(value, 'yaml');
+  };
 
   const syncScroll = () => {
     if (overlayRef.current && textareaRef.current) {
       overlayRef.current.scrollTop = textareaRef.current.scrollTop;
       overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
+    if (gutterRef.current && textareaRef.current) {
+      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
   };
 
   const copy = () => {
-    navigator.clipboard?.writeText(displayText).then(() => {
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 1500);
-    });
+    navigator.clipboard
+      ?.writeText(displayText)
+      .then(() => {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 1500);
+      })
+      .catch(() => {});
   };
 
   const syncLabel = error ? error : isEdited ? 'Unsaved — click outside to apply to canvas' : 'Synced with canvas';
 
   return (
-    <div className={styles.wrap}>
+    <div className={styles.wrap} ref={wrapRef}>
       <div className={styles.toolbar}>
         <span className={styles.filename}>{FILENAME_FOR_FORMAT[format]}</span>
         <span className={styles.stateBadge}>{isEdited ? 'edited' : 'generated'}</span>
         <div className={styles.spacer} />
+        {format !== 'yaml' && (
+          <>
+            <button
+              type="button"
+              className={styles.iconToggle}
+              data-active={highlightingEnabled}
+              title={highlightingEnabled ? 'Turn off syntax highlighting' : 'Turn on syntax highlighting'}
+              onClick={() => setHighlightingEnabled(!highlightingEnabled)}
+            >
+              <Paintbrush size={14} />
+            </button>
+            <button
+              type="button"
+              className={styles.iconToggle}
+              data-active={lineNumbersEnabled}
+              title={lineNumbersEnabled ? 'Hide line numbers' : 'Show line numbers'}
+              onClick={toggleLineNumbers}
+            >
+              <ListOrdered size={14} />
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          title={copyFeedback ? 'Copied' : 'Copy to clipboard'}
+          onClick={copy}
+        >
+          {copyFeedback ? <CopyCheck size={14} /> : <Copy size={14} />}
+        </button>
         <button
           type="button"
           className={styles.metaToggle}
@@ -154,50 +223,61 @@ export function RestProjectionCanvas() {
             </button>
           ))}
         </div>
-        <button type="button" className={styles.toolbarBtn} onClick={copy}>
-          {copyFeedback ? 'Copied ✓' : 'Copy'}
-        </button>
-        <button type="button" className={styles.toolbarBtn} onClick={clearManual}>
-          Regenerate
-        </button>
       </div>
 
-      <div className={styles.codeWrap}>
-        <div ref={overlayRef} className={styles.overlay}>
-          {lines.map((line) => (
-            <div key={line.num} className={styles.lineRow}>
-              <span className={styles.gutter} style={{ width: `${gutterWidth}ch` }}>
-                {String(line.num).padStart(gutterWidth, ' ')}
-              </span>
-              <div className={styles.runs}>
-                {line.runs.map((run, i) => (
-                  <span key={i} className={styles.run} data-token={run.token}>
-                    {run.text}
-                  </span>
+      <div className={styles.codeWrap} data-gutter={format !== 'yaml' && lineNumbersEnabled}>
+        {format === 'yaml' ? (
+          <Suspense fallback={<div className={styles.editorLoading}>Loading editor…</div>}>
+            <YamlMonacoEditor
+              value={displayText}
+              theme={theme}
+              wrapRef={wrapRef}
+              onChange={(value) => setManual('yaml', value)}
+              onCommit={commitYaml}
+            />
+          </Suspense>
+        ) : (
+          <>
+            {lineNumbersEnabled && (
+              <div ref={gutterRef} className={styles.gutter}>
+                {Array.from({ length: lineCount }, (_, i) => (
+                  <div key={i} className={styles.gutterLine}>
+                    {i + 1}
+                  </div>
                 ))}
               </div>
+            )}
+            <div ref={overlayRef} className={styles.overlay}>
+              <pre className={styles.pre}>
+                <code className={styles.code} dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+              </pre>
             </div>
-          ))}
-        </div>
-        <textarea
-          ref={textareaRef}
-          className={styles.textarea}
-          aria-label={`REST Projection document (${format.toUpperCase()})`}
-          spellCheck={false}
-          wrap="off"
-          value={displayText}
-          onChange={(e) => setManual(format, e.target.value)}
-          onBlur={() => {
-            if (manual[format] != null) commitRestProjectionEdit(manual[format]!, format);
-          }}
-          onScroll={syncScroll}
-        />
+            <textarea
+              ref={textareaRef}
+              className={styles.textarea}
+              aria-label={`REST Projection document (${format.toUpperCase()})`}
+              spellCheck={false}
+              wrap="off"
+              value={displayText}
+              onChange={(e) => setManual(format, e.target.value)}
+              onBlur={(e) => {
+                // Clicking our own toolbar (syntax highlighting, Copy, x-apiforge toggle, format switch) blurs
+                // the textarea first — don't treat that as "click outside" and commit; only a real
+                // blur to somewhere outside this panel applies the edit.
+                const next = e.relatedTarget as Node | null;
+                if (next && wrapRef.current?.contains(next)) return;
+                if (manual[format] != null) commitRestProjectionEdit(manual[format]!, format);
+              }}
+              onScroll={syncScroll}
+            />
+          </>
+        )}
       </div>
 
       <div className={styles.footer}>
         <span>OpenAPI {apiOpenapiVersion}</span>
         <span>·</span>
-        <span>{lines.length} lines</span>
+        <span>{lineCount} lines</span>
         <div className={styles.spacer} />
         <span className={styles.syncLabel} data-state={error ? 'error' : isEdited ? 'unsaved' : 'synced'}>
           {syncLabel}
