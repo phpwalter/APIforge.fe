@@ -68,7 +68,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
       {
         key: 'fileEncoding',
         label: 'File Encoding',
-        keywords: 'file encoding charset utf yaml json',
+        keywords: 'file encoding charset utf-8 bom line ending crlf lf newline',
         icon: Binary,
       },
       { key: 'formatting', label: 'Formatting', keywords: 'formatting indent tabs spaces wrap', icon: AlignLeft },

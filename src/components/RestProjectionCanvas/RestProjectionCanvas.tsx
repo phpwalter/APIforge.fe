@@ -6,6 +6,7 @@ import { fetchSecurityTypes, type SecurityTypeDto } from '../../lib/api/security
 import { buildOpenApiDocument, documentToJson, documentToYaml } from '../../lib/openapiExport';
 import { commitRestProjectionEdit } from '../../lib/restProjectionEdit';
 import { buildRestProjectionOutline, uniqueInOrder } from '../../lib/restProjectionOutline';
+import { applyLineEndingPrefs } from '../../lib/fileEncoding';
 import type { RestProjectionFormat } from '../../types/ui';
 import type { ProjectionMonacoEditorHandle } from './ProjectionMonacoEditor';
 import { RestProjectionOutlinePanel } from './RestProjectionOutlinePanel';
@@ -37,6 +38,8 @@ export function RestProjectionCanvas() {
   const manual = useAppStore((s) => s.restProjectionManual);
   const setManual = useAppStore((s) => s.setRestProjectionManual);
   const error = useAppStore((s) => s.restProjectionError);
+  const fileEncodingLineEnding = useAppStore((s) => s.fileEncodingLineEnding);
+  const fileEncodingInsertFinalNewline = useAppStore((s) => s.fileEncodingInsertFinalNewline);
 
   const apiTitle = useAppStore((s) => s.apiTitle);
   const apiVersion = useAppStore((s) => s.apiVersion);
@@ -158,8 +161,12 @@ export function RestProjectionCanvas() {
   const revealInEditor = (line: number) => editorHandleRef.current?.revealLine(line);
 
   const copy = () => {
+    const text = applyLineEndingPrefs(displayText, {
+      lineEnding: fileEncodingLineEnding,
+      insertFinalNewline: fileEncodingInsertFinalNewline,
+    });
     navigator.clipboard
-      ?.writeText(displayText)
+      ?.writeText(text)
       .then(() => {
         setCopyFeedback(true);
         setTimeout(() => setCopyFeedback(false), 1500);

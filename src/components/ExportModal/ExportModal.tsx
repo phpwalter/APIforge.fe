@@ -9,6 +9,7 @@ import {
   downloadTextFile,
   slugifyFilename,
 } from '../../lib/openapiExport';
+import { applyLineEndingPrefs, withByteOrderMark } from '../../lib/fileEncoding';
 import styles from './ExportModal.module.css';
 
 type FetchState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; types: SecurityTypeDto[] };
@@ -24,6 +25,9 @@ export function ExportModal() {
   const apiLicense = useAppStore((s) => s.apiLicense);
   const apiServers = useAppStore((s) => s.apiServers);
   const apiExternalDocs = useAppStore((s) => s.apiExternalDocs);
+  const characterEncoding = useAppStore((s) => s.fileEncodingCharacterEncoding);
+  const lineEnding = useAppStore((s) => s.fileEncodingLineEnding);
+  const insertFinalNewline = useAppStore((s) => s.fileEncodingInsertFinalNewline);
 
   const endpoints = useSpecStore((s) => s.endpoints);
   const schemas = useSpecStore((s) => s.schemas);
@@ -60,7 +64,8 @@ export function ExportModal() {
     });
     const slug = slugifyFilename(apiTitle);
     const filename = variant === 'full' ? `${slug}.apiforge.yaml` : `${slug}.yaml`;
-    downloadTextFile(filename, documentToYaml(doc), 'application/yaml');
+    const yaml = applyLineEndingPrefs(documentToYaml(doc), { lineEnding, insertFinalNewline });
+    downloadTextFile(filename, withByteOrderMark(yaml, characterEncoding), 'application/yaml');
     closeExportModal();
   };
 

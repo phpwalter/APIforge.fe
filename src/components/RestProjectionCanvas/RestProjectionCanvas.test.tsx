@@ -177,6 +177,19 @@ describe('RestProjectionCanvas', () => {
     });
   });
 
+  it('applies the File Encoding line-ending preference to what gets copied', async () => {
+    useAppStore.getState().setFileEncodingLineEnding('crlf');
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText');
+    render(<RestProjectionCanvas />);
+
+    await user.click(screen.getByRole('button', { name: 'Copy to clipboard' }));
+
+    const copied = writeText.mock.calls[0][0];
+    expect(copied).toContain('\r\n');
+    expect(copied).not.toMatch(/[^\r]\n/);
+  });
+
   it('commits a pending edit when the panel unmounts (e.g. switching to a different canvas tab), even though no blur ever fires', async () => {
     const { unmount } = render(<RestProjectionCanvas />);
     const textarea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;

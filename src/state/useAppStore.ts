@@ -13,6 +13,7 @@ import type { ApiContact, ApiExternalDocs, ApiLicense } from '../types/spec';
 import { signOutProvider } from '../lib/api/auth';
 import { clearAuthToken } from '../lib/api/authToken';
 import { getCookiePrefs, setCookiePrefs, type CookiePrefs } from '../lib/cookiePrefs';
+import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -150,6 +151,15 @@ interface AppState {
   restProjectionError: string | null;
   setRestProjectionError: (message: string | null) => void;
   clearRestProjectionManual: () => void;
+
+  // Settings :: Editor Preferences :: File Encoding — applies to both REST Projection's "Copy to
+  // clipboard" and the Export dialog's downloads, regardless of YAML/JSON format.
+  fileEncodingCharacterEncoding: CharacterEncoding;
+  setFileEncodingCharacterEncoding: (v: CharacterEncoding) => void;
+  fileEncodingLineEnding: LineEnding;
+  setFileEncodingLineEnding: (v: LineEnding) => void;
+  fileEncodingInsertFinalNewline: boolean;
+  setFileEncodingInsertFinalNewline: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -303,6 +313,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRestProjectionError: (message) => set({ restProjectionError: message }),
   clearRestProjectionManual: () =>
     set({ restProjectionManual: { yaml: null, json: null }, restProjectionError: null }),
+
+  fileEncodingCharacterEncoding: 'utf-8',
+  setFileEncodingCharacterEncoding: (v) => set({ fileEncodingCharacterEncoding: v }),
+  fileEncodingLineEnding: 'lf',
+  setFileEncodingLineEnding: (v) => set({ fileEncodingLineEnding: v }),
+  fileEncodingInsertFinalNewline: true,
+  setFileEncodingInsertFinalNewline: (v) => set({ fileEncodingInsertFinalNewline: v }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

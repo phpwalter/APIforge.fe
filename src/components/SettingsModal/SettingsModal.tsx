@@ -11,6 +11,7 @@ import { NotificationsSettingsPanel } from './NotificationsSettingsPanel';
 import { CookiesSettingsPanel } from './CookiesSettingsPanel';
 import { AboutSettingsPanel } from './AboutSettingsPanel';
 import { FormatScopedComingSoonPanel } from './FormatScopedComingSoonPanel';
+import { FileEncodingSettingsPanel } from './FileEncodingSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
@@ -34,12 +35,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
       description="Fine-tune which token types (keys, strings, numbers, literals) get their own color."
     />
   ),
-  fileEncoding: () => (
-    <FormatScopedComingSoonPanel
-      title="File Encoding"
-      description="Set the character encoding used when reading and writing each document format."
-    />
-  ),
+  fileEncoding: FileEncodingSettingsPanel,
 };
 
 /** A category row plus the parent it belongs to (undefined for top-level rows) — used for search + lookup. */
