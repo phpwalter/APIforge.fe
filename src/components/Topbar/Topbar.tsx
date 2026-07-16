@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Layers, ChevronDown, Undo2, Redo2, Monitor, Moon, Sun, Ellipsis } from 'lucide-react';
+import { Layers, ChevronDown, Undo2, Redo2, Monitor, Moon, Sun, EllipsisVertical } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { importOpenApiFile } from '../../lib/importHandler';
 import { APP_VERSION } from '../../lib/appInfo';
@@ -108,7 +108,7 @@ export function Topbar() {
 
       <div className={styles.menuAnchor}>
         <button type="button" className={styles.iconBtn} title="More actions" onClick={toggleMoreMenu}>
-          <Ellipsis size={16} />
+          <EllipsisVertical size={16} />
         </button>
         {moreMenuOpen && (
           <MoreMenu
@@ -117,9 +117,6 @@ export function Topbar() {
             }}
             onImport={() => importInputRef.current?.click()}
             onExport={openExportModal}
-            onToggleCode={() => {
-              /* wired up alongside the REST projection tab */
-            }}
             onShare={() => {
               /* wired up alongside the share modal */
             }}

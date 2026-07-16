@@ -1,4 +1,4 @@
-import { LayersPlus, Layers, Upload, Download, Code, Share2 } from 'lucide-react';
+import { LayersPlus, Layers, Upload, Download, Share2 } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import styles from './Topbar.module.css';
 
@@ -6,11 +6,10 @@ interface MoreMenuProps {
   onNewWorkspace: () => void;
   onImport: () => void;
   onExport: () => void;
-  onToggleCode: () => void;
   onShare: () => void;
 }
 
-export function MoreMenu({ onNewWorkspace, onImport, onExport, onToggleCode, onShare }: MoreMenuProps) {
+export function MoreMenu({ onNewWorkspace, onImport, onExport, onShare }: MoreMenuProps) {
   const closeMoreMenu = useAppStore((s) => s.closeMoreMenu);
   const openSettings = useAppStore((s) => s.openSettings);
 
@@ -49,12 +48,6 @@ export function MoreMenu({ onNewWorkspace, onImport, onExport, onToggleCode, onS
           <span className={styles.menuItemTrailing}>Export</span>
         </button>
         <div className={styles.menuDivider} />
-        <button type="button" className={styles.menuItem} onClick={run(onToggleCode)}>
-          <span className={styles.menuItemIcon}>
-            <Code size={15} />
-          </span>
-          <span className={styles.menuItemTrailing}>Code</span>
-        </button>
         <button type="button" className={styles.menuItem} onClick={run(onShare)}>
           <span className={styles.menuItemIcon}>
             <Share2 size={15} />
