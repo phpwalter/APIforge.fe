@@ -14,8 +14,15 @@ import { signOutProvider } from '../lib/api/auth';
 import { clearAuthToken } from '../lib/api/authToken';
 import { getCookiePrefs, setCookiePrefs, type CookiePrefs } from '../lib/cookiePrefs';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
-import type { ColorScheme } from '../lib/colorScheme';
-import { DEFAULT_COLOR_STYLE_PREFS, type ColorStyleCategory, type ColorStylePrefs } from '../lib/colorStyle';
+import type { ColorScheme, MonacoThemeId } from '../lib/colorScheme';
+import {
+  DEFAULT_COLOR_STYLE_CUSTOM_COLORS,
+  DEFAULT_COLOR_STYLE_PREFS,
+  type ColorStyleCategory,
+  type ColorStyleCustomColors,
+  type ColorStyleItem,
+  type ColorStylePrefs,
+} from '../lib/colorStyle';
 
 function systemPrefersDark(): boolean {
   return typeof window !== 'undefined' && window.matchMedia
@@ -187,6 +194,10 @@ interface AppState {
   // of whichever Color Scheme is active. Applies to YAML and JSON alike.
   colorStyle: ColorStylePrefs;
   setColorStyleCategory: (category: ColorStyleCategory, v: boolean) => void;
+  // Custom colors are kept separately per base Monaco theme (see ColorStyleCustomColors) — a
+  // color tuned for Dark shouldn't silently apply to Light too. `color: null` resets to default.
+  colorStyleCustomColors: ColorStyleCustomColors;
+  setColorStyleCustomColor: (theme: MonacoThemeId, item: ColorStyleItem, color: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -364,6 +375,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   colorStyle: DEFAULT_COLOR_STYLE_PREFS,
   setColorStyleCategory: (category, v) => set((s) => ({ colorStyle: { ...s.colorStyle, [category]: v } })),
+
+  colorStyleCustomColors: DEFAULT_COLOR_STYLE_CUSTOM_COLORS,
+  setColorStyleCustomColor: (theme, item, color) =>
+    set((s) => {
+      const forTheme = { ...s.colorStyleCustomColors[theme] };
+      if (color == null) delete forTheme[item];
+      else forTheme[item] = color;
+      return { colorStyleCustomColors: { ...s.colorStyleCustomColors, [theme]: forTheme } };
+    }),
 }));
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */

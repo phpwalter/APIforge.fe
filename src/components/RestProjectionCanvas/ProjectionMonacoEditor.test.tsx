@@ -79,6 +79,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -104,6 +105,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="hc-black"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -127,6 +129,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={{ ...DEFAULT_COLOR_STYLE_PREFS, comments: false }}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -144,6 +147,34 @@ describe('ProjectionMonacoEditor', () => {
     );
   });
 
+  it('applies a custom color for a category, and a custom Background as an editor.background color override', () => {
+    render(
+      <ProjectionMonacoEditor
+        value="openapi: 3.1.0"
+        format="yaml"
+        monacoTheme="vs-dark"
+        colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{ strings: '#ff8800', background: '#101010' }}
+        wrapRef={createRef()}
+        highlightingEnabled
+        lineNumbersEnabled
+        tabSize={2}
+        insertSpaces
+        wordWrap={false}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(defineTheme).toHaveBeenCalledWith(
+      'apiforge-projection',
+      expect.objectContaining({
+        rules: expect.arrayContaining([{ token: 'string', foreground: 'ff8800' }]),
+        colors: { 'editor.background': '#101010' },
+      }),
+    );
+  });
+
   it('creates a JSON model with its own URI when format is json', () => {
     render(
       <ProjectionMonacoEditor
@@ -151,6 +182,7 @@ describe('ProjectionMonacoEditor', () => {
         format="json"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -172,6 +204,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled={false}
@@ -195,6 +228,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -225,6 +259,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
@@ -258,6 +293,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={wrapRef}
         highlightingEnabled
         lineNumbersEnabled
@@ -282,6 +318,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -299,6 +336,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -321,6 +359,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -339,6 +378,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -360,6 +400,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -379,6 +420,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -399,6 +441,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -416,6 +459,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled={false}
@@ -437,6 +481,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -455,6 +500,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -476,6 +522,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -493,6 +540,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled={false}
         lineNumbersEnabled
@@ -515,6 +563,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -533,6 +582,7 @@ describe('ProjectionMonacoEditor', () => {
         format="json"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -559,6 +609,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled
@@ -584,6 +635,7 @@ describe('ProjectionMonacoEditor', () => {
         format="yaml"
         monacoTheme="vs-dark"
         colorStylePrefs={DEFAULT_COLOR_STYLE_PREFS}
+        colorStyleCustomColors={{}}
         wrapRef={createRef()}
         highlightingEnabled
         lineNumbersEnabled

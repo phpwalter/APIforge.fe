@@ -3,11 +3,8 @@ import type { RefObject } from 'react';
 import { setupMonacoOpenApiEditors } from '../../lib/monaco/setup';
 import type { RestProjectionFormat } from '../../types/ui';
 import type { MonacoThemeId } from '../../lib/colorScheme';
-import { buildColorStyleRules, type ColorStylePrefs } from '../../lib/colorStyle';
+import { buildColorStyleTheme, PROJECTION_THEME_ID, type ColorStylePrefs, type ThemeColorOverrides } from '../../lib/colorStyle';
 import styles from './RestProjectionCanvas.module.css';
-
-/** Fixed name for the derived theme we (re)define on top of the chosen base — see applyTheme below. */
-const PROJECTION_THEME_ID = 'apiforge-projection';
 
 interface ProjectionMonacoEditorProps {
   value: string;
@@ -16,6 +13,8 @@ interface ProjectionMonacoEditorProps {
   monacoTheme: MonacoThemeId;
   /** Settings :: Editor Preferences :: Color Style — per-token-type toggles layered on top of monacoTheme. */
   colorStylePrefs: ColorStylePrefs;
+  /** Custom colors for monacoTheme specifically (already resolved to the right base theme's slice). */
+  colorStyleCustomColors: ThemeColorOverrides;
   /** The panel's own root element — a blur that lands back inside it (our toolbar) doesn't count as "leaving the editor". */
   wrapRef: RefObject<HTMLDivElement | null>;
   /** Off switches the model's language to plaintext — no tokens/colors, but also no schema validation, hover, or autocomplete while off. */
@@ -48,6 +47,7 @@ export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, P
       format,
       monacoTheme,
       colorStylePrefs,
+      colorStyleCustomColors,
       wrapRef,
       highlightingEnabled,
       lineNumbersEnabled,
@@ -70,12 +70,8 @@ export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, P
     // it. Called both at editor creation and whenever monacoTheme/colorStylePrefs change later.
     const applyTheme = () => {
       const monaco = setupMonacoOpenApiEditors();
-      monaco.editor.defineTheme(PROJECTION_THEME_ID, {
-        base: monacoTheme,
-        inherit: true,
-        rules: buildColorStyleRules(monacoTheme, colorStylePrefs),
-        colors: {},
-      });
+      const { rules, colors } = buildColorStyleTheme(monacoTheme, colorStylePrefs, colorStyleCustomColors);
+      monaco.editor.defineTheme(PROJECTION_THEME_ID, { base: monacoTheme, inherit: true, rules, colors });
       monaco.editor.setTheme(PROJECTION_THEME_ID);
     };
 
@@ -139,7 +135,7 @@ export const ProjectionMonacoEditor = forwardRef<ProjectionMonacoEditorHandle, P
       // Global (there's only ever one Monaco instance mounted at a time, since the panel shows one format).
       applyTheme();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [monacoTheme, colorStylePrefs]);
+    }, [monacoTheme, colorStylePrefs, colorStyleCustomColors]);
 
     useEffect(() => {
       editorRef.current?.updateOptions({ lineNumbers: lineNumbersEnabled ? 'on' : 'off' });

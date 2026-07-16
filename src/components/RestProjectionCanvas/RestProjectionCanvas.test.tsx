@@ -26,6 +26,7 @@ vi.mock('./ProjectionMonacoEditor', () => ({
         format,
         monacoTheme,
         colorStylePrefs,
+        colorStyleCustomColors,
         wrapRef,
         onChange,
         onCommit,
@@ -34,6 +35,7 @@ vi.mock('./ProjectionMonacoEditor', () => ({
         format: string;
         monacoTheme: string;
         colorStylePrefs: Record<string, boolean>;
+        colorStyleCustomColors: Record<string, string>;
         wrapRef: RefObject<HTMLDivElement | null>;
         onChange: (value: string) => void;
         onCommit: (value: string) => void;
@@ -46,6 +48,7 @@ vi.mock('./ProjectionMonacoEditor', () => ({
           aria-label={`REST Projection document (${format.toUpperCase()})`}
           data-monaco-theme={monacoTheme}
           data-color-style={JSON.stringify(colorStylePrefs)}
+          data-color-style-custom={JSON.stringify(colorStyleCustomColors)}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={(e) => {
@@ -252,6 +255,16 @@ describe('RestProjectionCanvas', () => {
 
     const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
     expect(JSON.parse(yamlArea.getAttribute('data-color-style')!)).toMatchObject({ comments: false, keys: true });
+  });
+
+  it("passes only the current theme's custom colors to the editor, scoped per Color Scheme", () => {
+    useAppStore.getState().setColorStyleCustomColor('vs-dark', 'strings', '#ff8800');
+    useAppStore.getState().setColorStyleCustomColor('vs', 'strings', '#00ff88');
+    render(<RestProjectionCanvas />);
+
+    // App theme defaults to dark and Color Scheme defaults to Auto, so the active theme is vs-dark.
+    const yamlArea = screen.getByLabelText('REST Projection document (YAML)') as HTMLTextAreaElement;
+    expect(JSON.parse(yamlArea.getAttribute('data-color-style-custom')!)).toEqual({ strings: '#ff8800' });
   });
 
   it('applies the Formatting whitespace cleanup preferences to what gets copied', async () => {

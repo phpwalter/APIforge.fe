@@ -49,6 +49,7 @@ export function RestProjectionCanvas() {
   const formattingRemoveBlankLines = useAppStore((s) => s.formattingRemoveBlankLines);
   const editorColorScheme = useAppStore((s) => s.editorColorScheme);
   const colorStyle = useAppStore((s) => s.colorStyle);
+  const colorStyleCustomColors = useAppStore((s) => s.colorStyleCustomColors);
 
   const apiTitle = useAppStore((s) => s.apiTitle);
   const apiVersion = useAppStore((s) => s.apiVersion);
@@ -147,6 +148,7 @@ export function RestProjectionCanvas() {
   );
   const insertSpaces = resolveInsertSpaces(format, formattingIndentStyle);
   const monacoTheme = resolveMonacoTheme(editorColorScheme, theme);
+  const colorStyleCustomColorsForTheme = colorStyleCustomColors[monacoTheme];
 
   const commitEditor = (value: string) => {
     if (manual[format] != null) commitRestProjectionEdit(value, format);
@@ -282,6 +284,7 @@ export function RestProjectionCanvas() {
               format={format}
               monacoTheme={monacoTheme}
               colorStylePrefs={colorStyle}
+              colorStyleCustomColors={colorStyleCustomColorsForTheme}
               wrapRef={wrapRef}
               highlightingEnabled={highlightingEnabled}
               lineNumbersEnabled={lineNumbersEnabled}
