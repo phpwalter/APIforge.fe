@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiUrl, ApiError } from './client';
+import { apiGet, apiPatch, apiPost, apiUrl, ApiError } from './client';
 import { setAuthToken } from './authToken';
 
 function mockFetchOnce(response: Partial<Response> & { ok: boolean }) {
@@ -92,5 +92,33 @@ describe('apiPost', () => {
   it('throws an ApiError on a non-2xx response', async () => {
     mockFetchOnce({ ok: false, status: 401, statusText: 'Unauthorized' });
     await expect(apiPost('/auth/google/link')).rejects.toMatchObject({ status: 401 });
+  });
+});
+
+describe('apiPatch', () => {
+  it('sends a JSON body, the PATCH method, and the bearer token when present', async () => {
+    setAuthToken('the-token');
+    const fetchMock = mockFetchOnce({ ok: true, text: () => Promise.resolve('{"ok":true}') });
+    const result = await apiPatch('/auth/me', { display_name: 'Ada' });
+    expect(result).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://api.test/auth/me',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ display_name: 'Ada' }),
+        headers: expect.objectContaining({ Authorization: 'Bearer the-token' }),
+      }),
+    );
+  });
+
+  it('resolves to undefined for an empty response body', async () => {
+    mockFetchOnce({ ok: true, text: () => Promise.resolve('') });
+    const result = await apiPatch('/auth/me', { bio: 'x' });
+    expect(result).toBeUndefined();
+  });
+
+  it('throws an ApiError on a non-2xx response', async () => {
+    mockFetchOnce({ ok: false, status: 400, statusText: 'Bad Request' });
+    await expect(apiPatch('/auth/me', {})).rejects.toMatchObject({ status: 400 });
   });
 });

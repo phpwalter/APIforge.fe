@@ -202,6 +202,36 @@ describe('useAppStore', () => {
     expect(signOutProvider).not.toHaveBeenCalled();
   });
 
+  it('updateUserProfile merges a patch into the existing profile without dropping other fields', () => {
+    useAppStore
+      .getState()
+      .hydrateSession({ name: 'Ada Lovelace', email: 'ada@example.com', bio: 'old bio' }, 'google');
+
+    useAppStore.getState().updateUserProfile({ name: 'Ada L.', username: 'ada' });
+
+    expect(useAppStore.getState().userProfile).toEqual({
+      name: 'Ada L.',
+      email: 'ada@example.com',
+      bio: 'old bio',
+      username: 'ada',
+    });
+  });
+
+  it('openProfile opens the My Profile dialog and closes the user menu', () => {
+    useAppStore.setState({ userMenuOpen: true });
+    useAppStore.getState().openProfile();
+
+    const s = useAppStore.getState();
+    expect(s.profileOpen).toBe(true);
+    expect(s.userMenuOpen).toBe(false);
+  });
+
+  it('closeProfile closes the My Profile dialog', () => {
+    useAppStore.setState({ profileOpen: true });
+    useAppStore.getState().closeProfile();
+    expect(useAppStore.getState().profileOpen).toBe(false);
+  });
+
   it('hydrateSession stores the real profile and provider from a completed OAuth round trip', () => {
     useAppStore.getState().hydrateSession({ name: 'Ada Lovelace', email: 'ada@example.com' }, 'google');
     const s = useAppStore.getState();

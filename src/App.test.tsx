@@ -65,6 +65,29 @@ describe('App', () => {
     expect(window.location.search).toBe('?foo=bar');
   });
 
+  it('maps bio/created_at/last_login_at from a real backend session into the profile', async () => {
+    window.history.replaceState({}, '', '/?auth_session=fake');
+    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
+      user: {
+        display_name: 'Walter Torres',
+        email: 'otrwalter@gmail.com',
+        bio: 'Building APIforge',
+        created_at: '2026-07-07 23:04:26.110224+00',
+        last_login_at: '2026-07-15 04:13:55+00',
+      },
+      token: { access_token: 'the-token', token_type: 'Bearer', expires_in: 3600 },
+    });
+
+    render(<App />);
+
+    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
+    expect(useAppStore.getState().userProfile).toMatchObject({
+      bio: 'Building APIforge',
+      memberSince: '2026-07-07 23:04:26.110224+00',
+      lastLoginAt: '2026-07-15 04:13:55+00',
+    });
+  });
+
   it('does not let StrictMode\'s double effect invocation re-fetch and clobber the profile with a thinner shape', async () => {
     window.history.replaceState({}, '', '/?auth_session=fake');
     vi.mocked(readAuthSessionFromLocation).mockReturnValue({

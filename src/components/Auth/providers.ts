@@ -29,3 +29,8 @@ export const PROVIDERS: AuthProvider[] = [
   { id: 'apple', label: 'Apple', icon: '/assets/sso-badge-5.svg' },
   { id: 'bitbucket', label: 'Bitbucket', icon: '/assets/sso-badge-6.svg' },
 ];
+
+/** "google" -> "Google", falling back to the raw id for a provider not in the known list. */
+export function providerLabel(providerId: string): string {
+  return PROVIDERS.find((p) => p.id === providerId)?.label ?? providerId;
+}

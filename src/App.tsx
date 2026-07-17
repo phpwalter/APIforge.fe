@@ -20,9 +20,19 @@ function profileFrom(me: {
   username?: string;
   email?: string;
   avatar_url?: string;
+  bio?: string;
+  created_at?: string;
+  last_login_at?: string;
 }): UserProfile {
   const name = me.name ?? me.display_name ?? me.username ?? me.email ?? 'Signed in user';
-  return { name, email: me.email ?? '', avatarUrl: me.avatar_url || undefined };
+  return {
+    name,
+    email: me.email ?? '',
+    avatarUrl: me.avatar_url || undefined,
+    bio: me.bio || undefined,
+    memberSince: me.created_at || undefined,
+    lastLoginAt: me.last_login_at || undefined,
+  };
 }
 
 function App() {

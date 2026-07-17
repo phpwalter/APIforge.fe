@@ -115,6 +115,13 @@ interface AppState {
   /** Populates a real session after the backend's OAuth round trip resolves via GET /auth/me. */
   hydrateSession: (profile: UserProfile, provider: string) => void;
   signOut: () => void;
+  /** Merges into the signed-in profile — used by the My Profile dialog after a successful (or local-only) save. */
+  updateUserProfile: (patch: Partial<UserProfile>) => void;
+
+  // My Profile dialog (opened from the user menu)
+  profileOpen: boolean;
+  openProfile: () => void;
+  closeProfile: () => void;
 
   // Settings :: Version Control — GitHub links via a real OAuth round trip (see auth.ts /
   // App.tsx); GitLab and Bitbucket are UI-only stubs since the backend has no callback for them.
@@ -322,6 +329,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ signedIn: false, userProfile: { name: '', email: '' }, authProvider: null, userMenuOpen: false });
   },
+  updateUserProfile: (patch) => set((s) => ({ userProfile: { ...s.userProfile, ...patch } })),
+
+  profileOpen: false,
+  openProfile: () => set({ profileOpen: true, userMenuOpen: false }),
+  closeProfile: () => set({ profileOpen: false }),
 
   versionControlLinks: getVersionControlLinks(),
   connectVersionControlProvider: (provider, info) =>

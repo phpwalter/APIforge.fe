@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { UserMenu } from './UserMenu';
 import { useAppStore } from '../../state/useAppStore';
 
@@ -92,5 +93,22 @@ describe('UserMenu — provider line under the email', () => {
     render(<UserMenu />);
 
     expect(screen.queryByText(/^\[.*\]$/)).not.toBeInTheDocument();
+  });
+});
+
+describe('UserMenu — My Profile', () => {
+  it('opens the My Profile dialog and closes the user menu', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: true,
+      userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' },
+    });
+    render(<UserMenu />);
+
+    await user.click(screen.getByRole('button', { name: 'My Profile' }));
+
+    expect(useAppStore.getState().profileOpen).toBe(true);
+    expect(useAppStore.getState().userMenuOpen).toBe(false);
   });
 });

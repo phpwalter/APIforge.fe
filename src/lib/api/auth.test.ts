@@ -6,13 +6,15 @@ import {
   redirectToProviderSignIn,
   signOutProvider,
   unlinkProvider,
+  updateMe,
 } from './auth';
-import { apiGet, apiPost, apiUrl } from './client';
+import { apiGet, apiPatch, apiPost, apiUrl } from './client';
 import { takePendingAuthProvider, takePendingLinkProvider } from './authToken';
 
 vi.mock('./client', () => ({
   apiGet: vi.fn(),
   apiPost: vi.fn(),
+  apiPatch: vi.fn(),
   apiUrl: vi.fn((path: string) => `http://api.test${path}`),
 }));
 
@@ -84,6 +86,14 @@ describe('auth API wrappers', () => {
   it('fetchMe calls GET /auth/me', () => {
     fetchMe();
     expect(apiGet).toHaveBeenCalledWith('/auth/me');
+  });
+
+  it('updateMe calls PATCH /auth/me with the profile field patch', () => {
+    updateMe({ display_name: 'Ada Lovelace', bio: 'Mathematician' });
+    expect(apiPatch).toHaveBeenCalledWith('/auth/me', {
+      display_name: 'Ada Lovelace',
+      bio: 'Mathematician',
+    });
   });
 
   it('signOutProvider calls POST /auth/{provider}/signout', () => {

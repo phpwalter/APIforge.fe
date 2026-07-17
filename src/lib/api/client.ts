@@ -83,3 +83,32 @@ export async function apiPost<T = void>(path: string, body?: unknown): Promise<T
     );
   }
 }
+
+/** PATCH with the bearer token attached when present — e.g. updating profile fields via /auth/me. */
+export async function apiPatch<T = void>(path: string, body?: unknown): Promise<T> {
+  const url = apiUrl(path);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'PATCH',
+      headers: authHeaders(
+        body !== undefined ? { 'Content-Type': 'application/json', Accept: 'application/json' } : { Accept: 'application/json' },
+      ),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    throw new ApiError(`Could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (!res.ok) {
+    throw new ApiError(`${path} responded ${res.status} ${res.statusText}`, res.status);
+  }
+  const text = await res.text();
+  if (!text) return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    throw new ApiError(
+      `${path} returned a response that wasn't valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}

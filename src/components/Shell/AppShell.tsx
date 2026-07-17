@@ -8,6 +8,7 @@ import { RestProjectionCanvas } from '../RestProjectionCanvas/RestProjectionCanv
 import { SettingsModal } from '../SettingsModal/SettingsModal';
 import { ExportModal } from '../ExportModal/ExportModal';
 import { DocDialog } from '../DocDialog/DocDialog';
+import { ProfileModal } from '../Profile/ProfileModal';
 import { EmptyProjectState } from '../EmptyProjectState/EmptyProjectState';
 import { ImportStatusToast } from '../ImportStatusToast/ImportStatusToast';
 import shellStyles from './AppShell.module.css';
@@ -23,6 +24,7 @@ export function AppShell() {
   const settingsOpen = useAppStore((s) => s.settingsOpen);
   const exportOpen = useAppStore((s) => s.exportOpen);
   const docDialogOpen = useAppStore((s) => s.docDialogOpen);
+  const profileOpen = useAppStore((s) => s.profileOpen);
   const hasDocument = useSpecStore((s) => s.hasDocument);
 
   return (
@@ -49,6 +51,7 @@ export function AppShell() {
       {settingsOpen && <SettingsModal />}
       {exportOpen && <ExportModal />}
       {docDialogOpen && <DocDialog />}
+      {profileOpen && <ProfileModal />}
     </div>
   );
 }

@@ -21,6 +21,11 @@ export interface UserProfile {
   email: string;
   /** Absent for the demo sign-in providers, which have no real backend to source a photo from. */
   avatarUrl?: string;
+  /** The rest are only ever populated from a real backend session — absent for demo sign-in. */
+  bio?: string;
+  /** Raw backend timestamp strings (created_at / last_login_at) — formatted for display where shown. */
+  memberSince?: string;
+  lastLoginAt?: string;
 }
 
 /**

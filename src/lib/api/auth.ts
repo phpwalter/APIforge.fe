@@ -1,17 +1,22 @@
-import { apiGet, apiPost, apiUrl } from './client';
+import { apiGet, apiPatch, apiPost, apiUrl } from './client';
 import { setPendingAuthProvider, setPendingLinkProvider } from './authToken';
 
 /**
  * The backend's /auth/me schema isn't fleshed out in the imported OpenAPI document (empty
  * `properties: {}`), so this is deliberately permissive — read known-likely fields defensively
- * rather than assuming an exact shape.
+ * rather than assuming an exact shape. The optional fields beyond id/email/avatar_url are grounded
+ * in a real captured GET /auth/me response (see auth.test.ts's base64url fixture), not guessed.
  */
 export interface MeResponse {
   id?: string;
   name?: string;
   display_name?: string;
+  username?: string;
   email?: string;
   avatar_url?: string;
+  bio?: string;
+  created_at?: string;
+  last_login_at?: string;
   [key: string]: unknown;
 }
 
@@ -77,6 +82,21 @@ export function readAuthSessionFromLocation(search: string): AuthSessionPayload 
 
 export function fetchMe(): Promise<MeResponse> {
   return apiGet<MeResponse>('/auth/me');
+}
+
+/**
+ * The imported spec documents PATCH /auth/me as "Update authenticated user settings" but its
+ * request body schema is empty (no example was ever captured) — this sends the subset of
+ * MeResponse's fields that plausibly look user-editable (name/bio), mirroring the shape GET
+ * returns. Adjust field names here if the real backend expects something different.
+ */
+export interface UpdateMeRequest {
+  display_name?: string;
+  bio?: string;
+}
+
+export function updateMe(patch: UpdateMeRequest): Promise<MeResponse> {
+  return apiPatch<MeResponse>('/auth/me', patch);
 }
 
 export function signOutProvider(provider: string): Promise<void> {

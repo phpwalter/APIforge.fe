@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { User, UserPlus, Keyboard, HelpCircle, ExternalLink, Info, LogOut, User as UserBig } from 'lucide-react';
 import { initialsOf, useAppStore } from '../../state/useAppStore';
-import { PROVIDERS } from '../Auth/providers';
+import { providerLabel } from '../Auth/providers';
 import type { UserProfile } from '../../types/ui';
 import styles from './Topbar.module.css';
 
-/** "google" -> "Google", falling back to the raw id for a provider not in the known list. */
-function providerLabel(providerId: string): string {
-  return PROVIDERS.find((p) => p.id === providerId)?.label ?? providerId;
-}
-
-/** The real photo when one loaded successfully, falling back to initials otherwise (no photo, or a broken URL). */
-function AvatarContent({ profile }: { profile: UserProfile }) {
+/** The real photo when one loaded successfully, falling back to initials otherwise (no photo, or a broken URL). Exported for the My Profile dialog to reuse. */
+export function AvatarContent({ profile }: { profile: UserProfile }) {
   const [imgFailed, setImgFailed] = useState(false);
   if (profile.avatarUrl && !imgFailed) {
     return (
@@ -36,6 +31,7 @@ export function UserMenu() {
   const closeUserMenu = useAppStore((s) => s.closeUserMenu);
   const signIn = useAppStore((s) => s.openAuth);
   const signOut = useAppStore((s) => s.signOut);
+  const openProfile = useAppStore((s) => s.openProfile);
 
   const accountClick = () => (signedIn ? toggleUserMenu() : signIn());
 
@@ -56,7 +52,7 @@ export function UserMenu() {
               </div>
             </div>
             <div className={styles.userMenuHeaderDivider} />
-            <button type="button" className={styles.menuItem}>
+            <button type="button" className={styles.menuItem} onClick={openProfile}>
               <span className={styles.menuItemIcon}>
                 <User size={16} />
               </span>
