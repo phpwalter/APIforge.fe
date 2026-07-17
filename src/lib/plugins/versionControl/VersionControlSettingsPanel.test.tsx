@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { VersionControlSettingsPanel } from './VersionControlSettingsPanel';
-import { useAppStore } from '../../state/useAppStore';
-import { redirectToProviderLink } from '../../lib/api/auth';
+import { useAppStore } from '../../../state/useAppStore';
+import { redirectToProviderLink } from '../../api/auth';
 
-vi.mock('../../lib/api/auth', () => ({
+vi.mock('../../api/auth', () => ({
   signOutProvider: vi.fn(() => Promise.resolve()),
   unlinkProvider: vi.fn(() => Promise.resolve()),
   redirectToProviderLink: vi.fn(),

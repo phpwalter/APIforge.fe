@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PluginsSettingsPanel } from './PluginsSettingsPanel';
 import { useAppStore } from '../../state/useAppStore';
@@ -38,9 +38,10 @@ describe('PluginsSettingsPanel', () => {
     expect(screen.queryByRole('checkbox', { name: 'Enable AI' })).not.toBeInTheDocument();
   });
 
-  it("shows the plugin's own settings panel inline in the detail pane while it is enabled", () => {
+  it("shows the plugin's own settings panel inline in the detail pane while it is enabled", async () => {
     render(<PluginsSettingsPanel />);
-    expect(screen.getByText('Status')).toBeInTheDocument(); // AiSettingsPanel's own content
+    // Lazily loaded (see types.ts), so it isn't present on the very first synchronous render.
+    await waitFor(() => expect(screen.getByText('Status')).toBeInTheDocument()); // AiSettingsPanel's own content
   });
 
   it('the list checkbox disables the plugin and hides its inline settings panel', async () => {
@@ -64,7 +65,7 @@ describe('PluginsSettingsPanel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enable' }));
     expect(screen.getByRole('checkbox', { name: 'Enable AI' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByText('Status')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Status')).toBeInTheDocument());
   });
 
   it('search filters the installed list by plugin name', async () => {
@@ -84,5 +85,38 @@ describe('PluginsSettingsPanel', () => {
     await user.type(screen.getByPlaceholderText('Type to see options'), 'ai');
 
     expect(screen.getByRole('checkbox', { name: 'Enable AI' })).toBeInTheDocument();
+  });
+
+  it('also lists Version Control, enabled by default, alongside AI', () => {
+    render(<PluginsSettingsPanel />);
+    expect(screen.getByRole('checkbox', { name: 'Enable Version Control' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('selecting Version Control in the list shows its own settings in the detail pane, without disturbing AI', async () => {
+    const user = userEvent.setup();
+    render(<PluginsSettingsPanel />);
+
+    await user.click(screen.getByRole('button', { name: 'View Version Control details' }));
+
+    // Lazily loaded (see types.ts) — VersionControlSettingsPanel's own content.
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'Connect a Git hosting provider using its own OAuth sign-in — APIforge never sees your provider password.',
+        ),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByRole('button', { name: 'Connect with GitHub' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Enable AI' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('disabling Version Control does not disable AI', async () => {
+    const user = userEvent.setup();
+    render(<PluginsSettingsPanel />);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Enable Version Control' }));
+
+    expect(useAppStore.getState().enabledPluginIds.has('versionControl')).toBe(false);
+    expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(true);
   });
 });

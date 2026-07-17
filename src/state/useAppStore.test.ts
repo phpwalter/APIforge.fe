@@ -244,16 +244,17 @@ describe('useAppStore', () => {
 
   it('every registered plugin is enabled by default', () => {
     expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(true);
+    expect(useAppStore.getState().enabledPluginIds.has('versionControl')).toBe(true);
   });
 
   it('togglePlugin flips a plugin off and persists it, then flips it back on', () => {
     useAppStore.getState().togglePlugin('ai');
     expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(false);
-    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!)).toEqual([]);
+    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!)).toEqual(['versionControl']);
 
     useAppStore.getState().togglePlugin('ai');
     expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(true);
-    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!)).toEqual(['ai']);
+    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!).sort()).toEqual(['ai', 'versionControl']);
   });
 
   it('opens auth modal and closes other menus', () => {

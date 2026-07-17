@@ -6,6 +6,14 @@ describe('plugin registry', () => {
     expect(getPlugin('ai')?.label).toBe('AI');
   });
 
+  it('registers the Version Control plugin, with a settings panel but no field actions', () => {
+    const plugin = getPlugin('versionControl');
+    expect(plugin).toBeDefined();
+    expect(plugin?.label).toBe('Version Control');
+    expect(plugin?.settingsPanel).toBeDefined();
+    expect(plugin?.fieldActions).toBeUndefined();
+  });
+
   it('returns undefined for an unknown plugin id', () => {
     expect(getPlugin('nonexistent')).toBeUndefined();
   });
@@ -21,12 +29,14 @@ describe('plugin registry', () => {
   });
 
   it('getFieldActions returns nothing for a slot no plugin has registered anything for', () => {
-    // Every currently-registered plugin (just AI) covers all four real slots, so exercise the
-    // "no actions for this plugin+slot combination" path directly against the registry data.
+    // AI covers all four real slots; Version Control registers none — exercise the "no actions
+    // for this plugin+slot combination" path directly against the registry data.
     const aiPlugin = PLUGINS.find((p) => p.id === 'ai')!;
     expect(Object.keys(aiPlugin.fieldActions ?? {}).sort()).toEqual(
       ['operationSummary', 'requestBodyDescription', 'responseDescription', 'schemaDescription'].sort(),
     );
+    const versionControlPlugin = PLUGINS.find((p) => p.id === 'versionControl')!;
+    expect(versionControlPlugin.fieldActions).toBeUndefined();
   });
 
   it('getToolbarActions returns an empty array — no plugin registers toolbar actions yet', () => {

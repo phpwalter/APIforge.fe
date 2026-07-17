@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
-import { useAppStore } from '../../state/useAppStore';
-import { redirectToProviderLink } from '../../lib/api/auth';
-import { GitHubIcon, GitLabIcon, BitbucketIcon, type IconComponent } from '../Auth/ProviderIcons';
+import { useAppStore } from '../../../state/useAppStore';
+import { redirectToProviderLink } from '../../api/auth';
+import { GitHubIcon, GitLabIcon, BitbucketIcon, type IconComponent } from '../../../components/Auth/ProviderIcons';
 import styles from './VersionControlSettingsPanel.module.css';
 
 interface ProviderRow {

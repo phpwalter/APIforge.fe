@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Search, Check } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { PLUGINS } from '../../lib/plugins/registry';
@@ -15,7 +15,14 @@ interface DetailProps {
 
 function PluginDetail({ plugin, enabled, onToggle }: DetailProps) {
   const Icon = plugin.icon;
-  const PluginSettings = plugin.settingsPanel;
+  // Each plugin's settings panel is a lazy loader (see types.ts for why — it keeps the registry
+  // free of static imports into panels that might depend on the app store). lazy() must be called
+  // once per loader, not on every render, or Suspense remounts the panel on every keystroke.
+  const loadSettingsPanel = plugin.settingsPanel;
+  const LazyPluginSettings = useMemo(
+    () => (loadSettingsPanel ? lazy(loadSettingsPanel) : null),
+    [loadSettingsPanel],
+  );
 
   return (
     <>
@@ -37,9 +44,11 @@ function PluginDetail({ plugin, enabled, onToggle }: DetailProps) {
 
       <div className={styles.detailDescription}>{plugin.description}</div>
 
-      {enabled && PluginSettings && (
+      {enabled && LazyPluginSettings && (
         <div className={styles.detailSettings}>
-          <PluginSettings />
+          <Suspense fallback={<div className={styles.settingsLoading}>Loading…</div>}>
+            <LazyPluginSettings />
+          </Suspense>
         </div>
       )}
     </>
@@ -114,7 +123,12 @@ export function PluginsSettingsPanel() {
               const active = plugin.id === selected?.id;
               return (
                 <div key={plugin.id} className={styles.listRow} data-active={active}>
-                  <button type="button" className={styles.listRowMain} onClick={() => setSelectedId(plugin.id)}>
+                  <button
+                    type="button"
+                    className={styles.listRowMain}
+                    aria-label={`View ${plugin.label} details`}
+                    onClick={() => setSelectedId(plugin.id)}
+                  >
                     <span className={styles.listRowIcon}>
                       <Icon size={18} />
                     </span>

@@ -14,7 +14,6 @@ import { FileEncodingSettingsPanel } from './FileEncodingSettingsPanel';
 import { FormattingSettingsPanel } from './FormattingSettingsPanel';
 import { ColorSchemeSettingsPanel } from './ColorSchemeSettingsPanel';
 import { ColorStyleSettingsPanel } from './ColorStyleSettingsPanel';
-import { VersionControlSettingsPanel } from './VersionControlSettingsPanel';
 import { PluginsSettingsPanel } from './PluginsSettingsPanel';
 import styles from './SettingsModal.module.css';
 
@@ -31,7 +30,6 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   colorStyle: ColorStyleSettingsPanel,
   fileEncoding: FileEncodingSettingsPanel,
   formatting: FormattingSettingsPanel,
-  versionControl: VersionControlSettingsPanel,
   plugins: PluginsSettingsPanel,
 };
 

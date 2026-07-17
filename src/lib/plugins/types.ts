@@ -42,6 +42,13 @@ export interface Plugin {
   /** Registered per slot — a slot with no entry here just renders no button. */
   fieldActions?: Partial<Record<FieldSlot, PluginFieldAction[]>>;
   toolbarActions?: PluginToolbarAction[];
-  /** Rendered as this plugin's own row in Settings :: Plugins when present. */
-  settingsPanel?: ComponentType;
+  /**
+   * Lazily loaded and rendered in Settings :: Plugins' detail pane when present — a dynamic
+   * import() rather than a direct component reference, same pattern as ColorStylePreview's lazy
+   * load. This isn't just a bundle-size nicety: a plugin's settings panel may use the app store
+   * (e.g. Version Control's does), and the registry is itself imported by the store (for default
+   * enabled-plugin state) — a direct static import here would form useAppStore -> registry ->
+   * this plugin -> its panel -> useAppStore, a circular import that breaks at module-eval time.
+   */
+  settingsPanel?: () => Promise<{ default: ComponentType }>;
 }

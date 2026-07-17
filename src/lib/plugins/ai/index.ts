@@ -1,7 +1,6 @@
 import { Sparkles } from 'lucide-react';
 import type { Plugin } from '../types';
 import { AI_FIELD_ACTIONS } from './fieldActions';
-import { AiSettingsPanel } from './AiSettingsPanel';
 
 export const AI_PLUGIN: Plugin = {
   id: 'ai',
@@ -11,5 +10,5 @@ export const AI_PLUGIN: Plugin = {
   author: 'APIforge',
   version: 'Built-in',
   fieldActions: AI_FIELD_ACTIONS,
-  settingsPanel: AiSettingsPanel,
+  settingsPanel: () => import('./AiSettingsPanel').then((m) => ({ default: m.AiSettingsPanel })),
 };

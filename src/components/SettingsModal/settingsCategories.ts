@@ -7,7 +7,6 @@ import {
   Monitor,
   Info,
   Cable,
-  Merge,
   Wrench,
   Keyboard,
   Download,
@@ -80,14 +79,9 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   {
     key: 'plugins',
     label: 'Plugins',
-    keywords: 'plugins extensions marketplace ai assistant copilot generate',
+    keywords:
+      'plugins extensions marketplace ai assistant copilot generate version control git commit branch github gitlab bitbucket oauth connect link',
     icon: Cable,
-  },
-  {
-    key: 'versionControl',
-    label: 'Version Control',
-    keywords: 'version control git commit branch github gitlab bitbucket oauth connect link',
-    icon: Merge,
   },
   { key: 'tools', label: 'Tools', keywords: 'tools external integrations', icon: Wrench },
   { key: 'export', label: 'Export Defaults', keywords: 'export clean full filename yaml download', icon: Download },
