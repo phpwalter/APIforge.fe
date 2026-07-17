@@ -44,3 +44,53 @@ describe('UserMenu — avatar', () => {
     expect(screen.getByTitle('Ada Lovelace · Account')).toHaveTextContent('AL');
   });
 });
+
+describe('UserMenu — provider line under the email', () => {
+  it('shows the real provider\'s display label in brackets, below the email', () => {
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: true,
+      userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' },
+      authProvider: 'github',
+    });
+    render(<UserMenu />);
+
+    expect(screen.getByText('[GitHub]')).toBeInTheDocument();
+  });
+
+  it('resolves each known provider id to its display label', () => {
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: true,
+      userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' },
+      authProvider: 'google',
+    });
+    render(<UserMenu />);
+
+    expect(screen.getByText('[Google]')).toBeInTheDocument();
+  });
+
+  it('falls back to the raw provider id when it isn\'t in the known providers list', () => {
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: true,
+      userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' },
+      authProvider: 'some-future-provider',
+    });
+    render(<UserMenu />);
+
+    expect(screen.getByText('[some-future-provider]')).toBeInTheDocument();
+  });
+
+  it('shows nothing when there is no real provider (demo sign-in)', () => {
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: true,
+      userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' },
+      authProvider: null,
+    });
+    render(<UserMenu />);
+
+    expect(screen.queryByText(/^\[.*\]$/)).not.toBeInTheDocument();
+  });
+});

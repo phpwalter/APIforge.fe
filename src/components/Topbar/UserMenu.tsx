@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { User, UserPlus, Keyboard, HelpCircle, ExternalLink, Info, LogOut, User as UserBig } from 'lucide-react';
 import { initialsOf, useAppStore } from '../../state/useAppStore';
+import { PROVIDERS } from '../Auth/providers';
 import type { UserProfile } from '../../types/ui';
 import styles from './Topbar.module.css';
+
+/** "google" -> "Google", falling back to the raw id for a provider not in the known list. */
+function providerLabel(providerId: string): string {
+  return PROVIDERS.find((p) => p.id === providerId)?.label ?? providerId;
+}
 
 /** The real photo when one loaded successfully, falling back to initials otherwise (no photo, or a broken URL). */
 function AvatarContent({ profile }: { profile: UserProfile }) {
@@ -25,6 +31,7 @@ export function UserMenu() {
   const signedIn = useAppStore((s) => s.signedIn);
   const userMenuOpen = useAppStore((s) => s.userMenuOpen);
   const userProfile = useAppStore((s) => s.userProfile);
+  const authProvider = useAppStore((s) => s.authProvider);
   const toggleUserMenu = useAppStore((s) => s.toggleUserMenu);
   const closeUserMenu = useAppStore((s) => s.closeUserMenu);
   const signIn = useAppStore((s) => s.openAuth);
@@ -45,6 +52,7 @@ export function UserMenu() {
               <div className={styles.avatarText}>
                 <div className={styles.avatarName}>{userProfile.name}</div>
                 <div className={styles.avatarEmail}>{userProfile.email}</div>
+                {authProvider && <div className={styles.avatarProvider}>[{providerLabel(authProvider)}]</div>}
               </div>
             </div>
             <div className={styles.userMenuHeaderDivider} />

@@ -1,14 +1,13 @@
 /**
- * Placeholder provider "icons" — simple monogram badges in brand-adjacent
- * colors, NOT the official Google/GitHub/Apple/Atlassian/Confluence/
- * Bitbucket logos. Rendered as inline SVG (not <img src="...">) so they
- * always show up regardless of how/where this app is hosted or previewed.
- *
- * Swap the JSX in each component for the real licensed brand mark
- * whenever you're ready to use it — the props signature (size) can stay
- * the same so nothing else in the app needs to change.
+ * Google/Apple/Atlassian/Confluence still use placeholder monogram badges —
+ * NOT the official logos. GitHub/GitLab/Bitbucket use the real brand marks
+ * from src/assets/. Every icon here keeps the same (size) props signature so
+ * nothing else in the app needs to change if more get swapped in later.
  */
 import type { ReactElement, SVGProps } from 'react';
+import githubLogo from '../../assets/github.svg';
+import gitlabLogo from '../../assets/GitLab.svg';
+import bitbucketLogo from '../../assets/bitbucket.svg';
 
 export type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 export type IconComponent = (props: IconProps) => ReactElement;
@@ -46,20 +45,24 @@ export function AtlassianIcon(props: IconProps) {
   return <MonogramBadge {...props} bg="#0052CC" text="At" />;
 }
 
-export function GitHubIcon(props: IconProps) {
-  return <MonogramBadge {...props} bg="#24292f" text="Gh" />;
-}
-
 export function ConfluenceIcon(props: IconProps) {
   return <MonogramBadge {...props} bg="#1868DB" text="Co" />;
 }
 
-export function BitbucketIcon(props: IconProps) {
-  return <MonogramBadge {...props} bg="#0747A6" text="Bb" labelSize={7.5} />;
+function BrandLogo({ src, alt, size = 20, className }: { src: string; alt: string } & IconProps) {
+  return <img src={src} alt={alt} width={size} height={size} className={className} aria-hidden={alt ? undefined : true} />;
 }
 
-export function GitLabIcon(props: IconProps) {
-  return <MonogramBadge {...props} bg="#FC6D26" text="Gl" />;
+export function GitHubIcon({ size, className }: IconProps) {
+  return <BrandLogo src={githubLogo} alt="" size={size} className={className} />;
+}
+
+export function BitbucketIcon({ size, className }: IconProps) {
+  return <BrandLogo src={bitbucketLogo} alt="" size={size} className={className} />;
+}
+
+export function GitLabIcon({ size, className }: IconProps) {
+  return <BrandLogo src={gitlabLogo} alt="" size={size} className={className} />;
 }
 
 export function AppleIcon({ size = 20, ...rest }: IconProps) {
