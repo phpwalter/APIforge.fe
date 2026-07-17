@@ -79,7 +79,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'security', label: 'Security Schemes', keywords: 'auth apikey bearer oauth security scheme', icon: ShieldCog },
   { key: 'notifications', label: 'Notifications', keywords: 'notifications alerts email', icon: Info },
   { key: 'plugins', label: 'Plugins', keywords: 'plugins extensions marketplace', icon: Cable },
-  { key: 'versionControl', label: 'Version Control', keywords: 'version control git commit branch', icon: Merge },
+  {
+    key: 'versionControl',
+    label: 'Version Control',
+    keywords: 'version control git commit branch github gitlab bitbucket oauth connect link',
+    icon: Merge,
+  },
   { key: 'tools', label: 'Tools', keywords: 'tools external integrations', icon: Wrench },
   { key: 'ai', label: 'AI', keywords: 'ai assistant copilot generate', icon: Sparkles },
   { key: 'export', label: 'Export Defaults', keywords: 'export clean full filename yaml download', icon: Download },

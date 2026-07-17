@@ -58,6 +58,10 @@ export function BitbucketIcon(props: IconProps) {
   return <MonogramBadge {...props} bg="#0747A6" text="Bb" labelSize={7.5} />;
 }
 
+export function GitLabIcon(props: IconProps) {
+  return <MonogramBadge {...props} bg="#FC6D26" text="Gl" />;
+}
+
 export function AppleIcon({ size = 20, ...rest }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...rest}>

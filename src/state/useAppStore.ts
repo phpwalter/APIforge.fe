@@ -10,9 +10,16 @@ import type {
   UserProfile,
 } from '../types/ui';
 import type { ApiContact, ApiExternalDocs, ApiLicense } from '../types/spec';
-import { signOutProvider } from '../lib/api/auth';
+import { signOutProvider, unlinkProvider } from '../lib/api/auth';
 import { clearAuthToken } from '../lib/api/authToken';
 import { getCookiePrefs, setCookiePrefs, type CookiePrefs } from '../lib/cookiePrefs';
+import {
+  getVersionControlLinks,
+  setVersionControlLinks,
+  type VersionControlLinkInfo,
+  type VersionControlLinks,
+  type VersionControlProvider,
+} from '../lib/versionControlLinks';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
 import { MONACO_THEME_IDS, type ColorScheme, type MonacoThemeId } from '../lib/colorScheme';
 import {
@@ -107,6 +114,12 @@ interface AppState {
   /** Populates a real session after the backend's OAuth round trip resolves via GET /auth/me. */
   hydrateSession: (profile: UserProfile, provider: string) => void;
   signOut: () => void;
+
+  // Settings :: Version Control — GitHub links via a real OAuth round trip (see auth.ts /
+  // App.tsx); GitLab and Bitbucket are UI-only stubs since the backend has no callback for them.
+  versionControlLinks: VersionControlLinks;
+  connectVersionControlProvider: (provider: VersionControlProvider, info: VersionControlLinkInfo) => void;
+  disconnectVersionControlProvider: (provider: VersionControlProvider) => void;
 
   // Auth modal (provider-only — no username/password)
   authOpen: boolean;
@@ -303,6 +316,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       clearAuthToken();
     }
     set({ signedIn: false, userProfile: { name: '', email: '' }, authProvider: null, userMenuOpen: false });
+  },
+
+  versionControlLinks: getVersionControlLinks(),
+  connectVersionControlProvider: (provider, info) =>
+    set((s) => {
+      const next = { ...s.versionControlLinks, [provider]: info };
+      setVersionControlLinks(next);
+      return { versionControlLinks: next };
+    }),
+  disconnectVersionControlProvider: (provider) => {
+    unlinkProvider(provider).catch(() => {});
+    set((s) => {
+      const next = { ...s.versionControlLinks };
+      delete next[provider];
+      setVersionControlLinks(next);
+      return { versionControlLinks: next };
+    });
   },
 
   authOpen: false,

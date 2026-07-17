@@ -2,6 +2,7 @@ import { useAppStore, initialsOf } from './useAppStore';
 
 vi.mock('../lib/api/auth', () => ({
   signOutProvider: vi.fn(() => Promise.resolve()),
+  unlinkProvider: vi.fn(() => Promise.resolve()),
 }));
 
 const initialState = useAppStore.getState();
@@ -9,6 +10,7 @@ const initialState = useAppStore.getState();
 beforeEach(() => {
   useAppStore.setState(initialState, true);
   vi.clearAllMocks();
+  localStorage.clear();
 });
 
 describe('useAppStore', () => {
@@ -218,6 +220,26 @@ describe('useAppStore', () => {
     expect(s.signedIn).toBe(false);
     expect(s.authProvider).toBe(null);
     expect(s.userProfile).toEqual({ name: '', email: '' });
+  });
+
+  it('connectVersionControlProvider stores the linked identity and persists it to localStorage', () => {
+    useAppStore.getState().connectVersionControlProvider('github', { username: 'octocat' });
+
+    expect(useAppStore.getState().versionControlLinks).toEqual({ github: { username: 'octocat' } });
+    expect(JSON.parse(localStorage.getItem('apiforge_version_control_links')!)).toEqual({
+      github: { username: 'octocat' },
+    });
+  });
+
+  it('disconnectVersionControlProvider calls the backend unlink endpoint and clears the stored identity', async () => {
+    const { unlinkProvider } = await import('../lib/api/auth');
+    useAppStore.getState().connectVersionControlProvider('github', { username: 'octocat' });
+
+    useAppStore.getState().disconnectVersionControlProvider('github');
+
+    expect(unlinkProvider).toHaveBeenCalledWith('github');
+    expect(useAppStore.getState().versionControlLinks).toEqual({});
+    expect(JSON.parse(localStorage.getItem('apiforge_version_control_links')!)).toEqual({});
   });
 
   it('opens auth modal and closes other menus', () => {

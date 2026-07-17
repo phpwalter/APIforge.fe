@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from './state/useAppStore';
 import { AppShell } from './components/Shell/AppShell';
 import { LandingPage } from './components/Landing/LandingPage';
-import { fetchMe, readAuthSessionFromLocation, type MeResponse } from './lib/api/auth';
+import { fetchMe, linkProvider, readAuthSessionFromLocation, type MeResponse } from './lib/api/auth';
 import {
   getAuthProvider,
   getAuthToken,
@@ -10,6 +10,7 @@ import {
   setAuthToken,
   clearAuthToken,
   takePendingAuthProvider,
+  takePendingLinkProvider,
 } from './lib/api/authToken';
 import type { UserProfile } from './types/ui';
 
@@ -27,6 +28,7 @@ function profileFrom(me: {
 function App() {
   const signedIn = useAppStore((s) => s.signedIn);
   const hydrateSession = useAppStore((s) => s.hydrateSession);
+  const connectVersionControlProvider = useAppStore((s) => s.connectVersionControlProvider);
   // StrictMode runs this effect twice in dev. Without this guard, the second run would find the
   // auth_session param already stripped by the first, fall through to the "verify stored token"
   // branch, and overwrite the rich profile we just hydrated with whatever thinner shape /auth/me
@@ -51,6 +53,23 @@ function App() {
         window.location.pathname + (query ? `?${query}` : '') + window.location.hash,
       );
 
+      // A "link" redirect (Settings :: Version Control) proves ownership of the linked account via
+      // real OAuth, but must not replace the active session — register the link server-side and
+      // record its identity instead of touching signedIn/userProfile/authProvider.
+      const linkProviderId = takePendingLinkProvider();
+      if (linkProviderId === 'github') {
+        const user = session.user ?? {};
+        linkProvider(linkProviderId)
+          .then(() =>
+            connectVersionControlProvider(linkProviderId, {
+              username: user.username ?? user.display_name ?? user.email,
+              avatarUrl: user.avatar_url,
+            }),
+          )
+          .catch(() => {});
+        return;
+      }
+
       const provider = takePendingAuthProvider() ?? 'google';
       setAuthToken(session.token.access_token);
       setAuthProvider(provider);
@@ -66,7 +85,7 @@ function App() {
     fetchMe()
       .then((me: MeResponse) => hydrateSession(profileFrom(me), provider))
       .catch(() => clearAuthToken());
-  }, [hydrateSession]);
+  }, [hydrateSession, connectVersionControlProvider]);
 
   return signedIn ? <AppShell /> : <LandingPage />;
 }

@@ -5,7 +5,9 @@ import {
   setAuthProvider,
   setAuthToken,
   setPendingAuthProvider,
+  setPendingLinkProvider,
   takePendingAuthProvider,
+  takePendingLinkProvider,
 } from './authToken';
 
 beforeEach(() => {
@@ -44,5 +46,20 @@ describe('pending auth provider (sessionStorage, one-shot for the redirect round
     setPendingAuthProvider('github');
     expect(takePendingAuthProvider()).toBe('github');
     expect(takePendingAuthProvider()).toBeNull();
+  });
+});
+
+describe('pending link provider (sessionStorage, one-shot, kept separate from pending sign-in)', () => {
+  it('is null when nothing was recorded', () => {
+    expect(takePendingLinkProvider()).toBeNull();
+  });
+
+  it('returns the recorded provider exactly once, then clears it, without affecting the pending sign-in provider', () => {
+    setPendingAuthProvider('google');
+    setPendingLinkProvider('github');
+
+    expect(takePendingLinkProvider()).toBe('github');
+    expect(takePendingLinkProvider()).toBeNull();
+    expect(takePendingAuthProvider()).toBe('google');
   });
 });

@@ -9,6 +9,12 @@ const TOKEN_KEY = 'apiforge_auth_token';
 const PROVIDER_KEY = 'apiforge_auth_provider';
 /** Session-scoped: only needed for the moment between the redirect out and the callback's return. */
 const PENDING_PROVIDER_KEY = 'apiforge_pending_auth_provider';
+/**
+ * Separate from PENDING_PROVIDER_KEY: a "link" redirect (Settings :: Version Control, connecting
+ * an additional provider to the already-signed-in account) must not be mistaken for a fresh
+ * sign-in when the callback returns, or it would clobber the active session.
+ */
+const PENDING_LINK_PROVIDER_KEY = 'apiforge_pending_link_provider';
 
 export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -40,5 +46,17 @@ export function setPendingAuthProvider(provider: string): void {
 export function takePendingAuthProvider(): string | null {
   const provider = sessionStorage.getItem(PENDING_PROVIDER_KEY);
   sessionStorage.removeItem(PENDING_PROVIDER_KEY);
+  return provider;
+}
+
+/** Recorded right before redirecting to link an additional provider (Settings :: Version Control). */
+export function setPendingLinkProvider(provider: string): void {
+  sessionStorage.setItem(PENDING_LINK_PROVIDER_KEY, provider);
+}
+
+/** Reads and clears the pending link provider — one-shot, same pattern as takePendingAuthProvider. */
+export function takePendingLinkProvider(): string | null {
+  const provider = sessionStorage.getItem(PENDING_LINK_PROVIDER_KEY);
+  sessionStorage.removeItem(PENDING_LINK_PROVIDER_KEY);
   return provider;
 }

@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiUrl } from './client';
-import { setPendingAuthProvider } from './authToken';
+import { setPendingAuthProvider, setPendingLinkProvider } from './authToken';
 
 /**
  * The backend's /auth/me schema isn't fleshed out in the imported OpenAPI document (empty
@@ -25,6 +25,17 @@ export function redirectToProviderSignIn(provider: string): void {
   // The auth_session payload the callback returns doesn't say which provider produced it —
   // remember it here so the app can tag the session correctly once the browser comes back.
   setPendingAuthProvider(provider);
+  window.location.href = apiUrl(`/auth/${provider}`);
+}
+
+/**
+ * Same real OAuth entry point as redirectToProviderSignIn — the backend exposes no separate
+ * "link" redirect — but records the provider as pending-LINK rather than pending-sign-in, so the
+ * callback's return (App.tsx) links it to the already-signed-in account instead of replacing the
+ * active session (used by Settings :: Version Control to connect e.g. GitHub via real OAuth).
+ */
+export function redirectToProviderLink(provider: string): void {
+  setPendingLinkProvider(provider);
   window.location.href = apiUrl(`/auth/${provider}`);
 }
 

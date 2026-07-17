@@ -3,14 +3,21 @@ import { StrictMode } from 'react';
 import App from './App';
 import { useAppStore } from './state/useAppStore';
 import { useSpecStore } from './state/useSpecStore';
-import { fetchMe, readAuthSessionFromLocation } from './lib/api/auth';
-import { getAuthToken, setAuthProvider, setAuthToken, setPendingAuthProvider } from './lib/api/authToken';
+import { fetchMe, linkProvider, readAuthSessionFromLocation } from './lib/api/auth';
+import {
+  getAuthToken,
+  setAuthProvider,
+  setAuthToken,
+  setPendingAuthProvider,
+  setPendingLinkProvider,
+} from './lib/api/authToken';
 
 // App boots by checking for a real backend session — keep that hermetic in tests rather than
 // letting it hit the network, by always resolving to "not signed in" here by default.
 vi.mock('./lib/api/auth', () => ({
   fetchMe: vi.fn(() => Promise.reject(new Error('not signed in'))),
   readAuthSessionFromLocation: vi.fn(() => null),
+  linkProvider: vi.fn(() => Promise.resolve()),
 }));
 
 const initialAppState = useAppStore.getState();
@@ -21,6 +28,7 @@ beforeEach(() => {
   useSpecStore.setState(initialSpecState, true);
   vi.mocked(readAuthSessionFromLocation).mockReset().mockReturnValue(null);
   vi.mocked(fetchMe).mockReset().mockRejectedValue(new Error('not signed in'));
+  vi.mocked(linkProvider).mockReset().mockResolvedValue(undefined);
   window.history.replaceState({}, '', '/');
   localStorage.clear();
   sessionStorage.clear();
@@ -112,5 +120,29 @@ describe('App', () => {
 
     await waitFor(() => expect(fetchMe).not.toHaveBeenCalled());
     expect(useAppStore.getState().signedIn).toBe(false);
+  });
+
+  it('a link redirect (Settings :: Version Control) registers the connected identity instead of replacing the active session', async () => {
+    useAppStore.setState({ signedIn: true, userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' }, authProvider: 'google' });
+    setPendingLinkProvider('github');
+    window.history.replaceState({}, '', '/?auth_session=fake');
+    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
+      user: { username: 'octocat', display_name: 'The Octocat', avatar_url: 'https://example.com/octocat.png' },
+      token: { access_token: 'github-linked-token', token_type: 'Bearer', expires_in: 3600 },
+    });
+
+    render(<App />);
+
+    await waitFor(() => expect(linkProvider).toHaveBeenCalledWith('github'));
+    await waitFor(() =>
+      expect(useAppStore.getState().versionControlLinks).toEqual({
+        github: { username: 'octocat', avatarUrl: 'https://example.com/octocat.png' },
+      }),
+    );
+
+    // The primary session is untouched by the link — it must not be clobbered by the linked identity.
+    expect(useAppStore.getState().authProvider).toBe('google');
+    expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
+    expect(getAuthToken()).toBeNull();
   });
 });

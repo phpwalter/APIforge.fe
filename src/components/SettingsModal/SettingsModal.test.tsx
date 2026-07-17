@@ -69,6 +69,16 @@ describe('SettingsModal — nested nav', () => {
     expect(screen.getByRole('button', { name: 'File Encoding' })).toBeInTheDocument();
   });
 
+  it('selects Version Control as a top-level category and shows its own dedicated panel', async () => {
+    const user = userEvent.setup();
+    render(<SettingsModal />);
+
+    await user.click(screen.getByRole('button', { name: 'Version Control' }));
+
+    expect(screen.getByRole('button', { name: 'Version Control' })).toHaveAttribute('data-active', 'true');
+    expect(screen.getByText('GitHub')).toBeInTheDocument(); // VersionControlSettingsPanel's own content
+  });
+
   it('shows the generic "Coming Soon" fallback for a child with no dedicated panel yet (Keyboard Shortcuts)', async () => {
     const user = userEvent.setup();
     render(<SettingsModal />);

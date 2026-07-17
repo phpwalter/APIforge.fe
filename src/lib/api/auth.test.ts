@@ -1,6 +1,14 @@
-import { fetchMe, linkProvider, readAuthSessionFromLocation, redirectToProviderSignIn, signOutProvider, unlinkProvider } from './auth';
+import {
+  fetchMe,
+  linkProvider,
+  readAuthSessionFromLocation,
+  redirectToProviderLink,
+  redirectToProviderSignIn,
+  signOutProvider,
+  unlinkProvider,
+} from './auth';
 import { apiGet, apiPost, apiUrl } from './client';
-import { takePendingAuthProvider } from './authToken';
+import { takePendingAuthProvider, takePendingLinkProvider } from './authToken';
 
 vi.mock('./client', () => ({
   apiGet: vi.fn(),
@@ -37,6 +45,36 @@ describe('redirectToProviderSignIn', () => {
     redirectToProviderSignIn('github');
 
     expect(takePendingAuthProvider()).toBe('github');
+
+    window.location = original;
+  });
+});
+
+describe('redirectToProviderLink', () => {
+  it("navigates the full page to the same real OAuth entry point as sign-in, since the backend exposes no separate link redirect", () => {
+    const original = window.location;
+    // @ts-expect-error -- deliberately replacing a read-only global for this one assertion
+    delete window.location;
+    window.location = { ...original, href: '' } as Location;
+
+    redirectToProviderLink('github');
+
+    expect(apiUrl).toHaveBeenCalledWith('/auth/github');
+    expect(window.location.href).toBe('http://api.test/auth/github');
+
+    window.location = original;
+  });
+
+  it('records the provider as pending-LINK (not pending-sign-in), so the callback links it instead of replacing the active session', () => {
+    const original = window.location;
+    // @ts-expect-error -- deliberately replacing a read-only global for this one assertion
+    delete window.location;
+    window.location = { ...original, href: '' } as Location;
+
+    redirectToProviderLink('github');
+
+    expect(takePendingLinkProvider()).toBe('github');
+    expect(takePendingAuthProvider()).toBeNull();
 
     window.location = original;
   });
