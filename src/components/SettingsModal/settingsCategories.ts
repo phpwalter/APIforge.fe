@@ -39,7 +39,7 @@ export interface SettingsCategory {
 /**
  * Ordered as requested: "Account & Members" removed entirely, and
  * "Notes" moved to sit below "Export Defaults" (it was originally
- * between Editor Preferences and Security Schemes in the source).
+ * between Code Preferences and Security Schemes in the source).
  * Every category is a shell for now — selecting any of them just shows
  * "Coming Soon" until its real settings panel is built, except where a
  * dedicated panel is registered in SettingsModal.tsx.
@@ -49,8 +49,8 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'servers', label: 'Servers & External Docs', keywords: 'servers url external docs', icon: Route },
   {
     key: 'preferences',
-    label: 'Editor Preferences',
-    keywords: 'x-apiforge operationid tag mode resource naming response view codegen',
+    label: 'Code Preferences',
+    keywords: 'editor code preferences x-apiforge operationid tag mode resource naming response view codegen',
     icon: Code,
     children: [
       {
@@ -75,8 +75,8 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
       { key: 'shortcuts', label: 'Keyboard Shortcuts', keywords: 'undo redo keyboard shortcut', icon: Keyboard },
     ],
   },
-  { key: 'security', label: 'Security Schemes', keywords: 'auth apikey bearer oauth security scheme', icon: ShieldCog },
   { key: 'appearance', label: 'Appearance', keywords: 'theme dark light system language', icon: Monitor },
+  { key: 'security', label: 'Security Schemes', keywords: 'auth apikey bearer oauth security scheme', icon: ShieldCog },
   { key: 'notifications', label: 'Notifications', keywords: 'notifications alerts email', icon: Info },
   { key: 'plugins', label: 'Plugins', keywords: 'plugins extensions marketplace', icon: Cable },
   { key: 'versionControl', label: 'Version Control', keywords: 'version control git commit branch', icon: Merge },

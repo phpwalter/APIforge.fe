@@ -66,7 +66,7 @@ interface AppState {
   setApiServerUrl: (index: number, url: string) => void;
   setApiExternalDocsField: (field: keyof ApiExternalDocs, value: string) => void;
 
-  // Settings :: Editor Preferences (x-apiforge.preferences)
+  // Settings :: Code Preferences (x-apiforge.preferences)
   apiforgePreferences: ApiforgePreferences;
   setApiforgePreference: <K extends keyof ApiforgePreferences>(key: K, value: ApiforgePreferences[K]) => void;
 
@@ -161,7 +161,7 @@ interface AppState {
   setRestProjectionError: (message: string | null) => void;
   clearRestProjectionManual: () => void;
 
-  // Settings :: Editor Preferences :: File Encoding — applies to both REST Projection's "Copy to
+  // Settings :: Code Preferences :: File Encoding — applies to both REST Projection's "Copy to
   // clipboard" and the Export dialog's downloads, regardless of YAML/JSON format.
   fileEncodingCharacterEncoding: CharacterEncoding;
   setFileEncodingCharacterEncoding: (v: CharacterEncoding) => void;
@@ -170,7 +170,7 @@ interface AppState {
   fileEncodingInsertFinalNewline: boolean;
   setFileEncodingInsertFinalNewline: (v: boolean) => void;
 
-  // Settings :: Editor Preferences :: Formatting — also not per-format. Indent Style: Tabs only
+  // Settings :: Code Preferences :: Formatting — also not per-format. Indent Style: Tabs only
   // applies where valid (JSON, and Monaco's own typing) — YAML forbids tab indentation, so it
   // always uses spaces regardless of this setting (see resolveIndentUnit in restProjectionCanvas usage).
   formattingIndentSize: 2 | 4;
@@ -185,12 +185,12 @@ interface AppState {
   formattingRemoveBlankLines: boolean;
   setFormattingRemoveBlankLines: (v: boolean) => void;
 
-  // Settings :: Editor Preferences :: Color Scheme — the REST Projection editor's own Monaco
+  // Settings :: Code Preferences :: Color Scheme — the REST Projection editor's own Monaco
   // theme, independent of (but defaulting to follow) the app's Day/Night theme.
   editorColorScheme: ColorScheme;
   setEditorColorScheme: (v: ColorScheme) => void;
 
-  // Settings :: Editor Preferences :: Color Style — per-token-type color toggles, layered on top
+  // Settings :: Code Preferences :: Color Style — per-token-type color toggles, layered on top
   // of whichever Color Scheme is active. Applies to YAML and JSON alike.
   colorStyle: ColorStylePrefs;
   setColorStyleCategory: (category: ColorStyleCategory, v: boolean) => void;

@@ -9,9 +9,9 @@ import styles from './RestProjectionCanvas.module.css';
 interface ProjectionMonacoEditorProps {
   value: string;
   format: RestProjectionFormat;
-  /** Resolved Monaco theme id — Settings :: Editor Preferences :: Color Scheme, with 'auto' already resolved against the app's Day/Night theme. */
+  /** Resolved Monaco theme id — Settings :: Code Preferences :: Color Scheme, with 'auto' already resolved against the app's Day/Night theme. */
   monacoTheme: MonacoThemeId;
-  /** Settings :: Editor Preferences :: Color Style — per-token-type toggles layered on top of monacoTheme. */
+  /** Settings :: Code Preferences :: Color Style — per-token-type toggles layered on top of monacoTheme. */
   colorStylePrefs: ColorStylePrefs;
   /** Custom colors for monacoTheme specifically (already resolved to the right base theme's slice). */
   colorStyleCustomColors: ThemeColorOverrides;
@@ -20,7 +20,7 @@ interface ProjectionMonacoEditorProps {
   /** Off switches the model's language to plaintext — no tokens/colors, but also no schema validation, hover, or autocomplete while off. */
   highlightingEnabled: boolean;
   lineNumbersEnabled: boolean;
-  /** Visual width of a tab stop / auto-indent step — from Settings :: Editor Preferences :: Formatting. */
+  /** Visual width of a tab stop / auto-indent step — from Settings :: Code Preferences :: Formatting. */
   tabSize: number;
   /** Whether pressing Tab inserts spaces (vs. a literal tab character) — always true for YAML, since tab indentation is invalid there. */
   insertSpaces: boolean;

@@ -10,18 +10,18 @@ beforeEach(() => {
 });
 
 describe('SettingsModal — nested nav', () => {
-  it('renders Editor Preferences collapsed by default, with no child rows visible', () => {
+  it('renders Code Preferences collapsed by default, with no child rows visible', () => {
     render(<SettingsModal />);
 
-    expect(screen.getByRole('button', { name: /Editor Preferences/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Code Preferences/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Color Scheme' })).not.toBeInTheDocument();
   });
 
-  it('expands Editor Preferences to reveal its children in alphabetical order on click, and selects it as active', async () => {
+  it('expands Code Preferences to reveal its children in alphabetical order on click, and selects it as active', async () => {
     const user = userEvent.setup();
     render(<SettingsModal />);
 
-    await user.click(screen.getByRole('button', { name: /Editor Preferences/ }));
+    await user.click(screen.getByRole('button', { name: /Code Preferences/ }));
 
     const children = ['Color Scheme', 'Color Style', 'File Encoding', 'Formatting', 'Keyboard Shortcuts'];
     for (const label of children) {
@@ -31,11 +31,24 @@ describe('SettingsModal — nested nav', () => {
     expect(screen.getByText('x-apiforge')).toBeInTheDocument();
   });
 
+  it('keeps Appearance as its own top-level category, directly below Code Preferences — not nested inside it', async () => {
+    const user = userEvent.setup();
+    render(<SettingsModal />);
+
+    // Top-level rows render immediately; Code Preferences' children don't, until expanded.
+    expect(screen.getByRole('button', { name: 'Appearance' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Color Scheme' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Appearance' }));
+    expect(screen.getByRole('button', { name: 'Appearance' })).toHaveAttribute('data-active', 'true');
+    expect(screen.getByText('Themes')).toBeInTheDocument(); // AppearanceSettingsPanel's own content
+  });
+
   it('collapses again on a second click', async () => {
     const user = userEvent.setup();
     render(<SettingsModal />);
 
-    const parent = screen.getByRole('button', { name: /Editor Preferences/ });
+    const parent = screen.getByRole('button', { name: /Code Preferences/ });
     await user.click(parent);
     expect(screen.getByRole('button', { name: 'Color Scheme' })).toBeInTheDocument();
 
@@ -47,7 +60,7 @@ describe('SettingsModal — nested nav', () => {
     const user = userEvent.setup();
     render(<SettingsModal />);
 
-    await user.click(screen.getByRole('button', { name: /Editor Preferences/ }));
+    await user.click(screen.getByRole('button', { name: /Code Preferences/ }));
     await user.click(screen.getByRole('button', { name: 'Color Style' }));
 
     expect(screen.getByRole('button', { name: 'Color Style' })).toHaveAttribute('data-active', 'true');
@@ -60,7 +73,7 @@ describe('SettingsModal — nested nav', () => {
     const user = userEvent.setup();
     render(<SettingsModal />);
 
-    await user.click(screen.getByRole('button', { name: /Editor Preferences/ }));
+    await user.click(screen.getByRole('button', { name: /Code Preferences/ }));
     await user.click(screen.getByRole('button', { name: 'Keyboard Shortcuts' }));
 
     expect(screen.getByRole('button', { name: 'Keyboard Shortcuts' })).toHaveAttribute('data-active', 'true');
@@ -73,7 +86,7 @@ describe('SettingsModal — nested nav', () => {
 
     await user.type(screen.getByPlaceholderText('Search settings…'), 'file encoding');
 
-    expect(screen.getByRole('button', { name: /Editor Preferences/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Code Preferences/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'File Encoding' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Color Scheme' })).not.toBeInTheDocument();
   });
