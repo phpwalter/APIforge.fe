@@ -244,17 +244,28 @@ describe('useAppStore', () => {
 
   it('every registered plugin is enabled by default', () => {
     expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(true);
-    expect(useAppStore.getState().enabledPluginIds.has('versionControl')).toBe(true);
+    expect(useAppStore.getState().enabledPluginIds.has('github')).toBe(true);
+    expect(useAppStore.getState().enabledPluginIds.has('gitlab')).toBe(true);
+    expect(useAppStore.getState().enabledPluginIds.has('bitbucket')).toBe(true);
   });
 
   it('togglePlugin flips a plugin off and persists it, then flips it back on', () => {
     useAppStore.getState().togglePlugin('ai');
     expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(false);
-    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!)).toEqual(['versionControl']);
+    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!).sort()).toEqual([
+      'bitbucket',
+      'github',
+      'gitlab',
+    ]);
 
     useAppStore.getState().togglePlugin('ai');
     expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(true);
-    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!).sort()).toEqual(['ai', 'versionControl']);
+    expect(JSON.parse(localStorage.getItem('apiforge_enabled_plugins')!).sort()).toEqual([
+      'ai',
+      'bitbucket',
+      'github',
+      'gitlab',
+    ]);
   });
 
   it('opens auth modal and closes other menus', () => {

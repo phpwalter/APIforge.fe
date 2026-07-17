@@ -75,12 +75,14 @@ describe('SettingsModal — nested nav', () => {
     expect(screen.getByRole('button', { name: 'File Encoding' })).toBeInTheDocument();
   });
 
-  it('Version Control is no longer its own top-level category — it lives under Plugins now', () => {
+  it('GitHub, GitLab, and Bitbucket are not their own top-level categories — they live under Plugins now', () => {
     render(<SettingsModal />);
-    expect(screen.queryByRole('button', { name: 'Version Control' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'GitHub' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'GitLab' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Bitbucket' })).not.toBeInTheDocument();
   });
 
-  it('selects Plugins as a top-level category and shows its own dedicated panel, listing both AI and Version Control', async () => {
+  it('selects Plugins as a top-level category and shows its own dedicated panel, listing AI plus the provider plugins', async () => {
     const user = userEvent.setup();
     render(<SettingsModal />);
 
@@ -88,7 +90,9 @@ describe('SettingsModal — nested nav', () => {
 
     expect(screen.getByRole('button', { name: 'Plugins' })).toHaveAttribute('data-active', 'true');
     expect(screen.getByRole('checkbox', { name: 'Enable AI' })).toBeInTheDocument(); // PluginsSettingsPanel's own content
-    expect(screen.getByRole('checkbox', { name: 'Enable Version Control' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Enable GitHub' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Enable GitLab' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Enable Bitbucket' })).toBeInTheDocument();
   });
 
   it('shows the generic "Coming Soon" fallback for a child with no dedicated panel yet (Keyboard Shortcuts)', async () => {

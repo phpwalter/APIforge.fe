@@ -87,36 +87,41 @@ describe('PluginsSettingsPanel', () => {
     expect(screen.getByRole('checkbox', { name: 'Enable AI' })).toBeInTheDocument();
   });
 
-  it('also lists Version Control, enabled by default, alongside AI', () => {
+  it('also lists GitHub, GitLab, and Bitbucket, all enabled by default alongside AI', () => {
     render(<PluginsSettingsPanel />);
-    expect(screen.getByRole('checkbox', { name: 'Enable Version Control' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('checkbox', { name: 'Enable GitHub' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('checkbox', { name: 'Enable GitLab' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('checkbox', { name: 'Enable Bitbucket' })).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('selecting Version Control in the list shows its own settings in the detail pane, without disturbing AI', async () => {
+  it('selecting GitHub in the list shows its own connect UI in the detail pane, without disturbing AI', async () => {
     const user = userEvent.setup();
     render(<PluginsSettingsPanel />);
 
-    await user.click(screen.getByRole('button', { name: 'View Version Control details' }));
+    await user.click(screen.getByRole('button', { name: 'View GitHub details' }));
 
-    // Lazily loaded (see types.ts) — VersionControlSettingsPanel's own content.
-    await waitFor(() =>
-      expect(
-        screen.getByText(
-          'Connect a Git hosting provider using its own OAuth sign-in — APIforge never sees your provider password.',
-        ),
-      ).toBeInTheDocument(),
-    );
-    expect(screen.getByRole('button', { name: 'Connect with GitHub' })).toBeInTheDocument();
+    // Lazily loaded (see types.ts) — GitHubSettingsPanel's own content.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Connect with GitHub' })).toBeInTheDocument());
     expect(screen.getByRole('checkbox', { name: 'Enable AI' })).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('disabling Version Control does not disable AI', async () => {
+  it('selecting GitLab shows its disabled stub connect button', async () => {
     const user = userEvent.setup();
     render(<PluginsSettingsPanel />);
 
-    await user.click(screen.getByRole('checkbox', { name: 'Enable Version Control' }));
+    await user.click(screen.getByRole('button', { name: 'View GitLab details' }));
 
-    expect(useAppStore.getState().enabledPluginIds.has('versionControl')).toBe(false);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Connect with GitLab' })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Connect with GitLab' })).toBeDisabled();
+  });
+
+  it('disabling GitHub does not disable AI', async () => {
+    const user = userEvent.setup();
+    render(<PluginsSettingsPanel />);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Enable GitHub' }));
+
+    expect(useAppStore.getState().enabledPluginIds.has('github')).toBe(false);
     expect(useAppStore.getState().enabledPluginIds.has('ai')).toBe(true);
   });
 });
