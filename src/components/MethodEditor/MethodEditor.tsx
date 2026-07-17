@@ -2,6 +2,7 @@ import { Sparkles, X } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
 import type { Endpoint } from '../../types/spec';
 import { methodColor, methodIcon, isIdempotent, isUnsafe } from '../../lib/methodStyle';
+import { FieldActionSlot } from '../../lib/plugins/FieldActionSlot';
 import { SecurityRow } from './SecurityRow';
 import { TagsRow } from './TagsRow';
 import { RequestPanel } from './RequestPanel';
@@ -56,6 +57,12 @@ export function MethodEditor({ endpoint }: MethodEditorProps) {
           value={endpoint.summary}
           placeholder="Summary — what this operation does"
           onChange={(e) => setSummary(endpoint.id, e.target.value)}
+        />
+        <FieldActionSlot
+          slot="operationSummary"
+          value={endpoint.summary}
+          onChange={(v) => setSummary(endpoint.id, v)}
+          hints={{ method: endpoint.method, path: endpoint.path }}
         />
         <input
           className={styles.opIdInput}

@@ -11,6 +11,7 @@ import {
   defaultActiveClass,
   reasonForCode,
 } from '../../lib/responseClass';
+import { FieldActionSlot } from '../../lib/plugins/FieldActionSlot';
 import { ParamFieldRow } from './ParamFieldRow';
 import styles from './MethodEditor.module.css';
 
@@ -123,6 +124,12 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
                     value={r.description}
                     placeholder={reasonForCode(r.code) ?? 'Description'}
                     onChange={(e) => setResponse(endpoint.id, r.id, { description: e.target.value })}
+                  />
+                  <FieldActionSlot
+                    slot="responseDescription"
+                    value={r.description}
+                    onChange={(v) => setResponse(endpoint.id, r.id, { description: v })}
+                    hints={{ method: endpoint.method, path: endpoint.path, statusCode: r.code }}
                   />
                   <button
                     type="button"

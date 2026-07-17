@@ -1,0 +1,247 @@
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  max-width: 520px;
+  margin-bottom: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.tab {
+  padding: 7px 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text-dim);
+}
+
+.tab[data-active='true'] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.searchWrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  display: flex;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px 7px 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--inset);
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: inherit;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+}
+
+.layout {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  height: 380px;
+}
+
+.listPane {
+  width: 220px;
+  flex: none;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--surface-2);
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px 3px;
+}
+
+.listRow:hover {
+  background: var(--surface);
+}
+
+.listRow[data-active='true'] {
+  background: var(--accent-soft);
+}
+
+.listRowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.listRowIcon {
+  flex: none;
+  display: flex;
+  color: var(--text-dim);
+}
+
+.listRowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.listRowLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listRowMeta {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 1px;
+}
+
+.listEmpty {
+  padding: 16px 10px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.checkbox {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.checkbox[data-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.detailPane {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.detailIcon {
+  flex: none;
+  display: flex;
+  color: var(--text-dim);
+}
+
+.detailTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.detailMeta {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.toggleBtn {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 6px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.toggleBtn[data-enabled='true']:hover {
+  border-color: var(--del);
+  color: var(--del);
+}
+
+.toggleBtn[data-enabled='false'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.detailDescription {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.detailSettings {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.emptyState {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}

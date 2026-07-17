@@ -15,6 +15,7 @@ import { FormattingSettingsPanel } from './FormattingSettingsPanel';
 import { ColorSchemeSettingsPanel } from './ColorSchemeSettingsPanel';
 import { ColorStyleSettingsPanel } from './ColorStyleSettingsPanel';
 import { VersionControlSettingsPanel } from './VersionControlSettingsPanel';
+import { PluginsSettingsPanel } from './PluginsSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
@@ -31,6 +32,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   fileEncoding: FileEncodingSettingsPanel,
   formatting: FormattingSettingsPanel,
   versionControl: VersionControlSettingsPanel,
+  plugins: PluginsSettingsPanel,
 };
 
 /** A category row plus the parent it belongs to (undefined for top-level rows) — used for search + lookup. */

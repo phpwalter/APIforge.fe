@@ -1,5 +1,6 @@
 import { useSpecStore } from '../../state/useSpecStore';
 import type { Schema } from '../../types/spec';
+import { FieldActionSlot } from '../../lib/plugins/FieldActionSlot';
 import styles from './SchemaScalarEditor.module.css';
 
 interface Props {
@@ -32,13 +33,21 @@ export function SchemaScalarEditor({ schema }: Props) {
         )}
         <div>
           <div className={styles.label}>Description</div>
-          <textarea
-            className={styles.textarea}
-            value={schema.scalarDescription || ''}
-            onChange={(e) => setScalarDescription(schema.id, e.target.value)}
-            placeholder="What this type represents…"
-            rows={2}
-          />
+          <div className={styles.descRow}>
+            <textarea
+              className={styles.textarea}
+              value={schema.scalarDescription || ''}
+              onChange={(e) => setScalarDescription(schema.id, e.target.value)}
+              placeholder="What this type represents…"
+              rows={2}
+            />
+            <FieldActionSlot
+              slot="schemaDescription"
+              value={schema.scalarDescription || ''}
+              onChange={(v) => setScalarDescription(schema.id, v)}
+              hints={{ schemaName: schema.name }}
+            />
+          </div>
         </div>
       </div>
     </div>

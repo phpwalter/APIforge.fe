@@ -2,6 +2,7 @@ import { ArrowBigRight, Plus } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
 import type { Endpoint, ParamLocation } from '../../types/spec';
 import { methodAllowsBody } from '../../lib/methodStyle';
+import { FieldActionSlot } from '../../lib/plugins/FieldActionSlot';
 import { ParamFieldRow } from './ParamFieldRow';
 import styles from './MethodEditor.module.css';
 
@@ -134,12 +135,20 @@ export function RequestPanel({ endpoint }: RequestPanelProps) {
                 This operation has a request body
               </label>
               {endpoint.requestBodyEnabled && (
-                <input
-                  className={styles.bodyDescInput}
-                  value={endpoint.requestBodyDescription}
-                  placeholder="Describe the request body…"
-                  onChange={(e) => setRequestBodyDescription(endpoint.id, e.target.value)}
-                />
+                <div className={styles.bodyDescRow}>
+                  <input
+                    className={styles.bodyDescInput}
+                    value={endpoint.requestBodyDescription}
+                    placeholder="Describe the request body…"
+                    onChange={(e) => setRequestBodyDescription(endpoint.id, e.target.value)}
+                  />
+                  <FieldActionSlot
+                    slot="requestBodyDescription"
+                    value={endpoint.requestBodyDescription}
+                    onChange={(v) => setRequestBodyDescription(endpoint.id, v)}
+                    hints={{ method: endpoint.method, path: endpoint.path }}
+                  />
+                </div>
               )}
             </>
           )}

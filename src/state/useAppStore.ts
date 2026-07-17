@@ -20,6 +20,7 @@ import {
   type VersionControlLinks,
   type VersionControlProvider,
 } from '../lib/versionControlLinks';
+import { getEnabledPluginIds, setEnabledPluginIds } from '../lib/pluginPrefs';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
 import { MONACO_THEME_IDS, type ColorScheme, type MonacoThemeId } from '../lib/colorScheme';
 import {
@@ -120,6 +121,10 @@ interface AppState {
   versionControlLinks: VersionControlLinks;
   connectVersionControlProvider: (provider: VersionControlProvider, info: VersionControlLinkInfo) => void;
   disconnectVersionControlProvider: (provider: VersionControlProvider) => void;
+
+  // Settings :: Plugins — which registered plugins (src/lib/plugins/registry.ts) are active.
+  enabledPluginIds: Set<string>;
+  togglePlugin: (id: string) => void;
 
   // Auth modal (provider-only — no username/password)
   authOpen: boolean;
@@ -334,6 +339,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       return { versionControlLinks: next };
     });
   },
+
+  enabledPluginIds: getEnabledPluginIds(),
+  togglePlugin: (id) =>
+    set((s) => {
+      const next = new Set(s.enabledPluginIds);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      setEnabledPluginIds(next);
+      return { enabledPluginIds: next };
+    }),
 
   authOpen: false,
   openAuth: () => set({ authOpen: true, moreMenuOpen: false, userMenuOpen: false }),

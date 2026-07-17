@@ -3,6 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { SettingsModal } from './SettingsModal';
 import { useAppStore } from '../../state/useAppStore';
 
+// PluginsSettingsPanel renders the AI plugin's own settings panel inline, which checks connection
+// status on mount — keep that hermetic rather than letting it hit the network.
+vi.mock('../../lib/api/ai', () => ({
+  fetchAiStatus: vi.fn(() => new Promise(() => {})),
+}));
+
 const initialState = useAppStore.getState();
 
 beforeEach(() => {
@@ -77,6 +83,16 @@ describe('SettingsModal — nested nav', () => {
 
     expect(screen.getByRole('button', { name: 'Version Control' })).toHaveAttribute('data-active', 'true');
     expect(screen.getByText('GitHub')).toBeInTheDocument(); // VersionControlSettingsPanel's own content
+  });
+
+  it('selects Plugins as a top-level category and shows its own dedicated panel, listing the AI plugin', async () => {
+    const user = userEvent.setup();
+    render(<SettingsModal />);
+
+    await user.click(screen.getByRole('button', { name: 'Plugins' }));
+
+    expect(screen.getByRole('button', { name: 'Plugins' })).toHaveAttribute('data-active', 'true');
+    expect(screen.getByRole('checkbox', { name: 'Enable AI' })).toBeInTheDocument(); // PluginsSettingsPanel's own content
   });
 
   it('shows the generic "Coming Soon" fallback for a child with no dedicated panel yet (Keyboard Shortcuts)', async () => {

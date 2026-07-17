@@ -653,8 +653,16 @@
   color: var(--text-faint);
 }
 
+.bodyDescRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .bodyDescInput {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
   font-size: 12.5px;
   font-family: inherit;
@@ -664,7 +672,6 @@
   padding: 7px 9px;
   color: var(--text);
   outline: none;
-  margin-top: 8px;
 }
 
 .bodyDescInput:focus {
