@@ -3,25 +3,33 @@
 ## Context
 
 Settings :: Version Control now supports connecting a GitHub account via a real OAuth round trip
-(frontend: `redirectToProviderLink` in `src/lib/api/auth.ts`, built on the existing `/auth/github`
-→ `/auth/github/callback` → `/auth/github/link` flow). That connection currently proves account
-ownership and nothing else — the token the callback hands back is an APIforge-issued JWT, not a
-usable GitHub API token, and there is no backend surface for actually reading or writing repo
-content yet.
+(frontend: `redirectToProviderLink` in `src/lib/api/auth.ts`, built on `GET /auth/github/link` →
+`/auth/github/callback` → `POST /auth/github/link` to finalize). That connection currently proves
+account ownership and nothing else — the token the callback hands back is an APIforge-issued JWT,
+not a usable GitHub API token, and there is no backend surface for actually reading or writing
+repo content yet.
+
+**Known gap as of this doc's last update**: `GET /auth/{provider}/link` currently returns `405
+Method Not Allowed` — only the existing `POST /auth/{provider}/link` (finalize) is implemented at
+that path. The frontend already redirects to `GET /auth/{provider}/link` expecting a GET handler
+alongside the POST (mirroring how `GET /auth/{provider}/signin` now exists as its own path,
+separate from whatever used to live at bare `/auth/{provider}`) — this needs a GET route added
+before "Connect with GitHub" actually works end-to-end again.
 
 This document sketches the backend work needed to make the connection do something: export a
 REST Projection spec to a GitHub repo, and import one from a repo.
 
 ## Prerequisite: OAuth scope
 
-The OAuth authorization request captured from `GET /auth/github` currently requests only
+The OAuth authorization request captured from `GET /auth/github/signin` currently requests only
 `scope=read:user user:email` — identity, no repo access. That's correct for plain sign-in, but
 insufficient for Version Control.
 
-Proposal: `GET /auth/{provider}` accepts an `intent` query param (e.g. `intent=version_control`)
-that the backend uses to pick a wider OAuth scope — `repo` (private + public) or `public_repo`
-(public-only) — before redirecting to GitHub's consent screen. Sign-in keeps the narrow identity
-scope; only the Version Control "Connect" action asks for repo access.
+Proposal: `GET /auth/{provider}/link` (once it exists as a GET route — see the gap noted above)
+accepts an `intent` query param (e.g. `intent=version_control`) that the backend uses to pick a
+wider OAuth scope — `repo` (private + public) or `public_repo` (public-only) — before redirecting
+to GitHub's consent screen. Sign-in keeps the narrow identity scope; only the Version Control
+"Connect" action asks for repo access.
 
 ## New endpoints
 

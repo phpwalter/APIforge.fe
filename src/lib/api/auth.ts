@@ -21,27 +21,29 @@ export interface MeResponse {
 }
 
 /**
- * Full-page navigation to the backend's own OAuth entry point — per the imported spec, GET
- * /auth/{provider} redirects the browser straight to the provider's consent screen and the
+ * Full-page navigation to the backend's own OAuth entry point for signing in — GET
+ * /auth/{provider}/signin redirects the browser straight to the provider's consent screen and the
  * backend owns the entire code exchange (it already holds the client id/secret). The frontend
- * never touches either.
+ * never touches either. (GET /auth/{provider} with no suffix no longer exists — 404s.)
  */
 export function redirectToProviderSignIn(provider: string): void {
   // The auth_session payload the callback returns doesn't say which provider produced it —
   // remember it here so the app can tag the session correctly once the browser comes back.
   setPendingAuthProvider(provider);
-  window.location.href = apiUrl(`/auth/${provider}`);
+  window.location.href = apiUrl(`/auth/${provider}/signin`);
 }
 
 /**
- * Same real OAuth entry point as redirectToProviderSignIn — the backend exposes no separate
- * "link" redirect — but records the provider as pending-LINK rather than pending-sign-in, so the
- * callback's return (App.tsx) links it to the already-signed-in account instead of replacing the
- * active session (used by Settings :: Version Control to connect e.g. GitHub via real OAuth).
+ * Full-page navigation to the backend's OAuth entry point for linking — GET /auth/{provider}/link,
+ * the redirect-out counterpart to the existing POST /auth/{provider}/link (which finalizes the
+ * link against the active session once the OAuth round trip completes). Records the provider as
+ * pending-LINK rather than pending-sign-in, so the callback's return (App.tsx) links it to the
+ * already-signed-in account instead of replacing the active session (used by Settings :: Plugins /
+ * the Profile dialog's Linked Profiles to connect e.g. GitHub via real OAuth).
  */
 export function redirectToProviderLink(provider: string): void {
   setPendingLinkProvider(provider);
-  window.location.href = apiUrl(`/auth/${provider}`);
+  window.location.href = apiUrl(`/auth/${provider}/link`);
 }
 
 export interface AuthSessionUser {

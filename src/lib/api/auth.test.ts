@@ -32,8 +32,8 @@ describe('redirectToProviderSignIn', () => {
 
     redirectToProviderSignIn('google');
 
-    expect(apiUrl).toHaveBeenCalledWith('/auth/google');
-    expect(window.location.href).toBe('http://api.test/auth/google');
+    expect(apiUrl).toHaveBeenCalledWith('/auth/google/signin');
+    expect(window.location.href).toBe('http://api.test/auth/google/signin');
 
     window.location = original;
   });
@@ -53,7 +53,7 @@ describe('redirectToProviderSignIn', () => {
 });
 
 describe('redirectToProviderLink', () => {
-  it("navigates the full page to the same real OAuth entry point as sign-in, since the backend exposes no separate link redirect", () => {
+  it('navigates the full page to the GET /auth/{provider}/link redirect-out counterpart of the existing POST /auth/{provider}/link', () => {
     const original = window.location;
     // @ts-expect-error -- deliberately replacing a read-only global for this one assertion
     delete window.location;
@@ -61,8 +61,8 @@ describe('redirectToProviderLink', () => {
 
     redirectToProviderLink('github');
 
-    expect(apiUrl).toHaveBeenCalledWith('/auth/github');
-    expect(window.location.href).toBe('http://api.test/auth/github');
+    expect(apiUrl).toHaveBeenCalledWith('/auth/github/link');
+    expect(window.location.href).toBe('http://api.test/auth/github/link');
 
     window.location = original;
   });
