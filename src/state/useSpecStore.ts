@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 import type {
   Endpoint,
   HeaderParam,
@@ -150,6 +151,8 @@ interface SpecState {
   hasDocument: boolean;
   importSpec: (parsed: { endpoints: Endpoint[]; schemas: Schema[] }) => void;
   loadSampleProject: () => void;
+  /** Closes the current document back to the empty state (Topbar :: More actions :: Close Workspace). */
+  closeDocument: () => void;
 
   importStatus: { type: 'success' | 'error'; message: string } | null;
   setImportStatus: (status: { type: 'success' | 'error'; message: string } | null) => void;
@@ -465,7 +468,8 @@ const sampleSchemas: Schema[] = [
   },
 ];
 
-export const useSpecStore = create<SpecState>((set, get) => ({
+export const useSpecStore = create<SpecState>()(
+  subscribeWithSelector((set, get) => ({
   hasDocument: false,
   importSpec: ({ endpoints, schemas }) =>
     set({
@@ -491,6 +495,21 @@ export const useSpecStore = create<SpecState>((set, get) => ({
       selectedEndpointId: sampleEndpoints[0].id,
       selectedSchemaId: sampleSchemas[0]?.id ?? null,
       enabledSecuritySchemes: ['bearerAuth'],
+    }),
+  closeDocument: () =>
+    set({
+      endpoints: [],
+      schemas: [],
+      hasDocument: false,
+      selectedEndpointId: null,
+      selectedSchemaId: null,
+      panelSearch: '',
+      schemaPanelSearch: '',
+      expandedTags: {},
+      expandedParamKey: null,
+      responseActiveClass: {},
+      enabledSecuritySchemes: [],
+      securityScopes: {},
     }),
 
   importStatus: null,
@@ -1251,7 +1270,8 @@ export const useSpecStore = create<SpecState>((set, get) => ({
   toggleRestProjectionOutlinePanelCollapsed: () =>
     set((s) => ({ restProjectionOutlinePanelCollapsed: !s.restProjectionOutlinePanelCollapsed })),
   setResizingRestProjectionOutlinePanel: (v) => set({ resizingRestProjectionOutlinePanel: v }),
-}));
+  })),
+);
 
 export function methodsForPath(endpoints: Endpoint[], path: string): HttpMethod[] {
   return endpoints

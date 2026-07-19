@@ -1,9 +1,7 @@
 import type { ComponentType } from 'react';
 import {
-  Route,
   Code,
   Pencil,
-  ShieldCog,
   Monitor,
   Info,
   Cable,
@@ -13,7 +11,6 @@ import {
   Settings,
   Cookie,
   CircleHelp,
-  SlidersVertical,
   Palette,
   SwatchBook,
   Binary,
@@ -38,13 +35,14 @@ export interface SettingsCategory {
  * Ordered as requested: "Account & Members" removed entirely, and
  * "Notes" moved to sit below "Export Defaults" (it was originally
  * between Code Preferences and Security Schemes in the source).
- * Every category is a shell for now — selecting any of them just shows
- * "Coming Soon" until its real settings panel is built, except where a
+ * General, Servers & External Docs, and Security Schemes moved out to the
+ * standalone Workspace Settings modal (Topbar :: More actions :: Workspace
+ * Settings) — see src/components/Workspace/WorkspaceSettingsModal.tsx.
+ * Every remaining category is a shell for now — selecting any of them just
+ * shows "Coming Soon" until its real settings panel is built, except where a
  * dedicated panel is registered in SettingsModal.tsx.
  */
 export const SETTINGS_CATEGORIES: SettingsCategory[] = [
-  { key: 'general', label: 'General', keywords: 'title version description contact license terms project info', icon: SlidersVertical },
-  { key: 'servers', label: 'Servers & External Docs', keywords: 'servers url external docs', icon: Route },
   {
     key: 'preferences',
     label: 'Code Preferences',
@@ -74,7 +72,6 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     ],
   },
   { key: 'appearance', label: 'Appearance', keywords: 'theme dark light system language', icon: Monitor },
-  { key: 'security', label: 'Security Schemes', keywords: 'auth apikey bearer oauth security scheme', icon: ShieldCog },
   { key: 'notifications', label: 'Notifications', keywords: 'notifications alerts email', icon: Info },
   {
     key: 'plugins',

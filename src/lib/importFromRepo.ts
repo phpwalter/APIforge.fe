@@ -1,33 +1,32 @@
 import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
 import { parseOpenApiDocument, OpenApiImportError } from './openapiImport';
+import type { GithubFileContent } from './api/repos';
 
-export async function importOpenApiFile(file: File): Promise<void> {
+/**
+ * Imports an OpenAPI document fetched from a repo file (Workspace from Version Control) — reuses
+ * the same parse/import pipeline Import already uses, decoding the base64 content GitHub's own
+ * Contents API returns (see docs/version-control-api-proposal.md).
+ */
+export function importFromGithubFile(file: GithubFileContent): void {
   const { setImportStatus, importSpec } = useSpecStore.getState();
+  const text = file.encoding === 'base64' ? atob(file.content) : file.content;
   try {
-    const text = await file.text();
     const parsed = parseOpenApiDocument(text, file.name);
-
     importSpec({ endpoints: parsed.endpoints, schemas: parsed.schemas });
     useAppStore.getState().setProjectInfo({
       title: parsed.title,
       version: parsed.version,
       openapiVersion: parsed.openapiVersion,
     });
-    // Establishes a fresh workspace for this import — see Settings :: Plugins-adjacent Recent
-    // Workspaces / autosave (src/lib/workspaceAutosave.ts). Defaults the name prompt to the
-    // document's own title, editable before it's saved.
     useAppStore.getState().startWorkspace(parsed.title);
-
-    setImportStatus({
-      type: 'success',
-      message: `Imported ${parsed.title} — ${parsed.endpoints.length} operation${parsed.endpoints.length === 1 ? '' : 's'}, ${parsed.schemas.length} schema${parsed.schemas.length === 1 ? '' : 's'}.`,
-    });
+    setImportStatus({ type: 'success', message: `Imported ${parsed.title} from ${file.path}.` });
   } catch (err) {
     const message =
       err instanceof OpenApiImportError
         ? err.message
-        : `Unexpected error reading "${file.name}": ${err instanceof Error ? err.message : String(err)}`;
+        : `Couldn't import "${file.name}": ${err instanceof Error ? err.message : String(err)}`;
     setImportStatus({ type: 'error', message });
+    throw err;
   }
 }

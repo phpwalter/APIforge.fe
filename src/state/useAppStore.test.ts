@@ -1,4 +1,5 @@
 import { useAppStore, initialsOf } from './useAppStore';
+import { useSpecStore } from './useSpecStore';
 
 vi.mock('../lib/api/auth', () => ({
   signOutProvider: vi.fn(() => Promise.resolve()),
@@ -6,9 +7,11 @@ vi.mock('../lib/api/auth', () => ({
 }));
 
 const initialState = useAppStore.getState();
+const initialSpecState = useSpecStore.getState();
 
 beforeEach(() => {
   useAppStore.setState(initialState, true);
+  useSpecStore.setState(initialSpecState, true);
   vi.clearAllMocks();
   localStorage.clear();
 });
@@ -337,6 +340,83 @@ describe('useAppStore', () => {
     useAppStore.getState().closeDocDialog();
     s = useAppStore.getState();
     expect(s.docDialogOpen).toBe(false);
+  });
+
+  it('startWorkspace generates a fresh id and opens the naming prompt with a suggested default', () => {
+    useAppStore.setState({ moreMenuOpen: true });
+    useAppStore.getState().startWorkspace('Untitled API');
+
+    const s = useAppStore.getState();
+    expect(s.currentWorkspaceId).not.toBeNull();
+    expect(s.currentWorkspaceName).toBeNull();
+    expect(s.workspaceNamePromptOpen).toBe(true);
+    expect(s.workspaceNamePromptDefault).toBe('Untitled API');
+    expect(s.moreMenuOpen).toBe(false);
+  });
+
+  it('startWorkspace generates a different id each time', () => {
+    useAppStore.getState().startWorkspace('A');
+    const first = useAppStore.getState().currentWorkspaceId;
+    useAppStore.getState().startWorkspace('B');
+    const second = useAppStore.getState().currentWorkspaceId;
+    expect(first).not.toBe(second);
+  });
+
+  it('confirmWorkspaceName locks in the name and closes the prompt', () => {
+    useAppStore.getState().startWorkspace('Untitled API');
+    useAppStore.getState().confirmWorkspaceName('My API');
+
+    const s = useAppStore.getState();
+    expect(s.currentWorkspaceName).toBe('My API');
+    expect(s.workspaceNamePromptOpen).toBe(false);
+  });
+
+  it('confirmWorkspaceName falls back to "Untitled Workspace" for a blank name', () => {
+    useAppStore.getState().startWorkspace('Untitled API');
+    useAppStore.getState().confirmWorkspaceName('   ');
+    expect(useAppStore.getState().currentWorkspaceName).toBe('Untitled Workspace');
+  });
+
+  it('openExistingWorkspace sets the id/name directly, without opening the naming prompt', () => {
+    useAppStore.setState({ moreMenuOpen: true });
+    useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');
+
+    const s = useAppStore.getState();
+    expect(s.currentWorkspaceId).toBe('ws-1');
+    expect(s.currentWorkspaceName).toBe('Saved API');
+    expect(s.workspaceNamePromptOpen).toBe(false);
+    expect(s.moreMenuOpen).toBe(false);
+  });
+
+  it('closeWorkspace clears the workspace identity and closes the document', () => {
+    useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');
+    useSpecStore.getState().loadSampleProject();
+
+    useAppStore.getState().closeWorkspace();
+
+    expect(useAppStore.getState().currentWorkspaceId).toBeNull();
+    expect(useAppStore.getState().currentWorkspaceName).toBeNull();
+    expect(useSpecStore.getState().hasDocument).toBe(false);
+  });
+
+  it('opens and closes the Workspace Settings modal', () => {
+    useAppStore.setState({ moreMenuOpen: true });
+    useAppStore.getState().openWorkspaceSettings();
+    expect(useAppStore.getState().workspaceSettingsOpen).toBe(true);
+    expect(useAppStore.getState().moreMenuOpen).toBe(false);
+
+    useAppStore.getState().closeWorkspaceSettings();
+    expect(useAppStore.getState().workspaceSettingsOpen).toBe(false);
+  });
+
+  it('opens and closes the Workspace from Version Control modal', () => {
+    useAppStore.setState({ moreMenuOpen: true });
+    useAppStore.getState().openWorkspaceFromVersionControl();
+    expect(useAppStore.getState().workspaceFromVersionControlOpen).toBe(true);
+    expect(useAppStore.getState().moreMenuOpen).toBe(false);
+
+    useAppStore.getState().closeWorkspaceFromVersionControl();
+    expect(useAppStore.getState().workspaceFromVersionControlOpen).toBe(false);
   });
 
   it('updates and persists a cookie preference', () => {

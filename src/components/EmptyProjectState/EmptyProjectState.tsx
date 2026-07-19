@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { FileUp, FlaskConical } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
+import { useAppStore } from '../../state/useAppStore';
 import { importOpenApiFile } from '../../lib/importHandler';
 import styles from './EmptyProjectState.module.css';
 
@@ -8,7 +9,13 @@ const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,applicat
 
 export function EmptyProjectState() {
   const loadSampleProject = useSpecStore((s) => s.loadSampleProject);
+  const startWorkspace = useAppStore((s) => s.startWorkspace);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const loadSample = () => {
+    loadSampleProject();
+    startWorkspace('Sample Project');
+  };
 
   return (
     <div className={styles.wrap}>
@@ -26,7 +33,7 @@ export function EmptyProjectState() {
             <FileUp size={15} />
             Import OpenAPI Document
           </button>
-          <button type="button" className={styles.secondaryBtn} onClick={loadSampleProject}>
+          <button type="button" className={styles.secondaryBtn} onClick={loadSample}>
             <FlaskConical size={15} />
             Load Sample Project
           </button>

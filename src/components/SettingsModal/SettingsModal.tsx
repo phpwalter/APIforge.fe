@@ -2,10 +2,7 @@ import { useState, type ComponentType } from 'react';
 import { Search, X, CircleHelp, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { SETTINGS_CATEGORIES, type SettingsCategory } from './settingsCategories';
-import { GeneralSettingsPanel } from './GeneralSettingsPanel';
-import { ServersSettingsPanel } from './ServersSettingsPanel';
 import { EditorPreferencesSettingsPanel } from './EditorPreferencesSettingsPanel';
-import { SecuritySettingsPanel } from './SecuritySettingsPanel';
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { NotificationsSettingsPanel } from './NotificationsSettingsPanel';
 import { CookiesSettingsPanel } from './CookiesSettingsPanel';
@@ -18,10 +15,7 @@ import { PluginsSettingsPanel } from './PluginsSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
-  general: GeneralSettingsPanel,
-  servers: ServersSettingsPanel,
   preferences: EditorPreferencesSettingsPanel,
-  security: SecuritySettingsPanel,
   appearance: AppearanceSettingsPanel,
   notifications: NotificationsSettingsPanel,
   cookies: CookiesSettingsPanel,

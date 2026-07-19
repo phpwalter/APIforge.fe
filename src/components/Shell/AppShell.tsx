@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
+import { initWorkspaceAutosave } from '../../lib/workspaceAutosave';
 import { Topbar } from '../Topbar/Topbar';
 import { CanvasHeader } from '../CanvasHeader/CanvasHeader';
 import { DesignCanvas } from '../DesignCanvas/DesignCanvas';
@@ -9,6 +11,9 @@ import { SettingsModal } from '../SettingsModal/SettingsModal';
 import { ExportModal } from '../ExportModal/ExportModal';
 import { DocDialog } from '../DocDialog/DocDialog';
 import { ProfileModal } from '../Profile/ProfileModal';
+import { WorkspaceNameModal } from '../Workspace/WorkspaceNameModal';
+import { WorkspaceSettingsModal } from '../Workspace/WorkspaceSettingsModal';
+import { WorkspaceFromVersionControlModal } from '../Workspace/WorkspaceFromVersionControlModal';
 import { EmptyProjectState } from '../EmptyProjectState/EmptyProjectState';
 import { ImportStatusToast } from '../ImportStatusToast/ImportStatusToast';
 import shellStyles from './AppShell.module.css';
@@ -25,7 +30,14 @@ export function AppShell() {
   const exportOpen = useAppStore((s) => s.exportOpen);
   const docDialogOpen = useAppStore((s) => s.docDialogOpen);
   const profileOpen = useAppStore((s) => s.profileOpen);
+  const workspaceNamePromptOpen = useAppStore((s) => s.workspaceNamePromptOpen);
+  const workspaceSettingsOpen = useAppStore((s) => s.workspaceSettingsOpen);
+  const workspaceFromVersionControlOpen = useAppStore((s) => s.workspaceFromVersionControlOpen);
   const hasDocument = useSpecStore((s) => s.hasDocument);
+
+  useEffect(() => {
+    initWorkspaceAutosave();
+  }, []);
 
   return (
     <div className={`app ${shellStyles.app}`} data-theme={theme}>
@@ -52,6 +64,9 @@ export function AppShell() {
       {exportOpen && <ExportModal />}
       {docDialogOpen && <DocDialog />}
       {profileOpen && <ProfileModal />}
+      {workspaceNamePromptOpen && <WorkspaceNameModal />}
+      {workspaceSettingsOpen && <WorkspaceSettingsModal />}
+      {workspaceFromVersionControlOpen && <WorkspaceFromVersionControlModal />}
     </div>
   );
 }

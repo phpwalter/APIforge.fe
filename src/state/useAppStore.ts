@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 import type {
   ApiforgePreferences,
   CanvasTabId,
@@ -21,6 +22,8 @@ import {
   type VersionControlProvider,
 } from '../lib/versionControlLinks';
 import { getEnabledPluginIds, setEnabledPluginIds } from '../lib/pluginPrefs';
+import { generateWorkspaceId } from '../lib/workspaces';
+import { useSpecStore } from './useSpecStore';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
 import { MONACO_THEME_IDS, type ColorScheme, type MonacoThemeId } from '../lib/colorScheme';
 import {
@@ -165,6 +168,36 @@ interface AppState {
   openDocDialog: (title: string, src: string) => void;
   closeDocDialog: () => void;
 
+  // Workspace identity — which src/lib/workspaces.ts entry the autosave engine writes to. null
+  // means "nothing to autosave yet" (e.g. right after Close Workspace).
+  currentWorkspaceId: string | null;
+  currentWorkspaceName: string | null;
+  // The "name this workspace" prompt shown after New Workspace / Import / Load Sample / Workspace
+  // from Version Control — each establishes a fresh id via startWorkspace(), then every way of
+  // dismissing the prompt (Save, Escape, backdrop click) calls confirmWorkspaceName() with
+  // whatever's typed (falling back to the suggested default) to lock in a name, which is what
+  // actually enables autosave — see src/lib/workspaceAutosave.ts. There's no true "cancel": the
+  // workspace already has real content by the time this prompt shows, so dismissing it just
+  // accepts the suggested name rather than discarding anything.
+  workspaceNamePromptOpen: boolean;
+  workspaceNamePromptDefault: string;
+  startWorkspace: (defaultName: string) => void;
+  confirmWorkspaceName: (name: string) => void;
+  /** Recent Workspaces reopen — the id/name are already known, so this skips the naming prompt. */
+  openExistingWorkspace: (id: string, name: string) => void;
+  /** Topbar :: More actions :: Close Workspace — also clears the workspace id so autosave stops. */
+  closeWorkspace: () => void;
+
+  // Workspace Settings modal (General / Servers & External Docs / Security Schemes)
+  workspaceSettingsOpen: boolean;
+  openWorkspaceSettings: () => void;
+  closeWorkspaceSettings: () => void;
+
+  // Workspace from Version Control modal
+  workspaceFromVersionControlOpen: boolean;
+  openWorkspaceFromVersionControl: () => void;
+  closeWorkspaceFromVersionControl: () => void;
+
   // Cookie category preferences (Settings > Cookies). Persisted to localStorage.
   cookiePrefs: CookiePrefs;
   setCookiePref: (key: keyof CookiePrefs, value: boolean) => void;
@@ -229,7 +262,8 @@ interface AppState {
   resetColorStyle: (theme: MonacoThemeId | 'all') => void;
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(
+  subscribeWithSelector((set, get) => ({
   themeMode: 'dark',
   theme: resolveTheme('dark'),
   toggleTheme: () => {
@@ -387,6 +421,35 @@ export const useAppStore = create<AppState>((set, get) => ({
   openDocDialog: (title, src) => set({ docDialogOpen: true, docDialogTitle: title, docDialogSrc: src }),
   closeDocDialog: () => set({ docDialogOpen: false }),
 
+  currentWorkspaceId: null,
+  currentWorkspaceName: null,
+  workspaceNamePromptOpen: false,
+  workspaceNamePromptDefault: '',
+  startWorkspace: (defaultName) =>
+    set({
+      currentWorkspaceId: generateWorkspaceId(),
+      currentWorkspaceName: null,
+      workspaceNamePromptOpen: true,
+      workspaceNamePromptDefault: defaultName,
+      moreMenuOpen: false,
+    }),
+  confirmWorkspaceName: (name) =>
+    set({ currentWorkspaceName: name.trim() || 'Untitled Workspace', workspaceNamePromptOpen: false }),
+  openExistingWorkspace: (id, name) =>
+    set({ currentWorkspaceId: id, currentWorkspaceName: name, moreMenuOpen: false }),
+  closeWorkspace: () => {
+    useSpecStore.getState().closeDocument();
+    set({ currentWorkspaceId: null, currentWorkspaceName: null, moreMenuOpen: false });
+  },
+
+  workspaceSettingsOpen: false,
+  openWorkspaceSettings: () => set({ workspaceSettingsOpen: true, moreMenuOpen: false }),
+  closeWorkspaceSettings: () => set({ workspaceSettingsOpen: false }),
+
+  workspaceFromVersionControlOpen: false,
+  openWorkspaceFromVersionControl: () => set({ workspaceFromVersionControlOpen: true, moreMenuOpen: false }),
+  closeWorkspaceFromVersionControl: () => set({ workspaceFromVersionControlOpen: false }),
+
   cookiePrefs: getCookiePrefs(),
   setCookiePref: (key, value) =>
     set((s) => {
@@ -464,7 +527,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           ? Object.fromEntries(MONACO_THEME_IDS.map((t) => [t, {}])) as typeof s.colorStyleCustomColors
           : { ...s.colorStyleCustomColors, [theme]: {} },
     })),
-}));
+  })),
+);
 
 /** userInitials derivation, matching the source: first letters of up to 2 words. */
 export function initialsOf(name: string): string {

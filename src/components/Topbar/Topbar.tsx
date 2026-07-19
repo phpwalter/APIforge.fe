@@ -112,9 +112,6 @@ export function Topbar() {
         </button>
         {moreMenuOpen && (
           <MoreMenu
-            onNewWorkspace={() => {
-              /* wired up alongside the workspace-settings modal */
-            }}
             onImport={() => importInputRef.current?.click()}
             onExport={openExportModal}
             onShare={() => {

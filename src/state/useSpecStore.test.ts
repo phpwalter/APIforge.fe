@@ -64,6 +64,24 @@ describe('useSpecStore', () => {
     expect(s.expandedTags).toEqual({});
   });
 
+  it('closeDocument resets back to the empty state, including panel UI state', () => {
+    useSpecStore.getState().loadSampleProject();
+    useSpecStore.setState({ panelSearch: 'foo', schemaPanelSearch: 'bar', expandedTags: { Users: true } });
+
+    useSpecStore.getState().closeDocument();
+
+    const s = useSpecStore.getState();
+    expect(s.hasDocument).toBe(false);
+    expect(s.endpoints).toEqual([]);
+    expect(s.schemas).toEqual([]);
+    expect(s.selectedEndpointId).toBeNull();
+    expect(s.selectedSchemaId).toBeNull();
+    expect(s.panelSearch).toBe('');
+    expect(s.schemaPanelSearch).toBe('');
+    expect(s.expandedTags).toEqual({});
+    expect(s.enabledSecuritySchemes).toEqual([]);
+  });
+
   it('adds a new endpoint with a unique default path and selects it', () => {
     useSpecStore.getState().addEndpoint();
     useSpecStore.getState().addEndpoint();
