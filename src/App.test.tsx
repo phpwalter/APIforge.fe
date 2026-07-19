@@ -168,4 +168,43 @@ describe('App', () => {
     expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
     expect(getAuthToken()).toBeNull();
   });
+
+  it('restores the primary signed-in session from a real stored token after a link redirect completes', async () => {
+    // Simulates the real scenario the earlier test doesn't: the user was actually signed in (a
+    // real token+provider in localStorage) before clicking "Connect with GitHub", not just
+    // in-memory store state — so the fresh page load after the redirect starts fully signed out
+    // until the bootstrap effect restores it.
+    setAuthToken('stored-token');
+    setAuthProvider('google');
+    vi.mocked(fetchMe).mockResolvedValue({ display_name: 'Ada Lovelace', email: 'ada@example.com' });
+    setPendingLinkProvider('github');
+    window.history.replaceState({}, '', '/?auth_session=fake');
+    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
+      user: { username: 'octocat' },
+      token: { access_token: 'github-linked-token', token_type: 'Bearer', expires_in: 3600 },
+    });
+
+    render(<App />);
+
+    await waitFor(() => expect(linkProvider).toHaveBeenCalledWith('github'));
+    // The link round trip alone must not leave the app stuck signed out.
+    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
+    expect(useAppStore.getState().authProvider).toBe('google');
+    expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
+  });
+
+  it('shows a loading splash — neither the landing page nor the app shell — while a stored session is still being verified', async () => {
+    setAuthToken('stored-token');
+    setAuthProvider('github');
+    let resolveFetchMe: (me: { display_name: string; email: string }) => void = () => {};
+    vi.mocked(fetchMe).mockReturnValue(new Promise((resolve) => (resolveFetchMe = resolve)));
+
+    render(<App />);
+
+    expect(screen.queryByRole('button', { name: 'Sign In' })).not.toBeInTheDocument();
+    expect(screen.queryByText('No API document loaded')).not.toBeInTheDocument();
+
+    resolveFetchMe({ display_name: 'Ada Lovelace', email: 'ada@example.com' });
+    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
+  });
 });

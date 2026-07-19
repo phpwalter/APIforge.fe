@@ -11,6 +11,19 @@
       rel="stylesheet"
     />
     <title>APIforge</title>
+    <!--
+      Inline, not in tokens.css: this needs to apply at the very first paint of the raw HTML
+      document, before any JS has run. In dev, Vite injects app CSS via JS rather than a <link>
+      tag, so there's a real gap on every full-page load (including landing back from an OAuth
+      redirect) where the browser would otherwise show its default white background first.
+      Matches tokens.css's `body { background: #15151a }` (dark, the app's default theme).
+    -->
+    <style>
+      html,
+      body {
+        background: #15151a;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
