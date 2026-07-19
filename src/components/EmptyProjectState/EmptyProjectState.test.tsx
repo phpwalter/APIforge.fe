@@ -32,15 +32,15 @@ describe('EmptyProjectState', () => {
     expect(s.endpoints.length).toBeGreaterThan(0);
   });
 
-  it('starts a new named workspace when loading the sample project', async () => {
+  it('starts a new named project when loading the sample project', async () => {
     const user = userEvent.setup();
     render(<EmptyProjectState />);
 
     await user.click(screen.getByRole('button', { name: /Load Sample Project/ }));
 
     const app = useAppStore.getState();
-    expect(app.currentWorkspaceId).not.toBeNull();
-    expect(app.workspaceNamePromptOpen).toBe(true);
-    expect(app.workspaceNamePromptDefault).toBe('Sample Project');
+    expect(app.currentProjectId).not.toBeNull();
+    expect(app.projectNamePromptOpen).toBe(true);
+    expect(app.projectNamePromptDefault).toBe('Sample Project');
   });
 });

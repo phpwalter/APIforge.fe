@@ -37,7 +37,7 @@ describe('UnsavedChangesModal', () => {
     expect(useSpecStore.getState().endpoints.length).toBeGreaterThan(0);
   });
 
-  it('Discard & Continue wipes the document and starts a fresh workspace', async () => {
+  it('Discard & Continue wipes the document and starts a fresh project', async () => {
     const user = userEvent.setup();
     useSpecStore.getState().loadSampleProject();
     useAppStore.setState({ unsavedChangesPromptOpen: true });
@@ -47,6 +47,6 @@ describe('UnsavedChangesModal', () => {
 
     expect(useAppStore.getState().unsavedChangesPromptOpen).toBe(false);
     expect(useSpecStore.getState().endpoints).toEqual([]);
-    expect(useAppStore.getState().workspaceNamePromptOpen).toBe(true);
+    expect(useAppStore.getState().projectNamePromptOpen).toBe(true);
   });
 });

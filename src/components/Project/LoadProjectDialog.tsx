@@ -1,52 +1,52 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, LoaderCircle } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
-import { formatRelativeTime } from '../../lib/workspaces';
-import { listServerWorkspaces, type ServerWorkspaceSummary } from '../../lib/api/workspaces';
-import { openServerWorkspaceIntoSettings } from '../../lib/loadServerWorkspace';
+import { formatRelativeTime } from '../../lib/projects';
+import { listServerProjects, type ServerProjectSummary } from '../../lib/api/projects';
+import { openServerProjectIntoSettings } from '../../lib/loadServerProject';
 import { importOpenApiFileIntoSettings, IMPORT_ACCEPT } from '../../lib/importHandler';
-import styles from './LoadWorkspaceDialog.module.css';
+import styles from './LoadProjectDialog.module.css';
 
 type AsyncState<T> = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: T };
 
 /**
- * Topbar :: More actions :: Load Workspace — lists this user's projects from the server (GET
- * /workspaces, proposed in docs/workspace-server-storage-api-proposal.md — not built yet, so this
+ * Topbar :: More actions :: Load Project — lists this user's projects from the server (GET
+ * /projects, proposed in docs/project-server-storage-api-proposal.md — not built yet, so this
  * shows an error state until the backend catches up), plus entry points into the other two ways
- * to bring in a workspace: importing a file from disk, or browsing a connected Version Control
- * repo. Picking a project or importing a file both drop straight into Workspace Settings ::
+ * to bring in a project: importing a file from disk, or browsing a connected Version Control
+ * repo. Picking a project or importing a file both drop straight into Project Settings ::
  * General with the loaded data; Version Control keeps its own existing flow (naming popup) unchanged.
  */
-export function LoadWorkspaceDialog() {
-  const closeDialog = useAppStore((s) => s.closeLoadWorkspaceDialog);
-  const openWorkspaceFromVersionControl = useAppStore((s) => s.openWorkspaceFromVersionControl);
-  const [projects, setProjects] = useState<AsyncState<ServerWorkspaceSummary[]>>({ status: 'loading' });
+export function LoadProjectDialog() {
+  const closeDialog = useAppStore((s) => s.closeLoadProjectDialog);
+  const openProjectFromVersionControl = useAppStore((s) => s.openProjectFromVersionControl);
+  const [projects, setProjects] = useState<AsyncState<ServerProjectSummary[]>>({ status: 'loading' });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    listServerWorkspaces()
+    listServerProjects()
       .then((data) => setProjects({ status: 'ready', data }))
       .catch((err) => setProjects({ status: 'error', message: err instanceof Error ? err.message : String(err) }));
   }, []);
 
   const open = async (id: string) => {
     setOpening(true);
-    await openServerWorkspaceIntoSettings(id);
+    await openServerProjectIntoSettings(id);
     setOpening(false);
   };
 
   const loadFromVersionControl = () => {
     closeDialog();
-    openWorkspaceFromVersionControl();
+    openProjectFromVersionControl();
   };
 
   return (
     <div className={styles.scrim} onClick={closeDialog}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className={styles.header}>
-          <div className={styles.title}>Load Workspace</div>
+          <div className={styles.title}>Load Project</div>
           <button type="button" className={styles.closeBtn} title="Close" onClick={closeDialog}>
             <X size={15} />
           </button>

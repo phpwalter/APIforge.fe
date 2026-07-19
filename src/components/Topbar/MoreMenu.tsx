@@ -16,13 +16,13 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
-import { requestNewWorkspace } from '../../lib/newWorkspace';
-import { listWorkspaces, formatRelativeTime, deleteWorkspace } from '../../lib/workspaces';
-import { openRecentWorkspace } from '../../lib/reopenWorkspace';
-import { computeHasSavableContent } from '../../lib/workspaceEligibility';
+import { requestNewProject } from '../../lib/newProject';
+import { listProjects, formatRelativeTime, deleteProject } from '../../lib/projects';
+import { openRecentProject } from '../../lib/reopenProject';
+import { computeHasSavableContent } from '../../lib/projectEligibility';
 import styles from './Topbar.module.css';
 
-const RECENT_WORKSPACES_LIMIT = 5;
+const RECENT_PROJECTS_LIMIT = 5;
 
 interface MoreMenuProps {
   onExport: () => void;
@@ -32,10 +32,10 @@ interface MoreMenuProps {
 export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
   const closeMoreMenu = useAppStore((s) => s.closeMoreMenu);
   const openSettings = useAppStore((s) => s.openSettings);
-  const openWorkspaceSettings = useAppStore((s) => s.openWorkspaceSettings);
-  const openLoadWorkspaceDialog = useAppStore((s) => s.openLoadWorkspaceDialog);
-  const closeWorkspace = useAppStore((s) => s.closeWorkspace);
-  const currentWorkspaceName = useAppStore((s) => s.currentWorkspaceName);
+  const openProjectSettings = useAppStore((s) => s.openProjectSettings);
+  const openLoadProjectDialog = useAppStore((s) => s.openLoadProjectDialog);
+  const closeProject = useAppStore((s) => s.closeProject);
+  const currentProjectName = useAppStore((s) => s.currentProjectName);
   const hasDocument = useSpecStore((s) => s.hasDocument);
   const endpoints = useSpecStore((s) => s.endpoints);
   const schemas = useSpecStore((s) => s.schemas);
@@ -43,17 +43,17 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
   const [saveExpanded, setSaveExpanded] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const canSaveOrClose = computeHasSavableContent(currentWorkspaceName, endpoints.length, schemas.length);
+  const canSaveOrClose = computeHasSavableContent(currentProjectName, endpoints.length, schemas.length);
 
   const run = (fn: () => void) => () => {
     fn();
     closeMoreMenu();
   };
 
-  const recentWorkspaces = recentExpanded ? listWorkspaces().slice(0, RECENT_WORKSPACES_LIMIT) : [];
+  const recentProjects = recentExpanded ? listProjects().slice(0, RECENT_PROJECTS_LIMIT) : [];
 
   const confirmDelete = (id: string) => {
-    deleteWorkspace(id);
+    deleteProject(id);
     setConfirmDeleteId(null);
   };
 
@@ -61,18 +61,18 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
     <>
       <div className={styles.menuScrim} onClick={closeMoreMenu} />
       <div className={styles.moreMenu} role="menu">
-        <button type="button" className={styles.menuItem} onClick={run(requestNewWorkspace)}>
+        <button type="button" className={styles.menuItem} onClick={run(requestNewProject)}>
           <span className={styles.menuItemIcon}>
             <LayersPlus size={16} />
           </span>
-          <span className={styles.menuItemTrailing}>New Workspace</span>
+          <span className={styles.menuItemTrailing}>New Project</span>
         </button>
 
-        <button type="button" className={styles.menuItem} onClick={run(openLoadWorkspaceDialog)}>
+        <button type="button" className={styles.menuItem} onClick={run(openLoadProjectDialog)}>
           <span className={styles.menuItemIcon}>
             <FolderOpen size={15} />
           </span>
-          <span className={styles.menuItemTrailing}>Load Workspace</span>
+          <span className={styles.menuItemTrailing}>Load Project</span>
         </button>
 
         <button
@@ -84,15 +84,15 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
           <span className={styles.menuItemIcon}>
             <History size={15} />
           </span>
-          <span className={styles.menuItemTrailing}>Recent Workspaces</span>
+          <span className={styles.menuItemTrailing}>Recent Projects</span>
           <ChevronRight size={13} className={recentExpanded ? styles.menuChevronOpen : undefined} />
         </button>
         {recentExpanded && (
           <div className={styles.menuSubList}>
-            {recentWorkspaces.length === 0 ? (
-              <div className={styles.menuEmpty}>No saved workspaces yet</div>
+            {recentProjects.length === 0 ? (
+              <div className={styles.menuEmpty}>No saved projects yet</div>
             ) : (
-              recentWorkspaces.map((w) =>
+              recentProjects.map((w) =>
                 confirmDeleteId === w.id ? (
                   <div key={w.id} className={styles.menuSubItemRow}>
                     <div className={styles.menuSubItemConfirm}>
@@ -118,7 +118,7 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
                     <button
                       type="button"
                       className={styles.menuSubItemOpenBtn}
-                      onClick={run(() => openRecentWorkspace(w.id))}
+                      onClick={run(() => openRecentProject(w.id))}
                     >
                       <span className={styles.menuSubItemName}>{w.name}</span>
                       <span className={styles.menuSubItemTime}>{formatRelativeTime(w.savedAt)}</span>
@@ -148,7 +148,7 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
           <span className={styles.menuItemIcon}>
             <Save size={15} />
           </span>
-          <span className={styles.menuItemTrailing}>Save Workspace</span>
+          <span className={styles.menuItemTrailing}>Save Project</span>
           <ChevronRight size={13} className={saveExpanded ? styles.menuChevronOpen : undefined} />
         </button>
         {saveExpanded && canSaveOrClose && (
@@ -167,20 +167,20 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
           type="button"
           className={styles.menuDangerItem}
           disabled={!hasDocument || !canSaveOrClose}
-          onClick={run(closeWorkspace)}
+          onClick={run(closeProject)}
         >
           <span className={styles.menuItemIcon}>
             <FolderX size={15} />
           </span>
-          <span className={styles.menuItemTrailing}>Close Workspace</span>
+          <span className={styles.menuItemTrailing}>Close Project</span>
         </button>
 
         <div className={styles.menuDivider} />
-        <button type="button" className={styles.menuItem} onClick={run(openWorkspaceSettings)}>
+        <button type="button" className={styles.menuItem} onClick={run(openProjectSettings)}>
           <span className={styles.menuItemIcon}>
             <SlidersHorizontal size={15} />
           </span>
-          <span className={styles.menuItemTrailing}>Workspace Settings</span>
+          <span className={styles.menuItemTrailing}>Project Settings</span>
         </button>
 
         <div className={styles.menuDivider} />

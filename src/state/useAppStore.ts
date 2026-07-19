@@ -22,7 +22,7 @@ import {
   type VersionControlProvider,
 } from '../lib/versionControlLinks';
 import { getEnabledPluginIds, setEnabledPluginIds } from '../lib/pluginPrefs';
-import { generateWorkspaceId } from '../lib/workspaces';
+import { generateProjectId } from '../lib/projects';
 import { useSpecStore } from './useSpecStore';
 import type { CharacterEncoding, LineEnding } from '../lib/fileEncoding';
 import { MONACO_THEME_IDS, type ColorScheme, type MonacoThemeId } from '../lib/colorScheme';
@@ -168,63 +168,63 @@ interface AppState {
   openDocDialog: (title: string, src: string) => void;
   closeDocDialog: () => void;
 
-  // Workspace identity — which src/lib/workspaces.ts entry the autosave engine writes to. null
-  // means "nothing to autosave yet" (e.g. right after Close Workspace).
-  currentWorkspaceId: string | null;
-  currentWorkspaceName: string | null;
-  // The "name this workspace" prompt shown after New Workspace / Import / Load Sample / Workspace
-  // from Version Control — each establishes a fresh id via startWorkspace(), then every way of
-  // dismissing the prompt (Save, Escape, backdrop click) calls confirmWorkspaceName() with
+  // Project identity — which src/lib/projects.ts entry the autosave engine writes to. null
+  // means "nothing to autosave yet" (e.g. right after Close Project).
+  currentProjectId: string | null;
+  currentProjectName: string | null;
+  // The "name this project" prompt shown after New Project / Import / Load Sample / Project
+  // from Version Control — each establishes a fresh id via startProject(), then every way of
+  // dismissing the prompt (Save, Escape, backdrop click) calls confirmProjectName() with
   // whatever's typed (falling back to the suggested default) to lock in a name, which is what
-  // actually enables autosave — see src/lib/workspaceAutosave.ts. There's no true "cancel": the
-  // workspace already has real content by the time this prompt shows, so dismissing it just
+  // actually enables autosave — see src/lib/projectAutosave.ts. There's no true "cancel": the
+  // project already has real content by the time this prompt shows, so dismissing it just
   // accepts the suggested name rather than discarding anything.
-  workspaceNamePromptOpen: boolean;
-  workspaceNamePromptDefault: string;
-  startWorkspace: (defaultName: string) => void;
-  confirmWorkspaceName: (name: string) => void;
-  /** Workspace Settings :: General's "Workspace name" field — live edits, no trim/fallback (that's
+  projectNamePromptOpen: boolean;
+  projectNamePromptDefault: string;
+  startProject: (defaultName: string) => void;
+  confirmProjectName: (name: string) => void;
+  /** Project Settings :: General's "Project name" field — live edits, no trim/fallback (that's
    * only for the initial naming prompt), so an in-progress edit can pass through an empty string. */
-  setWorkspaceName: (name: string) => void;
-  /** Recent Workspaces reopen — the id/name are already known, so this skips the naming prompt. */
-  openExistingWorkspace: (id: string, name: string) => void;
-  /** The Load Workspace dialog's "Open" action — same as openExistingWorkspace, but also drops
-   * straight into Workspace Settings :: General so the loaded data is immediately visible. */
-  openExistingWorkspaceIntoSettings: (id: string, name: string) => void;
-  /** The Load Workspace dialog's "Import OpenAPI Document" action — same as startWorkspace, but
-   * skips the small naming popup and opens Workspace Settings :: General instead (its Workspace
+  setProjectName: (name: string) => void;
+  /** Recent Projects reopen — the id/name are already known, so this skips the naming prompt. */
+  openExistingProject: (id: string, name: string) => void;
+  /** The Load Project dialog's "Open" action — same as openExistingProject, but also drops
+   * straight into Project Settings :: General so the loaded data is immediately visible. */
+  openExistingProjectIntoSettings: (id: string, name: string) => void;
+  /** The Load Project dialog's "Import OpenAPI Document" action — same as startProject, but
+   * skips the small naming popup and opens Project Settings :: General instead (its Project
    * Name field already covers naming, prefilled with the document's own title). */
-  startWorkspaceIntoSettings: (defaultName: string) => void;
-  /** Topbar :: More actions :: Close Workspace — also clears the workspace id so autosave stops. */
-  closeWorkspace: () => void;
-  /** True from startWorkspace() (New Workspace / Import / Load from Version Control) until the
-   * workspace is reopened via openExistingWorkspace() — drives Workspace Settings :: General's
-   * OK-vs-SAVE footer button, since a freshly started workspace has never been saved to the server. */
-  isNewWorkspace: boolean;
+  startProjectIntoSettings: (defaultName: string) => void;
+  /** Topbar :: More actions :: Close Project — also clears the project id so autosave stops. */
+  closeProject: () => void;
+  /** True from startProject() (New Project / Import / Load from Version Control) until the
+   * project is reopened via openExistingProject() — drives Project Settings :: General's
+   * OK-vs-SAVE footer button, since a freshly started project has never been saved to the server. */
+  isNewProject: boolean;
 
-  // "Unsaved changes" guard shown before New Workspace wipes the current document — export and
+  // "Unsaved changes" guard shown before New Project wipes the current document — export and
   // local autosave don't count as saved, only a real server save would (not yet built), so this
-  // fires whenever a document is loaded. See src/lib/newWorkspace.ts's requestNewWorkspace().
+  // fires whenever a document is loaded. See src/lib/newProject.ts's requestNewProject().
   unsavedChangesPromptOpen: boolean;
   openUnsavedChangesPrompt: () => void;
   closeUnsavedChangesPrompt: () => void;
 
-  // Load Workspace dialog — lists previous projects (currently sourced from the local autosave
-  // list in src/lib/workspaces.ts; will point at a server endpoint once one exists) alongside an
+  // Load Project dialog — lists previous projects (currently sourced from the local autosave
+  // list in src/lib/projects.ts; will point at a server endpoint once one exists) alongside an
   // "Import OpenAPI Document" button and a "Load from Version Control" entry point.
-  loadWorkspaceOpen: boolean;
-  openLoadWorkspaceDialog: () => void;
-  closeLoadWorkspaceDialog: () => void;
+  loadProjectOpen: boolean;
+  openLoadProjectDialog: () => void;
+  closeLoadProjectDialog: () => void;
 
-  // Workspace Settings modal (General / Servers & External Docs / Security Schemes)
-  workspaceSettingsOpen: boolean;
-  openWorkspaceSettings: () => void;
-  closeWorkspaceSettings: () => void;
+  // Project Settings modal (General / Servers & External Docs / Security Schemes)
+  projectSettingsOpen: boolean;
+  openProjectSettings: () => void;
+  closeProjectSettings: () => void;
 
-  // Workspace from Version Control modal
-  workspaceFromVersionControlOpen: boolean;
-  openWorkspaceFromVersionControl: () => void;
-  closeWorkspaceFromVersionControl: () => void;
+  // Project from Version Control modal
+  projectFromVersionControlOpen: boolean;
+  openProjectFromVersionControl: () => void;
+  closeProjectFromVersionControl: () => void;
 
   // Cookie category preferences (Settings > Cookies). Persisted to localStorage.
   cookiePrefs: CookiePrefs;
@@ -449,64 +449,64 @@ export const useAppStore = create<AppState>()(
   openDocDialog: (title, src) => set({ docDialogOpen: true, docDialogTitle: title, docDialogSrc: src }),
   closeDocDialog: () => set({ docDialogOpen: false }),
 
-  currentWorkspaceId: null,
-  currentWorkspaceName: null,
-  workspaceNamePromptOpen: false,
-  workspaceNamePromptDefault: '',
-  startWorkspace: (defaultName) =>
+  currentProjectId: null,
+  currentProjectName: null,
+  projectNamePromptOpen: false,
+  projectNamePromptDefault: '',
+  startProject: (defaultName) =>
     set({
-      currentWorkspaceId: generateWorkspaceId(),
-      currentWorkspaceName: null,
-      workspaceNamePromptOpen: true,
-      workspaceNamePromptDefault: defaultName,
+      currentProjectId: generateProjectId(),
+      currentProjectName: null,
+      projectNamePromptOpen: true,
+      projectNamePromptDefault: defaultName,
       moreMenuOpen: false,
-      isNewWorkspace: true,
+      isNewProject: true,
     }),
-  confirmWorkspaceName: (name) =>
-    set({ currentWorkspaceName: name.trim() || 'Untitled Workspace', workspaceNamePromptOpen: false }),
-  setWorkspaceName: (name) => set({ currentWorkspaceName: name }),
-  openExistingWorkspace: (id, name) =>
-    set({ currentWorkspaceId: id, currentWorkspaceName: name, moreMenuOpen: false, isNewWorkspace: false }),
-  openExistingWorkspaceIntoSettings: (id, name) =>
+  confirmProjectName: (name) =>
+    set({ currentProjectName: name.trim() || 'Untitled Project', projectNamePromptOpen: false }),
+  setProjectName: (name) => set({ currentProjectName: name }),
+  openExistingProject: (id, name) =>
+    set({ currentProjectId: id, currentProjectName: name, moreMenuOpen: false, isNewProject: false }),
+  openExistingProjectIntoSettings: (id, name) =>
     set({
-      currentWorkspaceId: id,
-      currentWorkspaceName: name,
+      currentProjectId: id,
+      currentProjectName: name,
       moreMenuOpen: false,
-      isNewWorkspace: false,
-      loadWorkspaceOpen: false,
-      workspaceSettingsOpen: true,
+      isNewProject: false,
+      loadProjectOpen: false,
+      projectSettingsOpen: true,
     }),
-  startWorkspaceIntoSettings: (defaultName) =>
+  startProjectIntoSettings: (defaultName) =>
     set({
-      currentWorkspaceId: generateWorkspaceId(),
-      currentWorkspaceName: defaultName,
-      workspaceNamePromptOpen: false,
+      currentProjectId: generateProjectId(),
+      currentProjectName: defaultName,
+      projectNamePromptOpen: false,
       moreMenuOpen: false,
-      isNewWorkspace: true,
-      loadWorkspaceOpen: false,
-      workspaceSettingsOpen: true,
+      isNewProject: true,
+      loadProjectOpen: false,
+      projectSettingsOpen: true,
     }),
-  closeWorkspace: () => {
+  closeProject: () => {
     useSpecStore.getState().closeDocument();
-    set({ currentWorkspaceId: null, currentWorkspaceName: null, moreMenuOpen: false, isNewWorkspace: false });
+    set({ currentProjectId: null, currentProjectName: null, moreMenuOpen: false, isNewProject: false });
   },
-  isNewWorkspace: false,
+  isNewProject: false,
 
   unsavedChangesPromptOpen: false,
   openUnsavedChangesPrompt: () => set({ unsavedChangesPromptOpen: true, moreMenuOpen: false }),
   closeUnsavedChangesPrompt: () => set({ unsavedChangesPromptOpen: false }),
 
-  loadWorkspaceOpen: false,
-  openLoadWorkspaceDialog: () => set({ loadWorkspaceOpen: true, moreMenuOpen: false }),
-  closeLoadWorkspaceDialog: () => set({ loadWorkspaceOpen: false }),
+  loadProjectOpen: false,
+  openLoadProjectDialog: () => set({ loadProjectOpen: true, moreMenuOpen: false }),
+  closeLoadProjectDialog: () => set({ loadProjectOpen: false }),
 
-  workspaceSettingsOpen: false,
-  openWorkspaceSettings: () => set({ workspaceSettingsOpen: true, moreMenuOpen: false }),
-  closeWorkspaceSettings: () => set({ workspaceSettingsOpen: false }),
+  projectSettingsOpen: false,
+  openProjectSettings: () => set({ projectSettingsOpen: true, moreMenuOpen: false }),
+  closeProjectSettings: () => set({ projectSettingsOpen: false }),
 
-  workspaceFromVersionControlOpen: false,
-  openWorkspaceFromVersionControl: () => set({ workspaceFromVersionControlOpen: true, moreMenuOpen: false }),
-  closeWorkspaceFromVersionControl: () => set({ workspaceFromVersionControlOpen: false }),
+  projectFromVersionControlOpen: false,
+  openProjectFromVersionControl: () => set({ projectFromVersionControlOpen: true, moreMenuOpen: false }),
+  closeProjectFromVersionControl: () => set({ projectFromVersionControlOpen: false }),
 
   cookiePrefs: getCookiePrefs(),
   setCookiePref: (key, value) =>

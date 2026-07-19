@@ -4,7 +4,7 @@ import { parseOpenApiDocument, OpenApiImportError } from './openapiImport';
 
 export const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,application/xml,text/xml';
 
-async function doImport(file: File, startWorkspace: (defaultTitle: string) => void): Promise<void> {
+async function doImport(file: File, startProject: (defaultTitle: string) => void): Promise<void> {
   const { setImportStatus, importSpec } = useSpecStore.getState();
   try {
     const text = await file.text();
@@ -16,7 +16,7 @@ async function doImport(file: File, startWorkspace: (defaultTitle: string) => vo
       version: parsed.version,
       openapiVersion: parsed.openapiVersion,
     });
-    startWorkspace(parsed.title);
+    startProject(parsed.title);
 
     setImportStatus({
       type: 'success',
@@ -32,19 +32,19 @@ async function doImport(file: File, startWorkspace: (defaultTitle: string) => vo
 }
 
 /**
- * Establishes a fresh workspace for this import — see Settings :: Plugins-adjacent Recent
- * Workspaces / autosave (src/lib/workspaceAutosave.ts). Defaults the name prompt to the
+ * Establishes a fresh project for this import — see Settings :: Plugins-adjacent Recent
+ * Projects / autosave (src/lib/projectAutosave.ts). Defaults the name prompt to the
  * document's own title, editable before it's saved.
  */
 export async function importOpenApiFile(file: File): Promise<void> {
-  return doImport(file, (title) => useAppStore.getState().startWorkspace(title));
+  return doImport(file, (title) => useAppStore.getState().startProject(title));
 }
 
 /**
- * Load Workspace dialog's "Import OpenAPI Document" button — same import pipeline, but drops
- * straight into Workspace Settings :: General (prefilled with the document's own title) instead
+ * Load Project dialog's "Import OpenAPI Document" button — same import pipeline, but drops
+ * straight into Project Settings :: General (prefilled with the document's own title) instead
  * of the small naming popup.
  */
 export async function importOpenApiFileIntoSettings(file: File): Promise<void> {
-  return doImport(file, (title) => useAppStore.getState().startWorkspaceIntoSettings(title));
+  return doImport(file, (title) => useAppStore.getState().startProjectIntoSettings(title));
 }

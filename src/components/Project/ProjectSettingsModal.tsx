@@ -6,39 +6,39 @@ import { ServersSettingsPanel } from '../SettingsModal/ServersSettingsPanel';
 import { SecuritySettingsPanel } from '../SettingsModal/SecuritySettingsPanel';
 import styles from '../SettingsModal/SettingsModal.module.css';
 
-interface WorkspaceCategory {
+interface ProjectCategory {
   key: string;
   label: string;
   icon: ComponentType<{ size?: number }>;
   panel: ComponentType;
 }
 
-const CATEGORIES: WorkspaceCategory[] = [
+const CATEGORIES: ProjectCategory[] = [
   { key: 'general', label: 'General', icon: SlidersVertical, panel: GeneralSettingsPanel },
   { key: 'servers', label: 'Servers & External Docs', icon: Route, panel: ServersSettingsPanel },
   { key: 'security', label: 'Security Schemes', icon: ShieldCog, panel: SecuritySettingsPanel },
 ];
 
 /**
- * Per-workspace settings (General / Servers & External Docs / Security Schemes) — split out from
+ * Per-project settings (General / Servers & External Docs / Security Schemes) — split out from
  * the app-level Settings modal since these describe the document you're editing, not the app.
- * Opened from Topbar :: More actions :: Workspace Settings.
+ * Opened from Topbar :: More actions :: Project Settings.
  */
-export function WorkspaceSettingsModal() {
-  const closeWorkspaceSettings = useAppStore((s) => s.closeWorkspaceSettings);
-  const isNewWorkspace = useAppStore((s) => s.isNewWorkspace);
+export function ProjectSettingsModal() {
+  const closeProjectSettings = useAppStore((s) => s.closeProjectSettings);
+  const isNewProject = useAppStore((s) => s.isNewProject);
   const [activeKey, setActiveKey] = useState(CATEGORIES[0].key);
 
   const active = CATEGORIES.find((c) => c.key === activeKey) ?? CATEGORIES[0];
   const Panel = active.panel;
 
   return (
-    <div className={styles.scrim} onClick={closeWorkspaceSettings}>
+    <div className={styles.scrim} onClick={closeProjectSettings}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className={styles.split}>
           <div className={styles.rail}>
             <div className={styles.railHead}>
-              <div className={styles.railTitle}>Workspace Settings</div>
+              <div className={styles.railTitle}>Project Settings</div>
             </div>
             <div className={styles.navList}>
               {CATEGORIES.map((cat) => {
@@ -67,7 +67,7 @@ export function WorkspaceSettingsModal() {
                 <active.icon size={16} />
               </span>
               <div className={styles.paneTitle}>{active.label}</div>
-              <button type="button" className={styles.closeBtn} title="Close" onClick={closeWorkspaceSettings}>
+              <button type="button" className={styles.closeBtn} title="Close" onClick={closeProjectSettings}>
                 <X size={16} />
               </button>
             </div>
@@ -79,7 +79,7 @@ export function WorkspaceSettingsModal() {
 
         <div className={styles.footer}>
           <span className={styles.footerSpacer} />
-          {isNewWorkspace ? (
+          {isNewProject ? (
             <button
               type="button"
               className={`${styles.btn} ${styles.btnSave}`}
@@ -89,11 +89,11 @@ export function WorkspaceSettingsModal() {
               Save
             </button>
           ) : (
-            <button type="button" className={`${styles.btn} ${styles.btnOk}`} onClick={closeWorkspaceSettings}>
+            <button type="button" className={`${styles.btn} ${styles.btnOk}`} onClick={closeProjectSettings}>
               OK
             </button>
           )}
-          <button type="button" className={`${styles.btn} ${styles.btnCancel}`} onClick={closeWorkspaceSettings}>
+          <button type="button" className={`${styles.btn} ${styles.btnCancel}`} onClick={closeProjectSettings}>
             Cancel
           </button>
         </div>

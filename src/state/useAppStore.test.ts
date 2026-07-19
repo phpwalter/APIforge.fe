@@ -342,80 +342,80 @@ describe('useAppStore', () => {
     expect(s.docDialogOpen).toBe(false);
   });
 
-  it('startWorkspace generates a fresh id and opens the naming prompt with a suggested default', () => {
+  it('startProject generates a fresh id and opens the naming prompt with a suggested default', () => {
     useAppStore.setState({ moreMenuOpen: true });
-    useAppStore.getState().startWorkspace('Untitled API');
+    useAppStore.getState().startProject('Untitled API');
 
     const s = useAppStore.getState();
-    expect(s.currentWorkspaceId).not.toBeNull();
-    expect(s.currentWorkspaceName).toBeNull();
-    expect(s.workspaceNamePromptOpen).toBe(true);
-    expect(s.workspaceNamePromptDefault).toBe('Untitled API');
+    expect(s.currentProjectId).not.toBeNull();
+    expect(s.currentProjectName).toBeNull();
+    expect(s.projectNamePromptOpen).toBe(true);
+    expect(s.projectNamePromptDefault).toBe('Untitled API');
     expect(s.moreMenuOpen).toBe(false);
   });
 
-  it('startWorkspace generates a different id each time', () => {
-    useAppStore.getState().startWorkspace('A');
-    const first = useAppStore.getState().currentWorkspaceId;
-    useAppStore.getState().startWorkspace('B');
-    const second = useAppStore.getState().currentWorkspaceId;
+  it('startProject generates a different id each time', () => {
+    useAppStore.getState().startProject('A');
+    const first = useAppStore.getState().currentProjectId;
+    useAppStore.getState().startProject('B');
+    const second = useAppStore.getState().currentProjectId;
     expect(first).not.toBe(second);
   });
 
-  it('confirmWorkspaceName locks in the name and closes the prompt', () => {
-    useAppStore.getState().startWorkspace('Untitled API');
-    useAppStore.getState().confirmWorkspaceName('My API');
+  it('confirmProjectName locks in the name and closes the prompt', () => {
+    useAppStore.getState().startProject('Untitled API');
+    useAppStore.getState().confirmProjectName('My API');
 
     const s = useAppStore.getState();
-    expect(s.currentWorkspaceName).toBe('My API');
-    expect(s.workspaceNamePromptOpen).toBe(false);
+    expect(s.currentProjectName).toBe('My API');
+    expect(s.projectNamePromptOpen).toBe(false);
   });
 
-  it('confirmWorkspaceName falls back to "Untitled Workspace" for a blank name', () => {
-    useAppStore.getState().startWorkspace('Untitled API');
-    useAppStore.getState().confirmWorkspaceName('   ');
-    expect(useAppStore.getState().currentWorkspaceName).toBe('Untitled Workspace');
+  it('confirmProjectName falls back to "Untitled Project" for a blank name', () => {
+    useAppStore.getState().startProject('Untitled API');
+    useAppStore.getState().confirmProjectName('   ');
+    expect(useAppStore.getState().currentProjectName).toBe('Untitled Project');
   });
 
-  it('setWorkspaceName updates the name live, without trimming or falling back to a default', () => {
-    useAppStore.getState().startWorkspace('Untitled API');
-    useAppStore.getState().confirmWorkspaceName('My API');
+  it('setProjectName updates the name live, without trimming or falling back to a default', () => {
+    useAppStore.getState().startProject('Untitled API');
+    useAppStore.getState().confirmProjectName('My API');
 
-    useAppStore.getState().setWorkspaceName('My Renamed API');
-    expect(useAppStore.getState().currentWorkspaceName).toBe('My Renamed API');
+    useAppStore.getState().setProjectName('My Renamed API');
+    expect(useAppStore.getState().currentProjectName).toBe('My Renamed API');
 
-    useAppStore.getState().setWorkspaceName('  ');
-    expect(useAppStore.getState().currentWorkspaceName).toBe('  ');
+    useAppStore.getState().setProjectName('  ');
+    expect(useAppStore.getState().currentProjectName).toBe('  ');
   });
 
-  it('startWorkspace marks the workspace as new; openExistingWorkspace clears that flag', () => {
-    useAppStore.getState().startWorkspace('Untitled API');
-    expect(useAppStore.getState().isNewWorkspace).toBe(true);
+  it('startProject marks the project as new; openExistingProject clears that flag', () => {
+    useAppStore.getState().startProject('Untitled API');
+    expect(useAppStore.getState().isNewProject).toBe(true);
 
-    useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');
-    expect(useAppStore.getState().isNewWorkspace).toBe(false);
+    useAppStore.getState().openExistingProject('ws-1', 'Saved API');
+    expect(useAppStore.getState().isNewProject).toBe(false);
   });
 
-  it('openExistingWorkspace sets the id/name directly, without opening the naming prompt', () => {
+  it('openExistingProject sets the id/name directly, without opening the naming prompt', () => {
     useAppStore.setState({ moreMenuOpen: true });
-    useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');
+    useAppStore.getState().openExistingProject('ws-1', 'Saved API');
 
     const s = useAppStore.getState();
-    expect(s.currentWorkspaceId).toBe('ws-1');
-    expect(s.currentWorkspaceName).toBe('Saved API');
-    expect(s.workspaceNamePromptOpen).toBe(false);
+    expect(s.currentProjectId).toBe('ws-1');
+    expect(s.currentProjectName).toBe('Saved API');
+    expect(s.projectNamePromptOpen).toBe(false);
     expect(s.moreMenuOpen).toBe(false);
   });
 
-  it('closeWorkspace clears the workspace identity and closes the document', () => {
-    useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');
+  it('closeProject clears the project identity and closes the document', () => {
+    useAppStore.getState().openExistingProject('ws-1', 'Saved API');
     useSpecStore.getState().loadSampleProject();
 
-    useAppStore.getState().closeWorkspace();
+    useAppStore.getState().closeProject();
 
-    expect(useAppStore.getState().currentWorkspaceId).toBeNull();
-    expect(useAppStore.getState().currentWorkspaceName).toBeNull();
-    expect(useAppStore.getState().isNewWorkspace).toBe(false);
+    expect(useAppStore.getState().currentProjectId).toBeNull();
+    expect(useAppStore.getState().currentProjectName).toBeNull();
+    expect(useAppStore.getState().isNewProject).toBe(false);
     expect(useSpecStore.getState().hasDocument).toBe(false);
   });
 
@@ -429,59 +429,59 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().unsavedChangesPromptOpen).toBe(false);
   });
 
-  it('opens and closes the Load Workspace dialog', () => {
+  it('opens and closes the Load Project dialog', () => {
     useAppStore.setState({ moreMenuOpen: true });
-    useAppStore.getState().openLoadWorkspaceDialog();
-    expect(useAppStore.getState().loadWorkspaceOpen).toBe(true);
+    useAppStore.getState().openLoadProjectDialog();
+    expect(useAppStore.getState().loadProjectOpen).toBe(true);
     expect(useAppStore.getState().moreMenuOpen).toBe(false);
 
-    useAppStore.getState().closeLoadWorkspaceDialog();
-    expect(useAppStore.getState().loadWorkspaceOpen).toBe(false);
+    useAppStore.getState().closeLoadProjectDialog();
+    expect(useAppStore.getState().loadProjectOpen).toBe(false);
   });
 
-  it('openExistingWorkspaceIntoSettings sets the id/name, closes Load Workspace, and opens Workspace Settings', () => {
-    useAppStore.setState({ loadWorkspaceOpen: true, isNewWorkspace: true });
-    useAppStore.getState().openExistingWorkspaceIntoSettings('ws-1', 'Saved API');
+  it('openExistingProjectIntoSettings sets the id/name, closes Load Project, and opens Project Settings', () => {
+    useAppStore.setState({ loadProjectOpen: true, isNewProject: true });
+    useAppStore.getState().openExistingProjectIntoSettings('ws-1', 'Saved API');
 
     const s = useAppStore.getState();
-    expect(s.currentWorkspaceId).toBe('ws-1');
-    expect(s.currentWorkspaceName).toBe('Saved API');
-    expect(s.isNewWorkspace).toBe(false);
-    expect(s.loadWorkspaceOpen).toBe(false);
-    expect(s.workspaceSettingsOpen).toBe(true);
+    expect(s.currentProjectId).toBe('ws-1');
+    expect(s.currentProjectName).toBe('Saved API');
+    expect(s.isNewProject).toBe(false);
+    expect(s.loadProjectOpen).toBe(false);
+    expect(s.projectSettingsOpen).toBe(true);
   });
 
-  it('startWorkspaceIntoSettings starts a fresh workspace, skips the naming popup, closes Load Workspace, and opens Workspace Settings', () => {
-    useAppStore.setState({ loadWorkspaceOpen: true });
-    useAppStore.getState().startWorkspaceIntoSettings('Imported API');
+  it('startProjectIntoSettings starts a fresh project, skips the naming popup, closes Load Project, and opens Project Settings', () => {
+    useAppStore.setState({ loadProjectOpen: true });
+    useAppStore.getState().startProjectIntoSettings('Imported API');
 
     const s = useAppStore.getState();
-    expect(s.currentWorkspaceId).not.toBeNull();
-    expect(s.currentWorkspaceName).toBe('Imported API');
-    expect(s.workspaceNamePromptOpen).toBe(false);
-    expect(s.isNewWorkspace).toBe(true);
-    expect(s.loadWorkspaceOpen).toBe(false);
-    expect(s.workspaceSettingsOpen).toBe(true);
+    expect(s.currentProjectId).not.toBeNull();
+    expect(s.currentProjectName).toBe('Imported API');
+    expect(s.projectNamePromptOpen).toBe(false);
+    expect(s.isNewProject).toBe(true);
+    expect(s.loadProjectOpen).toBe(false);
+    expect(s.projectSettingsOpen).toBe(true);
   });
 
-  it('opens and closes the Workspace Settings modal', () => {
+  it('opens and closes the Project Settings modal', () => {
     useAppStore.setState({ moreMenuOpen: true });
-    useAppStore.getState().openWorkspaceSettings();
-    expect(useAppStore.getState().workspaceSettingsOpen).toBe(true);
+    useAppStore.getState().openProjectSettings();
+    expect(useAppStore.getState().projectSettingsOpen).toBe(true);
     expect(useAppStore.getState().moreMenuOpen).toBe(false);
 
-    useAppStore.getState().closeWorkspaceSettings();
-    expect(useAppStore.getState().workspaceSettingsOpen).toBe(false);
+    useAppStore.getState().closeProjectSettings();
+    expect(useAppStore.getState().projectSettingsOpen).toBe(false);
   });
 
-  it('opens and closes the Workspace from Version Control modal', () => {
+  it('opens and closes the Project from Version Control modal', () => {
     useAppStore.setState({ moreMenuOpen: true });
-    useAppStore.getState().openWorkspaceFromVersionControl();
-    expect(useAppStore.getState().workspaceFromVersionControlOpen).toBe(true);
+    useAppStore.getState().openProjectFromVersionControl();
+    expect(useAppStore.getState().projectFromVersionControlOpen).toBe(true);
     expect(useAppStore.getState().moreMenuOpen).toBe(false);
 
-    useAppStore.getState().closeWorkspaceFromVersionControl();
-    expect(useAppStore.getState().workspaceFromVersionControlOpen).toBe(false);
+    useAppStore.getState().closeProjectFromVersionControl();
+    expect(useAppStore.getState().projectFromVersionControlOpen).toBe(false);
   });
 
   it('updates and persists a cookie preference', () => {

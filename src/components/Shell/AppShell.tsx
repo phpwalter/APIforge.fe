@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
-import { initWorkspaceAutosave } from '../../lib/workspaceAutosave';
+import { initProjectAutosave } from '../../lib/projectAutosave';
 import { Topbar } from '../Topbar/Topbar';
 import { CanvasHeader } from '../CanvasHeader/CanvasHeader';
 import { DesignCanvas } from '../DesignCanvas/DesignCanvas';
@@ -11,11 +11,11 @@ import { SettingsModal } from '../SettingsModal/SettingsModal';
 import { ExportModal } from '../ExportModal/ExportModal';
 import { DocDialog } from '../DocDialog/DocDialog';
 import { ProfileModal } from '../Profile/ProfileModal';
-import { WorkspaceNameModal } from '../Workspace/WorkspaceNameModal';
-import { WorkspaceSettingsModal } from '../Workspace/WorkspaceSettingsModal';
-import { WorkspaceFromVersionControlModal } from '../Workspace/WorkspaceFromVersionControlModal';
-import { UnsavedChangesModal } from '../Workspace/UnsavedChangesModal';
-import { LoadWorkspaceDialog } from '../Workspace/LoadWorkspaceDialog';
+import { ProjectNameModal } from '../Project/ProjectNameModal';
+import { ProjectSettingsModal } from '../Project/ProjectSettingsModal';
+import { ProjectFromVersionControlModal } from '../Project/ProjectFromVersionControlModal';
+import { UnsavedChangesModal } from '../Project/UnsavedChangesModal';
+import { LoadProjectDialog } from '../Project/LoadProjectDialog';
 import { EmptyProjectState } from '../EmptyProjectState/EmptyProjectState';
 import { ImportStatusToast } from '../ImportStatusToast/ImportStatusToast';
 import shellStyles from './AppShell.module.css';
@@ -32,15 +32,15 @@ export function AppShell() {
   const exportOpen = useAppStore((s) => s.exportOpen);
   const docDialogOpen = useAppStore((s) => s.docDialogOpen);
   const profileOpen = useAppStore((s) => s.profileOpen);
-  const workspaceNamePromptOpen = useAppStore((s) => s.workspaceNamePromptOpen);
-  const workspaceSettingsOpen = useAppStore((s) => s.workspaceSettingsOpen);
-  const workspaceFromVersionControlOpen = useAppStore((s) => s.workspaceFromVersionControlOpen);
+  const projectNamePromptOpen = useAppStore((s) => s.projectNamePromptOpen);
+  const projectSettingsOpen = useAppStore((s) => s.projectSettingsOpen);
+  const projectFromVersionControlOpen = useAppStore((s) => s.projectFromVersionControlOpen);
   const unsavedChangesPromptOpen = useAppStore((s) => s.unsavedChangesPromptOpen);
-  const loadWorkspaceOpen = useAppStore((s) => s.loadWorkspaceOpen);
+  const loadProjectOpen = useAppStore((s) => s.loadProjectOpen);
   const hasDocument = useSpecStore((s) => s.hasDocument);
 
   useEffect(() => {
-    initWorkspaceAutosave();
+    initProjectAutosave();
   }, []);
 
   return (
@@ -68,11 +68,11 @@ export function AppShell() {
       {exportOpen && <ExportModal />}
       {docDialogOpen && <DocDialog />}
       {profileOpen && <ProfileModal />}
-      {workspaceNamePromptOpen && <WorkspaceNameModal />}
-      {workspaceSettingsOpen && <WorkspaceSettingsModal />}
-      {workspaceFromVersionControlOpen && <WorkspaceFromVersionControlModal />}
+      {projectNamePromptOpen && <ProjectNameModal />}
+      {projectSettingsOpen && <ProjectSettingsModal />}
+      {projectFromVersionControlOpen && <ProjectFromVersionControlModal />}
       {unsavedChangesPromptOpen && <UnsavedChangesModal />}
-      {loadWorkspaceOpen && <LoadWorkspaceDialog />}
+      {loadProjectOpen && <LoadProjectDialog />}
     </div>
   );
 }

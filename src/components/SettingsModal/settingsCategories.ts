@@ -36,8 +36,8 @@ export interface SettingsCategory {
  * "Notes" moved to sit below "Export Defaults" (it was originally
  * between Code Preferences and Security Schemes in the source).
  * General, Servers & External Docs, and Security Schemes moved out to the
- * standalone Workspace Settings modal (Topbar :: More actions :: Workspace
- * Settings) — see src/components/Workspace/WorkspaceSettingsModal.tsx.
+ * standalone Project Settings modal (Topbar :: More actions :: Project
+ * Settings) — see src/components/Project/ProjectSettingsModal.tsx.
  * Every remaining category is a shell for now — selecting any of them just
  * shows "Coming Soon" until its real settings panel is built, except where a
  * dedicated panel is registered in SettingsModal.tsx.

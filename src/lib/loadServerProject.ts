@@ -1,18 +1,18 @@
 import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
-import { getServerWorkspace } from './api/workspaces';
+import { getServerProject } from './api/projects';
 import { parseOpenApiDocument } from './openapiImport';
 
 /**
- * Load Workspace dialog's "Open" action for a server-listed project — fetches the full document
- * (GET /workspaces/:id, not yet built — see docs/workspace-server-storage-api-proposal.md), then
- * reuses the same parse/import pipeline Import already uses, and drops straight into Workspace
+ * Load Project dialog's "Open" action for a server-listed project — fetches the full document
+ * (GET /projects/:id, not yet built — see docs/project-server-storage-api-proposal.md), then
+ * reuses the same parse/import pipeline Import already uses, and drops straight into Project
  * Settings :: General so the loaded data is immediately visible.
  */
-export async function openServerWorkspaceIntoSettings(id: string): Promise<void> {
+export async function openServerProjectIntoSettings(id: string): Promise<void> {
   const { setImportStatus, importSpec } = useSpecStore.getState();
   try {
-    const entry = await getServerWorkspace(id);
+    const entry = await getServerProject(id);
     const parsed = parseOpenApiDocument(entry.specJson, `${entry.name}.json`);
     importSpec({ endpoints: parsed.endpoints, schemas: parsed.schemas });
     useAppStore.getState().setProjectInfo({
@@ -20,7 +20,7 @@ export async function openServerWorkspaceIntoSettings(id: string): Promise<void>
       version: parsed.version,
       openapiVersion: parsed.openapiVersion,
     });
-    useAppStore.getState().openExistingWorkspaceIntoSettings(entry.id, entry.name);
+    useAppStore.getState().openExistingProjectIntoSettings(entry.id, entry.name);
     setImportStatus({ type: 'success', message: `Loaded ${entry.name}.` });
   } catch (err) {
     setImportStatus({

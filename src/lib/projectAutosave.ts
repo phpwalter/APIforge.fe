@@ -2,19 +2,19 @@ import { shallow } from 'zustand/shallow';
 import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
 import { buildOpenApiDocument, documentToJson } from './openapiExport';
-import { saveWorkspace } from './workspaces';
+import { saveProject } from './projects';
 
 const DEBOUNCE_MS = 800;
 
 /**
- * Snapshots the current document into the active workspace's localStorage entry — reuses the same
+ * Snapshots the current document into the active project's localStorage entry — reuses the same
  * buildOpenApiDocument()/documentToJson() pipeline REST Projection's export already uses, so a
- * saved workspace is just a real OpenAPI document, not a bespoke format.
+ * saved project is just a real OpenAPI document, not a bespoke format.
  */
 export function saveNow(): void {
   const app = useAppStore.getState();
   const spec = useSpecStore.getState();
-  if (!app.currentWorkspaceId || !app.currentWorkspaceName || !spec.hasDocument) return;
+  if (!app.currentProjectId || !app.currentProjectName || !spec.hasDocument) return;
 
   const doc = buildOpenApiDocument({
     info: {
@@ -36,9 +36,9 @@ export function saveNow(): void {
     variant: 'full',
   });
 
-  saveWorkspace({
-    id: app.currentWorkspaceId,
-    name: app.currentWorkspaceName,
+  saveProject({
+    id: app.currentProjectId,
+    name: app.currentProjectName,
     savedAt: Date.now(),
     specJson: documentToJson(doc),
   });
@@ -48,8 +48,8 @@ export function saveNow(): void {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function scheduleSave(): void {
-  const { currentWorkspaceId, currentWorkspaceName, saveState } = useAppStore.getState();
-  if (!currentWorkspaceId || !currentWorkspaceName) return;
+  const { currentProjectId, currentProjectName, saveState } = useAppStore.getState();
+  if (!currentProjectId || !currentProjectName) return;
   if (saveState !== 'saving') useAppStore.setState({ saveState: 'unsaved' });
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(saveNow, DEBOUNCE_MS);
@@ -61,7 +61,7 @@ let started = false;
  * Starts watching document-relevant state for changes to autosave — call once (AppShell mounts
  * it). No-ops on later calls, so it's safe to call from a component that can remount.
  */
-export function initWorkspaceAutosave(): void {
+export function initProjectAutosave(): void {
   if (started) return;
   started = true;
 
@@ -81,17 +81,17 @@ export function initWorkspaceAutosave(): void {
       s.apiLicense,
       s.apiServers,
       s.apiExternalDocs,
-      // Workspace Settings :: General's "Workspace name" field — renaming an already-named
-      // workspace needs to autosave too, not just the initial name (handled separately below).
-      s.currentWorkspaceName,
+      // Project Settings :: General's "Project name" field — renaming an already-named
+      // project needs to autosave too, not just the initial name (handled separately below).
+      s.currentProjectName,
     ],
     scheduleSave,
     { equalityFn: shallow },
   );
-  // The very first save happens immediately once a workspace is named, rather than waiting for
+  // The very first save happens immediately once a project is named, rather than waiting for
   // the next edit + debounce — confirming a name is itself the natural first save point.
   useAppStore.subscribe(
-    (s) => s.currentWorkspaceName,
+    (s) => s.currentProjectName,
     (name, prevName) => {
       if (name && !prevName) saveNow();
     },

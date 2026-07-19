@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { WorkspaceSettingsModal } from './WorkspaceSettingsModal';
+import { ProjectSettingsModal } from './ProjectSettingsModal';
 import { useAppStore } from '../../state/useAppStore';
 
 const initialState = useAppStore.getState();
@@ -9,9 +9,9 @@ beforeEach(() => {
   useAppStore.setState(initialState, true);
 });
 
-describe('WorkspaceSettingsModal', () => {
+describe('ProjectSettingsModal', () => {
   it('defaults to the General panel, listing all three categories in the rail', () => {
-    render(<WorkspaceSettingsModal />);
+    render(<ProjectSettingsModal />);
 
     expect(screen.getAllByText('General').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /Servers & External Docs/ })).toBeInTheDocument();
@@ -20,7 +20,7 @@ describe('WorkspaceSettingsModal', () => {
 
   it('switches to the Servers panel on click', async () => {
     const user = userEvent.setup();
-    render(<WorkspaceSettingsModal />);
+    render(<ProjectSettingsModal />);
 
     await user.click(screen.getByRole('button', { name: /Servers & External Docs/ }));
 
@@ -29,7 +29,7 @@ describe('WorkspaceSettingsModal', () => {
 
   it('switches to the Security Schemes panel on click', async () => {
     const user = userEvent.setup();
-    render(<WorkspaceSettingsModal />);
+    render(<ProjectSettingsModal />);
 
     await user.click(screen.getByRole('button', { name: /Security Schemes/ }));
 
@@ -38,24 +38,24 @@ describe('WorkspaceSettingsModal', () => {
 
   it('OK/Cancel/close button/backdrop all close the modal', async () => {
     const user = userEvent.setup();
-    useAppStore.setState({ workspaceSettingsOpen: true });
-    render(<WorkspaceSettingsModal />);
+    useAppStore.setState({ projectSettingsOpen: true });
+    render(<ProjectSettingsModal />);
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
-    expect(useAppStore.getState().workspaceSettingsOpen).toBe(false);
+    expect(useAppStore.getState().projectSettingsOpen).toBe(false);
   });
 
-  it('shows OK (not Save) for an already-existing workspace', () => {
-    useAppStore.setState({ isNewWorkspace: false });
-    render(<WorkspaceSettingsModal />);
+  it('shows OK (not Save) for an already-existing project', () => {
+    useAppStore.setState({ isNewProject: false });
+    render(<ProjectSettingsModal />);
 
     expect(screen.getByRole('button', { name: 'OK' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
-  it('shows a disabled, coming-soon Save button instead of OK for a brand-new workspace', () => {
-    useAppStore.setState({ isNewWorkspace: true });
-    render(<WorkspaceSettingsModal />);
+  it('shows a disabled, coming-soon Save button instead of OK for a brand-new project', () => {
+    useAppStore.setState({ isNewProject: true });
+    render(<ProjectSettingsModal />);
 
     const saveBtn = screen.getByRole('button', { name: 'Save' });
     expect(saveBtn).toBeDisabled();
@@ -63,12 +63,12 @@ describe('WorkspaceSettingsModal', () => {
     expect(screen.queryByRole('button', { name: 'OK' })).not.toBeInTheDocument();
   });
 
-  it('Cancel still closes the modal for a brand-new workspace', async () => {
+  it('Cancel still closes the modal for a brand-new project', async () => {
     const user = userEvent.setup();
-    useAppStore.setState({ isNewWorkspace: true, workspaceSettingsOpen: true });
-    render(<WorkspaceSettingsModal />);
+    useAppStore.setState({ isNewProject: true, projectSettingsOpen: true });
+    render(<ProjectSettingsModal />);
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(useAppStore.getState().workspaceSettingsOpen).toBe(false);
+    expect(useAppStore.getState().projectSettingsOpen).toBe(false);
   });
 });

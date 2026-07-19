@@ -4,7 +4,7 @@ import { parseOpenApiDocument, OpenApiImportError } from './openapiImport';
 import type { GithubFileContent } from './api/repos';
 
 /**
- * Imports an OpenAPI document fetched from a repo file (Workspace from Version Control) — reuses
+ * Imports an OpenAPI document fetched from a repo file (Project from Version Control) — reuses
  * the same parse/import pipeline Import already uses, decoding the base64 content GitHub's own
  * Contents API returns (see docs/version-control-api-proposal.md).
  */
@@ -19,7 +19,7 @@ export function importFromGithubFile(file: GithubFileContent): void {
       version: parsed.version,
       openapiVersion: parsed.openapiVersion,
     });
-    useAppStore.getState().startWorkspace(parsed.title);
+    useAppStore.getState().startProject(parsed.title);
     setImportStatus({ type: 'success', message: `Imported ${parsed.title} from ${file.path}.` });
   } catch (err) {
     const message =

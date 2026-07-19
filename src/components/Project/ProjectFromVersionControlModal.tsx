@@ -11,14 +11,14 @@ import {
   type GithubRepo,
 } from '../../lib/api/repos';
 import { importFromGithubFile } from '../../lib/importFromRepo';
-import styles from './WorkspaceFromVersionControlModal.module.css';
+import styles from './ProjectFromVersionControlModal.module.css';
 
 type AsyncState<T> = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: T };
 
 const OPENAPI_FILE_PATTERN = /\.(json|ya?ml)$/i;
 
-export function WorkspaceFromVersionControlModal() {
-  const closeModal = useAppStore((s) => s.closeWorkspaceFromVersionControl);
+export function ProjectFromVersionControlModal() {
+  const closeModal = useAppStore((s) => s.closeProjectFromVersionControl);
   const isGithubConnected =
     useAppStore((s) => s.authProvider === 'github' || s.versionControlLinks.github != null);
 
@@ -85,7 +85,7 @@ export function WorkspaceFromVersionControlModal() {
     <div className={styles.scrim} onClick={closeModal}>
       <div className={styles.dialog} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className={styles.header}>
-          <div className={styles.title}>Workspace from Version Control</div>
+          <div className={styles.title}>Project from Version Control</div>
           <button type="button" className={styles.closeBtn} title="Close" onClick={closeModal}>
             <X size={15} />
           </button>

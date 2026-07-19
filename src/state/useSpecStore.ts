@@ -151,7 +151,7 @@ interface SpecState {
   hasDocument: boolean;
   importSpec: (parsed: { endpoints: Endpoint[]; schemas: Schema[] }) => void;
   loadSampleProject: () => void;
-  /** Closes the current document back to the empty state (Topbar :: More actions :: Close Workspace). */
+  /** Closes the current document back to the empty state (Topbar :: More actions :: Close Project). */
   closeDocument: () => void;
 
   importStatus: { type: 'success' | 'error'; message: string } | null;

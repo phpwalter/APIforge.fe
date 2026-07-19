@@ -23,7 +23,7 @@ export function AppearanceSettingsPanel() {
       <div>
         <div className={styles.title}>Themes</div>
         <div className={styles.description}>
-          Personalize your workspace with a Day and Night theme. Sync with your system to switch automatically, or
+          Personalize your project with a Day and Night theme. Sync with your system to switch automatically, or
           set one manually.
         </div>
       </div>

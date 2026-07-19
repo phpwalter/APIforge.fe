@@ -9,12 +9,12 @@ const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,applicat
 
 export function EmptyProjectState() {
   const loadSampleProject = useSpecStore((s) => s.loadSampleProject);
-  const startWorkspace = useAppStore((s) => s.startWorkspace);
+  const startProject = useAppStore((s) => s.startProject);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const loadSample = () => {
     loadSampleProject();
-    startWorkspace('Sample Project');
+    startProject('Sample Project');
   };
 
   return (
@@ -25,7 +25,7 @@ export function EmptyProjectState() {
         </div>
         <div className={styles.title}>No API document loaded</div>
         <div className={styles.subtitle}>
-          This workspace is empty. Import an OpenAPI document (JSON, YAML, or XML) to start designing, or load a
+          This project is empty. Import an OpenAPI document (JSON, YAML, or XML) to start designing, or load a
           sample project to explore the interface.
         </div>
         <div className={styles.actions}>

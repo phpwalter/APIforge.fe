@@ -1,4 +1,4 @@
-import { computeHasSavableContent, hasSavableContent } from './workspaceEligibility';
+import { computeHasSavableContent, hasSavableContent } from './projectEligibility';
 import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
 
@@ -16,7 +16,7 @@ describe('computeHasSavableContent', () => {
   });
 
   it('is false for any name starting with "Untitled"', () => {
-    expect(computeHasSavableContent('Untitled Workspace', 1, 0)).toBe(false);
+    expect(computeHasSavableContent('Untitled Project', 1, 0)).toBe(false);
     expect(computeHasSavableContent('Untitled API', 1, 0)).toBe(false);
     expect(computeHasSavableContent('UntitledThing', 1, 0)).toBe(false);
   });
@@ -39,7 +39,7 @@ describe('hasSavableContent', () => {
     expect(hasSavableContent()).toBe(false);
 
     useSpecStore.getState().loadSampleProject();
-    useAppStore.setState({ currentWorkspaceName: 'My API' });
+    useAppStore.setState({ currentProjectName: 'My API' });
 
     expect(hasSavableContent()).toBe(true);
   });

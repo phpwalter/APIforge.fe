@@ -1,16 +1,16 @@
 import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
-import { getWorkspace } from './workspaces';
+import { getProject } from './projects';
 import { parseOpenApiDocument, OpenApiImportError } from './openapiImport';
 
 /**
- * Reopens a workspace saved by the autosave engine (src/lib/workspaceAutosave.ts) — the saved
+ * Reopens a project saved by the autosave engine (src/lib/projectAutosave.ts) — the saved
  * specJson is a real OpenAPI document, so this reuses the exact same parse/import pipeline Import
- * already uses. Sets the workspace identity directly (openExistingWorkspace), skipping the "name
- * this workspace" prompt since the name is already known.
+ * already uses. Sets the project identity directly (openExistingProject), skipping the "name
+ * this project" prompt since the name is already known.
  */
-export function openRecentWorkspace(id: string): void {
-  const entry = getWorkspace(id);
+export function openRecentProject(id: string): void {
+  const entry = getProject(id);
   if (!entry) return;
 
   const { setImportStatus, importSpec } = useSpecStore.getState();
@@ -22,7 +22,7 @@ export function openRecentWorkspace(id: string): void {
       version: parsed.version,
       openapiVersion: parsed.openapiVersion,
     });
-    useAppStore.getState().openExistingWorkspace(entry.id, entry.name);
+    useAppStore.getState().openExistingProject(entry.id, entry.name);
     setImportStatus({ type: 'success', message: `Reopened ${entry.name}.` });
   } catch (err) {
     const message =

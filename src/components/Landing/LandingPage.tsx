@@ -73,7 +73,7 @@ export function LandingPage() {
             </div>
           </div>
 
-          <p className={styles.gateNote}>Please sign in to access your workspaces and capabilities</p>
+          <p className={styles.gateNote}>Please sign in to access your projects and capabilities</p>
         </div>
 
         <footer className={styles.footer}>
