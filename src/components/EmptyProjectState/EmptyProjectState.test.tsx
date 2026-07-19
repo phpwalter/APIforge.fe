@@ -13,34 +13,52 @@ beforeEach(() => {
 });
 
 describe('EmptyProjectState', () => {
-  it('prompts to import or load a sample project', () => {
-    render(<EmptyProjectState />);
+  it('prompts with inline links, reading as one coherent sentence', () => {
+    const { container } = render(<EmptyProjectState />);
     expect(screen.getByText('No API document loaded')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Import OpenAPI Document/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Load Sample Project/ })).toBeInTheDocument();
+    expect(container.querySelector('[class*="subtitle"]')!.textContent).toBe(
+      'This project is empty. Create a new project, import an OpenAPI document (JSON or YAML), or load a sample project to explore the interface.',
+    );
   });
 
-  it('loads the sample project into the spec store on click', async () => {
+  it('"Create a new project" starts a blank, named project', async () => {
+    const user = userEvent.setup();
+    render(<EmptyProjectState />);
+
+    await user.click(screen.getByRole('button', { name: 'Create a new project' }));
+
+    expect(useSpecStore.getState().hasDocument).toBe(true);
+    expect(useAppStore.getState().projectNamePromptOpen).toBe(true);
+    expect(useAppStore.getState().projectNamePromptDefault).toBe('Untitled API');
+  });
+
+  it('"load a sample project" loads the sample and starts a named project', async () => {
     const user = userEvent.setup();
     render(<EmptyProjectState />);
 
     expect(useSpecStore.getState().hasDocument).toBe(false);
-    await user.click(screen.getByRole('button', { name: /Load Sample Project/ }));
+    await user.click(screen.getByRole('button', { name: 'load a sample project' }));
 
-    const s = useSpecStore.getState();
-    expect(s.hasDocument).toBe(true);
-    expect(s.endpoints.length).toBeGreaterThan(0);
-  });
-
-  it('starts a new named project when loading the sample project', async () => {
-    const user = userEvent.setup();
-    render(<EmptyProjectState />);
-
-    await user.click(screen.getByRole('button', { name: /Load Sample Project/ }));
+    const spec = useSpecStore.getState();
+    expect(spec.hasDocument).toBe(true);
+    expect(spec.endpoints.length).toBeGreaterThan(0);
 
     const app = useAppStore.getState();
     expect(app.currentProjectId).not.toBeNull();
     expect(app.projectNamePromptOpen).toBe(true);
     expect(app.projectNamePromptDefault).toBe('Sample Project');
+  });
+
+  it('"import an OpenAPI document" opens the file picker (no XML in the accepted types)', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<EmptyProjectState />);
+
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input.accept).not.toContain('xml');
+
+    // Clicking the link forwards the click to the hidden file input.
+    const clickSpy = vi.spyOn(input, 'click');
+    await user.click(screen.getByRole('button', { name: 'import an OpenAPI document' }));
+    expect(clickSpy).toHaveBeenCalled();
   });
 });

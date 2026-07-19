@@ -1,11 +1,12 @@
 import { useRef } from 'react';
-import { FileUp, FlaskConical } from 'lucide-react';
+import { FileUp } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
 import { useAppStore } from '../../state/useAppStore';
 import { importOpenApiFile } from '../../lib/importHandler';
+import { requestNewProject } from '../../lib/newProject';
 import styles from './EmptyProjectState.module.css';
 
-const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,application/xml,text/xml';
+const IMPORT_ACCEPT = '.yaml,.yml,.json,application/json,text/yaml';
 
 export function EmptyProjectState() {
   const loadSampleProject = useSpecStore((s) => s.loadSampleProject);
@@ -25,18 +26,18 @@ export function EmptyProjectState() {
         </div>
         <div className={styles.title}>No API document loaded</div>
         <div className={styles.subtitle}>
-          This project is empty. Import an OpenAPI document (JSON, YAML, or XML) to start designing, or load a
-          sample project to explore the interface.
-        </div>
-        <div className={styles.actions}>
-          <button type="button" className={styles.primaryBtn} onClick={() => inputRef.current?.click()}>
-            <FileUp size={15} />
-            Import OpenAPI Document
+          This project is empty.{' '}
+          <button type="button" className={styles.link} onClick={requestNewProject}>
+            Create a new project
           </button>
-          <button type="button" className={styles.secondaryBtn} onClick={loadSample}>
-            <FlaskConical size={15} />
-            Load Sample Project
-          </button>
+          , <button type="button" className={styles.link} onClick={() => inputRef.current?.click()}>
+            import an OpenAPI document
+          </button>{' '}
+          (JSON or YAML), or{' '}
+          <button type="button" className={styles.link} onClick={loadSample}>
+            load a sample project
+          </button>{' '}
+          to explore the interface.
         </div>
         <input
           ref={inputRef}
