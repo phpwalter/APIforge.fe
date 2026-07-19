@@ -4,6 +4,9 @@ import styles from './GeneralSettingsPanel.module.css';
 const OPENAPI_VERSIONS = ['3.1.0', '3.1.1', '3.0.3', '3.0.2', '3.0.1', '3.0.0'];
 
 export function GeneralSettingsPanel() {
+  const currentWorkspaceName = useAppStore((s) => s.currentWorkspaceName);
+  const setWorkspaceName = useAppStore((s) => s.setWorkspaceName);
+
   const apiOpenapiVersion = useAppStore((s) => s.apiOpenapiVersion);
   const setApiOpenapiVersion = useAppStore((s) => s.setApiOpenapiVersion);
 
@@ -21,6 +24,16 @@ export function GeneralSettingsPanel() {
 
   return (
     <>
+      <div>
+        <div className={styles.fieldLabel}>Workspace Name</div>
+        <input
+          className={styles.textInput}
+          value={currentWorkspaceName ?? ''}
+          placeholder="Untitled Workspace"
+          onChange={(e) => setWorkspaceName(e.target.value)}
+        />
+      </div>
+
       <div>
         <div className={styles.fieldLabel}>OpenAPI Version</div>
         <select

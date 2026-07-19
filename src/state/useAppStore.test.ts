@@ -377,6 +377,17 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().currentWorkspaceName).toBe('Untitled Workspace');
   });
 
+  it('setWorkspaceName updates the name live, without trimming or falling back to a default', () => {
+    useAppStore.getState().startWorkspace('Untitled API');
+    useAppStore.getState().confirmWorkspaceName('My API');
+
+    useAppStore.getState().setWorkspaceName('My Renamed API');
+    expect(useAppStore.getState().currentWorkspaceName).toBe('My Renamed API');
+
+    useAppStore.getState().setWorkspaceName('  ');
+    expect(useAppStore.getState().currentWorkspaceName).toBe('  ');
+  });
+
   it('openExistingWorkspace sets the id/name directly, without opening the naming prompt', () => {
     useAppStore.setState({ moreMenuOpen: true });
     useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');

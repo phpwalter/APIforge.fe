@@ -183,6 +183,9 @@ interface AppState {
   workspaceNamePromptDefault: string;
   startWorkspace: (defaultName: string) => void;
   confirmWorkspaceName: (name: string) => void;
+  /** Workspace Settings :: General's "Workspace name" field — live edits, no trim/fallback (that's
+   * only for the initial naming prompt), so an in-progress edit can pass through an empty string. */
+  setWorkspaceName: (name: string) => void;
   /** Recent Workspaces reopen — the id/name are already known, so this skips the naming prompt. */
   openExistingWorkspace: (id: string, name: string) => void;
   /** Topbar :: More actions :: Close Workspace — also clears the workspace id so autosave stops. */
@@ -435,6 +438,7 @@ export const useAppStore = create<AppState>()(
     }),
   confirmWorkspaceName: (name) =>
     set({ currentWorkspaceName: name.trim() || 'Untitled Workspace', workspaceNamePromptOpen: false }),
+  setWorkspaceName: (name) => set({ currentWorkspaceName: name }),
   openExistingWorkspace: (id, name) =>
     set({ currentWorkspaceId: id, currentWorkspaceName: name, moreMenuOpen: false }),
   closeWorkspace: () => {

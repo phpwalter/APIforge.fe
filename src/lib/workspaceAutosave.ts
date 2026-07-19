@@ -81,6 +81,9 @@ export function initWorkspaceAutosave(): void {
       s.apiLicense,
       s.apiServers,
       s.apiExternalDocs,
+      // Workspace Settings :: General's "Workspace name" field — renaming an already-named
+      // workspace needs to autosave too, not just the initial name (handled separately below).
+      s.currentWorkspaceName,
     ],
     scheduleSave,
     { equalityFn: shallow },

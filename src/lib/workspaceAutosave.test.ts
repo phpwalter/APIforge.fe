@@ -124,4 +124,19 @@ describe('initWorkspaceAutosave', () => {
     const id = useAppStore.getState().currentWorkspaceId!;
     expect(getWorkspace(id)).toBeDefined();
   });
+
+  it('autosaves (debounced) when an already-named workspace is renamed, not just on the first name', () => {
+    initWorkspaceAutosave();
+    useSpecStore.getState().loadSampleProject();
+    useAppStore.setState({ currentWorkspaceId: 'ws-1', currentWorkspaceName: 'My API' });
+    saveNow();
+    localStorage.clear(); // discard that save so the assertion below proves the rename re-saved it
+
+    useAppStore.getState().setWorkspaceName('My Renamed API');
+    vi.advanceTimersByTime(1000);
+
+    const entry = getWorkspace('ws-1');
+    expect(entry).toBeDefined();
+    expect(entry?.name).toBe('My Renamed API');
+  });
 });
