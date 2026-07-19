@@ -208,6 +208,15 @@
   background: var(--surface-2);
 }
 
+.menuItem:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.menuItem:disabled:hover {
+  background: transparent;
+}
+
 .menuItemIcon {
   width: 18px;
   flex: none;
@@ -279,6 +288,107 @@
 
 .menuSubItem:hover {
   background: var(--surface-2);
+}
+
+.menuSubItem:disabled {
+  cursor: not-allowed;
+}
+
+.menuSubItem:disabled:hover {
+  background: transparent;
+}
+
+.menuSubItem:disabled .menuSubItemName {
+  color: var(--text-faint);
+}
+
+.menuComingSoon {
+  flex: none;
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+
+.menuSubItemRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 7px;
+}
+
+.menuSubItemRow:hover {
+  background: var(--surface-2);
+}
+
+.menuSubItemOpenBtn {
+  composes: menuSubItem;
+  flex: 1;
+  min-width: 0;
+}
+
+.menuSubItemOpenBtn:hover {
+  background: transparent;
+}
+
+.menuSubItemDeleteBtn {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-faint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuSubItemDeleteBtn:hover {
+  background: var(--del-soft);
+  color: var(--del);
+}
+
+.menuSubItemConfirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+}
+
+.menuSubItemConfirmText {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menuSubItemConfirmBtn {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.menuSubItemConfirmBtnDanger {
+  composes: menuSubItemConfirmBtn;
+  border-color: var(--del);
+  color: var(--del);
+}
+
+.menuSubItemConfirmBtnDanger:hover {
+  background: var(--del-soft);
 }
 
 .menuSubItemName {

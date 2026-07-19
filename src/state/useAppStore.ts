@@ -188,8 +188,33 @@ interface AppState {
   setWorkspaceName: (name: string) => void;
   /** Recent Workspaces reopen — the id/name are already known, so this skips the naming prompt. */
   openExistingWorkspace: (id: string, name: string) => void;
+  /** The Load Workspace dialog's "Open" action — same as openExistingWorkspace, but also drops
+   * straight into Workspace Settings :: General so the loaded data is immediately visible. */
+  openExistingWorkspaceIntoSettings: (id: string, name: string) => void;
+  /** The Load Workspace dialog's "Import OpenAPI Document" action — same as startWorkspace, but
+   * skips the small naming popup and opens Workspace Settings :: General instead (its Workspace
+   * Name field already covers naming, prefilled with the document's own title). */
+  startWorkspaceIntoSettings: (defaultName: string) => void;
   /** Topbar :: More actions :: Close Workspace — also clears the workspace id so autosave stops. */
   closeWorkspace: () => void;
+  /** True from startWorkspace() (New Workspace / Import / Load from Version Control) until the
+   * workspace is reopened via openExistingWorkspace() — drives Workspace Settings :: General's
+   * OK-vs-SAVE footer button, since a freshly started workspace has never been saved to the server. */
+  isNewWorkspace: boolean;
+
+  // "Unsaved changes" guard shown before New Workspace wipes the current document — export and
+  // local autosave don't count as saved, only a real server save would (not yet built), so this
+  // fires whenever a document is loaded. See src/lib/newWorkspace.ts's requestNewWorkspace().
+  unsavedChangesPromptOpen: boolean;
+  openUnsavedChangesPrompt: () => void;
+  closeUnsavedChangesPrompt: () => void;
+
+  // Load Workspace dialog — lists previous projects (currently sourced from the local autosave
+  // list in src/lib/workspaces.ts; will point at a server endpoint once one exists) alongside an
+  // "Import OpenAPI Document" button and a "Load from Version Control" entry point.
+  loadWorkspaceOpen: boolean;
+  openLoadWorkspaceDialog: () => void;
+  closeLoadWorkspaceDialog: () => void;
 
   // Workspace Settings modal (General / Servers & External Docs / Security Schemes)
   workspaceSettingsOpen: boolean;
@@ -435,16 +460,45 @@ export const useAppStore = create<AppState>()(
       workspaceNamePromptOpen: true,
       workspaceNamePromptDefault: defaultName,
       moreMenuOpen: false,
+      isNewWorkspace: true,
     }),
   confirmWorkspaceName: (name) =>
     set({ currentWorkspaceName: name.trim() || 'Untitled Workspace', workspaceNamePromptOpen: false }),
   setWorkspaceName: (name) => set({ currentWorkspaceName: name }),
   openExistingWorkspace: (id, name) =>
-    set({ currentWorkspaceId: id, currentWorkspaceName: name, moreMenuOpen: false }),
+    set({ currentWorkspaceId: id, currentWorkspaceName: name, moreMenuOpen: false, isNewWorkspace: false }),
+  openExistingWorkspaceIntoSettings: (id, name) =>
+    set({
+      currentWorkspaceId: id,
+      currentWorkspaceName: name,
+      moreMenuOpen: false,
+      isNewWorkspace: false,
+      loadWorkspaceOpen: false,
+      workspaceSettingsOpen: true,
+    }),
+  startWorkspaceIntoSettings: (defaultName) =>
+    set({
+      currentWorkspaceId: generateWorkspaceId(),
+      currentWorkspaceName: defaultName,
+      workspaceNamePromptOpen: false,
+      moreMenuOpen: false,
+      isNewWorkspace: true,
+      loadWorkspaceOpen: false,
+      workspaceSettingsOpen: true,
+    }),
   closeWorkspace: () => {
     useSpecStore.getState().closeDocument();
-    set({ currentWorkspaceId: null, currentWorkspaceName: null, moreMenuOpen: false });
+    set({ currentWorkspaceId: null, currentWorkspaceName: null, moreMenuOpen: false, isNewWorkspace: false });
   },
+  isNewWorkspace: false,
+
+  unsavedChangesPromptOpen: false,
+  openUnsavedChangesPrompt: () => set({ unsavedChangesPromptOpen: true, moreMenuOpen: false }),
+  closeUnsavedChangesPrompt: () => set({ unsavedChangesPromptOpen: false }),
+
+  loadWorkspaceOpen: false,
+  openLoadWorkspaceDialog: () => set({ loadWorkspaceOpen: true, moreMenuOpen: false }),
+  closeLoadWorkspaceDialog: () => set({ loadWorkspaceOpen: false }),
 
   workspaceSettingsOpen: false,
   openWorkspaceSettings: () => set({ workspaceSettingsOpen: true, moreMenuOpen: false }),

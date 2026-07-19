@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, UserPlus, Keyboard, HelpCircle, ExternalLink, Info, LogOut, User as UserBig } from 'lucide-react';
+import { User, UserPlus, LogOut, User as UserBig } from 'lucide-react';
 import { initialsOf, useAppStore } from '../../state/useAppStore';
 import { providerLabel } from '../Auth/providers';
 import type { UserProfile } from '../../types/ui';
@@ -63,32 +63,6 @@ export function UserMenu() {
                 <UserPlus size={16} />
               </span>
               <span className={styles.menuItemTrailing}>Invite Members</span>
-            </button>
-            <div className={styles.menuDivider} />
-            <button type="button" className={styles.menuItem}>
-              <span className={styles.menuItemIcon}>
-                <Keyboard size={16} />
-              </span>
-              <span className={styles.menuItemTrailing}>Keyboard Shortcuts</span>
-            </button>
-            <div className={styles.menuDivider} />
-            <button type="button" className={styles.menuItem}>
-              <span className={styles.menuItemIcon}>
-                <HelpCircle size={16} />
-              </span>
-              <span className={styles.menuItemTrailing}>Help &amp; Documentation</span>
-              <span className={styles.menuItemExternal}>
-                <ExternalLink size={13} />
-              </span>
-            </button>
-            <button type="button" className={styles.menuItem}>
-              <span className={styles.menuItemIcon}>
-                <Info size={16} />
-              </span>
-              <span className={styles.menuItemTrailing}>What&apos;s New</span>
-              <span className={styles.menuItemExternal}>
-                <ExternalLink size={13} />
-              </span>
             </button>
             <div className={styles.menuDivider} />
             <button type="button" className={styles.menuDangerItem} onClick={signOut}>

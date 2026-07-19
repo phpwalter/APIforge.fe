@@ -26,6 +26,7 @@ const CATEGORIES: WorkspaceCategory[] = [
  */
 export function WorkspaceSettingsModal() {
   const closeWorkspaceSettings = useAppStore((s) => s.closeWorkspaceSettings);
+  const isNewWorkspace = useAppStore((s) => s.isNewWorkspace);
   const [activeKey, setActiveKey] = useState(CATEGORIES[0].key);
 
   const active = CATEGORIES.find((c) => c.key === activeKey) ?? CATEGORIES[0];
@@ -78,9 +79,20 @@ export function WorkspaceSettingsModal() {
 
         <div className={styles.footer}>
           <span className={styles.footerSpacer} />
-          <button type="button" className={`${styles.btn} ${styles.btnOk}`} onClick={closeWorkspaceSettings}>
-            OK
-          </button>
+          {isNewWorkspace ? (
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnSave}`}
+              disabled
+              title="Save to server — coming soon"
+            >
+              Save
+            </button>
+          ) : (
+            <button type="button" className={`${styles.btn} ${styles.btnOk}`} onClick={closeWorkspaceSettings}>
+              OK
+            </button>
+          )}
           <button type="button" className={`${styles.btn} ${styles.btnCancel}`} onClick={closeWorkspaceSettings}>
             Cancel
           </button>

@@ -14,6 +14,8 @@ import { ProfileModal } from '../Profile/ProfileModal';
 import { WorkspaceNameModal } from '../Workspace/WorkspaceNameModal';
 import { WorkspaceSettingsModal } from '../Workspace/WorkspaceSettingsModal';
 import { WorkspaceFromVersionControlModal } from '../Workspace/WorkspaceFromVersionControlModal';
+import { UnsavedChangesModal } from '../Workspace/UnsavedChangesModal';
+import { LoadWorkspaceDialog } from '../Workspace/LoadWorkspaceDialog';
 import { EmptyProjectState } from '../EmptyProjectState/EmptyProjectState';
 import { ImportStatusToast } from '../ImportStatusToast/ImportStatusToast';
 import shellStyles from './AppShell.module.css';
@@ -33,6 +35,8 @@ export function AppShell() {
   const workspaceNamePromptOpen = useAppStore((s) => s.workspaceNamePromptOpen);
   const workspaceSettingsOpen = useAppStore((s) => s.workspaceSettingsOpen);
   const workspaceFromVersionControlOpen = useAppStore((s) => s.workspaceFromVersionControlOpen);
+  const unsavedChangesPromptOpen = useAppStore((s) => s.unsavedChangesPromptOpen);
+  const loadWorkspaceOpen = useAppStore((s) => s.loadWorkspaceOpen);
   const hasDocument = useSpecStore((s) => s.hasDocument);
 
   useEffect(() => {
@@ -67,6 +71,8 @@ export function AppShell() {
       {workspaceNamePromptOpen && <WorkspaceNameModal />}
       {workspaceSettingsOpen && <WorkspaceSettingsModal />}
       {workspaceFromVersionControlOpen && <WorkspaceFromVersionControlModal />}
+      {unsavedChangesPromptOpen && <UnsavedChangesModal />}
+      {loadWorkspaceOpen && <LoadWorkspaceDialog />}
     </div>
   );
 }

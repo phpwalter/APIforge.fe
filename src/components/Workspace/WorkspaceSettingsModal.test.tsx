@@ -44,4 +44,31 @@ describe('WorkspaceSettingsModal', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(useAppStore.getState().workspaceSettingsOpen).toBe(false);
   });
+
+  it('shows OK (not Save) for an already-existing workspace', () => {
+    useAppStore.setState({ isNewWorkspace: false });
+    render(<WorkspaceSettingsModal />);
+
+    expect(screen.getByRole('button', { name: 'OK' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  });
+
+  it('shows a disabled, coming-soon Save button instead of OK for a brand-new workspace', () => {
+    useAppStore.setState({ isNewWorkspace: true });
+    render(<WorkspaceSettingsModal />);
+
+    const saveBtn = screen.getByRole('button', { name: 'Save' });
+    expect(saveBtn).toBeDisabled();
+    expect(saveBtn).toHaveAttribute('title', 'Save to server — coming soon');
+    expect(screen.queryByRole('button', { name: 'OK' })).not.toBeInTheDocument();
+  });
+
+  it('Cancel still closes the modal for a brand-new workspace', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ isNewWorkspace: true, workspaceSettingsOpen: true });
+    render(<WorkspaceSettingsModal />);
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(useAppStore.getState().workspaceSettingsOpen).toBe(false);
+  });
 });

@@ -56,6 +56,7 @@
 .footer {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
   margin-top: 16px;
 }
 
@@ -73,6 +74,38 @@
 
 .btnSave:hover {
   filter: brightness(1.08);
+}
+
+.btnCancel {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.btnCancel:hover {
+  border-color: var(--border-strong);
+}
+
+.btnDiscard {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--del);
+  background: transparent;
+  color: var(--del);
+}
+
+.btnDiscard:hover {
+  background: var(--del-soft);
 }
 
 @keyframes fadeIn {

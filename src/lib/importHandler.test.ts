@@ -1,4 +1,4 @@
-import { importOpenApiFile } from './importHandler';
+import { importOpenApiFile, importOpenApiFileIntoSettings } from './importHandler';
 import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
 
@@ -46,5 +46,27 @@ describe('importOpenApiFile', () => {
     expect(useSpecStore.getState().importStatus?.type).toBe('error');
     expect(useSpecStore.getState().hasDocument).toBe(false);
     expect(useAppStore.getState().currentWorkspaceId).toBeNull();
+  });
+});
+
+describe('importOpenApiFileIntoSettings', () => {
+  it('imports the file and drops straight into Workspace Settings, skipping the naming popup', async () => {
+    await importOpenApiFileIntoSettings(fileFor(VALID_DOC));
+
+    const app = useAppStore.getState();
+    expect(useSpecStore.getState().hasDocument).toBe(true);
+    expect(app.currentWorkspaceId).not.toBeNull();
+    expect(app.currentWorkspaceName).toBe('Imported API');
+    expect(app.workspaceNamePromptOpen).toBe(false);
+    expect(app.workspaceSettingsOpen).toBe(true);
+    expect(app.isNewWorkspace).toBe(true);
+  });
+
+  it('sets an error import status and does not start a workspace when the file fails to parse', async () => {
+    await importOpenApiFileIntoSettings(fileFor({ not: 'an openapi doc' }));
+
+    expect(useSpecStore.getState().importStatus?.type).toBe('error');
+    expect(useAppStore.getState().currentWorkspaceId).toBeNull();
+    expect(useAppStore.getState().workspaceSettingsOpen).toBe(false);
   });
 });

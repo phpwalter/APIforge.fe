@@ -1,14 +1,10 @@
-import { useRef } from 'react';
 import { Layers, ChevronDown, Undo2, Redo2, Monitor, Moon, Sun, EllipsisVertical } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
-import { importOpenApiFile } from '../../lib/importHandler';
 import { APP_VERSION } from '../../lib/appInfo';
 import { SaveBadge } from './SaveBadge';
 import { MoreMenu } from './MoreMenu';
 import { UserMenu } from './UserMenu';
 import styles from './Topbar.module.css';
-
-const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,application/xml,text/xml';
 
 function themeTitle(themeMode: string, theme: string): string {
   if (themeMode === 'system') return `Theme: System · following OS (${theme}) — click for Light`;
@@ -31,8 +27,6 @@ export function Topbar() {
   const toggleMoreMenu = useAppStore((s) => s.toggleMoreMenu);
   const openSettings = useAppStore((s) => s.openSettings);
   const openExportModal = useAppStore((s) => s.openExportModal);
-
-  const importInputRef = useRef<HTMLInputElement>(null);
 
   const cannotUndo = undoStack.length === 0;
   const cannotRedo = redoStack.length === 0;
@@ -65,18 +59,6 @@ export function Topbar() {
       <div className={styles.spacer} />
 
       <SaveBadge />
-
-      <input
-        ref={importInputRef}
-        type="file"
-        accept={IMPORT_ACCEPT}
-        style={{ display: 'none' }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = '';
-          if (file) void importOpenApiFile(file);
-        }}
-      />
 
       <button
         type="button"
@@ -112,7 +94,6 @@ export function Topbar() {
         </button>
         {moreMenuOpen && (
           <MoreMenu
-            onImport={() => importInputRef.current?.click()}
             onExport={openExportModal}
             onShare={() => {
               /* wired up alongside the share modal */

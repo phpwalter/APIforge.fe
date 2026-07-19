@@ -388,6 +388,14 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().currentWorkspaceName).toBe('  ');
   });
 
+  it('startWorkspace marks the workspace as new; openExistingWorkspace clears that flag', () => {
+    useAppStore.getState().startWorkspace('Untitled API');
+    expect(useAppStore.getState().isNewWorkspace).toBe(true);
+
+    useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');
+    expect(useAppStore.getState().isNewWorkspace).toBe(false);
+  });
+
   it('openExistingWorkspace sets the id/name directly, without opening the naming prompt', () => {
     useAppStore.setState({ moreMenuOpen: true });
     useAppStore.getState().openExistingWorkspace('ws-1', 'Saved API');
@@ -407,7 +415,53 @@ describe('useAppStore', () => {
 
     expect(useAppStore.getState().currentWorkspaceId).toBeNull();
     expect(useAppStore.getState().currentWorkspaceName).toBeNull();
+    expect(useAppStore.getState().isNewWorkspace).toBe(false);
     expect(useSpecStore.getState().hasDocument).toBe(false);
+  });
+
+  it('opens and closes the unsaved-changes prompt', () => {
+    useAppStore.setState({ moreMenuOpen: true });
+    useAppStore.getState().openUnsavedChangesPrompt();
+    expect(useAppStore.getState().unsavedChangesPromptOpen).toBe(true);
+    expect(useAppStore.getState().moreMenuOpen).toBe(false);
+
+    useAppStore.getState().closeUnsavedChangesPrompt();
+    expect(useAppStore.getState().unsavedChangesPromptOpen).toBe(false);
+  });
+
+  it('opens and closes the Load Workspace dialog', () => {
+    useAppStore.setState({ moreMenuOpen: true });
+    useAppStore.getState().openLoadWorkspaceDialog();
+    expect(useAppStore.getState().loadWorkspaceOpen).toBe(true);
+    expect(useAppStore.getState().moreMenuOpen).toBe(false);
+
+    useAppStore.getState().closeLoadWorkspaceDialog();
+    expect(useAppStore.getState().loadWorkspaceOpen).toBe(false);
+  });
+
+  it('openExistingWorkspaceIntoSettings sets the id/name, closes Load Workspace, and opens Workspace Settings', () => {
+    useAppStore.setState({ loadWorkspaceOpen: true, isNewWorkspace: true });
+    useAppStore.getState().openExistingWorkspaceIntoSettings('ws-1', 'Saved API');
+
+    const s = useAppStore.getState();
+    expect(s.currentWorkspaceId).toBe('ws-1');
+    expect(s.currentWorkspaceName).toBe('Saved API');
+    expect(s.isNewWorkspace).toBe(false);
+    expect(s.loadWorkspaceOpen).toBe(false);
+    expect(s.workspaceSettingsOpen).toBe(true);
+  });
+
+  it('startWorkspaceIntoSettings starts a fresh workspace, skips the naming popup, closes Load Workspace, and opens Workspace Settings', () => {
+    useAppStore.setState({ loadWorkspaceOpen: true });
+    useAppStore.getState().startWorkspaceIntoSettings('Imported API');
+
+    const s = useAppStore.getState();
+    expect(s.currentWorkspaceId).not.toBeNull();
+    expect(s.currentWorkspaceName).toBe('Imported API');
+    expect(s.workspaceNamePromptOpen).toBe(false);
+    expect(s.isNewWorkspace).toBe(true);
+    expect(s.loadWorkspaceOpen).toBe(false);
+    expect(s.workspaceSettingsOpen).toBe(true);
   });
 
   it('opens and closes the Workspace Settings modal', () => {
