@@ -42,14 +42,14 @@ describe('projects', () => {
     expect(listProjects()).toEqual([{ id: 'a', name: 'Renamed', savedAt: 2000 }]);
   });
 
-  it('caps the list at 10, dropping the oldest', () => {
-    for (let i = 0; i < 11; i++) {
+  it('caps the list at 5, dropping the oldest — nothing beyond that is ever stored', () => {
+    for (let i = 0; i < 6; i++) {
       saveProject(entry({ id: `w${i}`, savedAt: i }));
     }
     const all = listProjects();
-    expect(all).toHaveLength(10);
+    expect(all).toHaveLength(5);
     expect(all.find((w) => w.id === 'w0')).toBeUndefined(); // oldest (savedAt: 0) dropped
-    expect(all.find((w) => w.id === 'w10')).toBeDefined();
+    expect(all.find((w) => w.id === 'w5')).toBeDefined();
   });
 
   it('deleteProject removes just that entry', () => {
@@ -97,5 +97,17 @@ describe('projects', () => {
     localStorage.setItem('apiforge_recent_workspaces', JSON.stringify([entry({ id: 'legacy' })]));
 
     expect(listProjects()).toEqual([{ id: 'current', name: 'Project A', savedAt: 1000 }]);
+  });
+
+  it('caps legacy entries at 5 during migration too, keeping the most recent', () => {
+    const legacyEntries = Array.from({ length: 7 }, (_, i) => entry({ id: `legacy${i}`, savedAt: i }));
+    localStorage.setItem('apiforge_recent_workspaces', JSON.stringify(legacyEntries));
+
+    const all = listProjects();
+
+    expect(all).toHaveLength(5);
+    expect(all.find((w) => w.id === 'legacy6')).toBeDefined(); // most recent (savedAt: 6) kept
+    expect(all.find((w) => w.id === 'legacy0')).toBeUndefined(); // oldest dropped
+    expect(all.find((w) => w.id === 'legacy1')).toBeUndefined();
   });
 });

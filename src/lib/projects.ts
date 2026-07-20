@@ -17,8 +17,9 @@ const STORAGE_KEY = 'apiforge_recent_projects';
 /** Pre-rename key ("Workspace" → "Project") — read once as a fallback so existing users' saved
  * entries aren't silently orphaned by the key change, then migrated onto STORAGE_KEY. */
 const LEGACY_STORAGE_KEY = 'apiforge_recent_workspaces';
-/** Keeps localStorage usage bounded — oldest entries drop off once this many are saved. */
-const MAX_PROJECTS = 10;
+/** Hard cap — a FIFO list of at most this many entries; the oldest drops off once a new one
+ * pushes it out. Nothing beyond this many is ever stored. */
+const MAX_PROJECTS = 5;
 
 function readAll(): ProjectEntry[] {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -35,7 +36,10 @@ function readAll(): ProjectEntry[] {
   if (!legacyRaw) return [];
   try {
     const parsed = JSON.parse(legacyRaw) as unknown;
-    const entries = Array.isArray(parsed) ? (parsed as ProjectEntry[]) : [];
+    const legacyEntries = Array.isArray(parsed) ? (parsed as ProjectEntry[]) : [];
+    // The legacy list may have been saved under a higher cap — enforce MAX_PROJECTS here too,
+    // keeping only the most-recently-saved entries.
+    const entries = [...legacyEntries].sort((a, b) => b.savedAt - a.savedAt).slice(0, MAX_PROJECTS);
     writeAll(entries);
     return entries;
   } catch {
