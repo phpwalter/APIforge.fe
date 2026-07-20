@@ -377,6 +377,20 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().currentProjectName).toBe('Untitled Project');
   });
 
+  it('cancelProjectName discards the project entirely, closing both the document and the prompt', () => {
+    useSpecStore.getState().loadSampleProject();
+    useAppStore.getState().startProject('Sample Project');
+
+    useAppStore.getState().cancelProjectName();
+
+    const s = useAppStore.getState();
+    expect(s.currentProjectId).toBeNull();
+    expect(s.currentProjectName).toBeNull();
+    expect(s.projectNamePromptOpen).toBe(false);
+    expect(s.isNewProject).toBe(false);
+    expect(useSpecStore.getState().hasDocument).toBe(false);
+  });
+
   it('setProjectName updates the name live, without trimming or falling back to a default', () => {
     useAppStore.getState().startProject('Untitled API');
     useAppStore.getState().confirmProjectName('My API');

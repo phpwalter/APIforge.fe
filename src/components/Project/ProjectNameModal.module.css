@@ -72,8 +72,13 @@
   color: #fff;
 }
 
-.btnSave:hover {
+.btnSave:hover:not(:disabled) {
   filter: brightness(1.08);
+}
+
+.btnSave:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btnCancel {

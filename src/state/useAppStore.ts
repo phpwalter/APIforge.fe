@@ -172,17 +172,19 @@ interface AppState {
   // means "nothing to autosave yet" (e.g. right after Close Project).
   currentProjectId: string | null;
   currentProjectName: string | null;
-  // The "name this project" prompt shown after New Project / Import / Load Sample / Project
-  // from Version Control — each establishes a fresh id via startProject(), then every way of
-  // dismissing the prompt (Save, Escape, backdrop click) calls confirmProjectName() with
-  // whatever's typed (falling back to the suggested default) to lock in a name, which is what
-  // actually enables autosave — see src/lib/projectAutosave.ts. There's no true "cancel": the
-  // project already has real content by the time this prompt shows, so dismissing it just
-  // accepts the suggested name rather than discarding anything.
+  // The "New Project" naming prompt shown after New Project / Import / Load Sample / Project
+  // from Version Control — each establishes a fresh id via startProject(). Save (2+ characters
+  // required) or Enter calls confirmProjectName() to lock in a name, which is what actually
+  // enables autosave — see src/lib/projectAutosave.ts. Cancel, Escape, and the backdrop all call
+  // cancelProjectName() instead, discarding the project that was just created/imported.
   projectNamePromptOpen: boolean;
   projectNamePromptDefault: string;
   startProject: (defaultName: string) => void;
   confirmProjectName: (name: string) => void;
+  /** Cancel / Escape / backdrop on the naming prompt — discards the project that startProject()
+   * just created (or that Import/Load Sample/Version Control just populated), unlike
+   * confirmProjectName() which locks one in. */
+  cancelProjectName: () => void;
   /** Project Settings :: General's "Project name" field — live edits, no trim/fallback (that's
    * only for the initial naming prompt), so an in-progress edit can pass through an empty string. */
   setProjectName: (name: string) => void;
@@ -464,6 +466,15 @@ export const useAppStore = create<AppState>()(
     }),
   confirmProjectName: (name) =>
     set({ currentProjectName: name.trim() || 'Untitled Project', projectNamePromptOpen: false }),
+  cancelProjectName: () => {
+    useSpecStore.getState().closeDocument();
+    set({
+      currentProjectId: null,
+      currentProjectName: null,
+      projectNamePromptOpen: false,
+      isNewProject: false,
+    });
+  },
   setProjectName: (name) => set({ currentProjectName: name }),
   openExistingProject: (id, name) =>
     set({ currentProjectId: id, currentProjectName: name, moreMenuOpen: false, isNewProject: false }),
