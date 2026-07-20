@@ -1,4 +1,4 @@
-import { Layers, ChevronDown, Undo2, Redo2, Monitor, Moon, Sun, EllipsisVertical } from 'lucide-react';
+import { Layers, Undo2, Redo2, Monitor, Moon, Sun, EllipsisVertical } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { APP_VERSION } from '../../lib/appInfo';
 import { SaveBadge } from './SaveBadge';
@@ -13,7 +13,9 @@ function themeTitle(themeMode: string, theme: string): string {
 }
 
 export function Topbar() {
-  const apiTitle = useAppStore((s) => s.apiTitle);
+  // Matches AppShell's gate — a brand-new/imported project has real content the moment its
+  // source action runs, but the title bar doesn't show anything for it until it's actually named.
+  const currentProjectName = useAppStore((s) => s.currentProjectName);
   const apiVersion = useAppStore((s) => s.apiVersion);
   const apiOpenapiVersion = useAppStore((s) => s.apiOpenapiVersion);
   const themeMode = useAppStore((s) => s.themeMode);
@@ -25,7 +27,6 @@ export function Topbar() {
   const redo = useAppStore((s) => s.redo);
   const moreMenuOpen = useAppStore((s) => s.moreMenuOpen);
   const toggleMoreMenu = useAppStore((s) => s.toggleMoreMenu);
-  const openSettings = useAppStore((s) => s.openSettings);
   const openExportModal = useAppStore((s) => s.openExportModal);
 
   const cannotUndo = undoStack.length === 0;
@@ -43,18 +44,16 @@ export function Topbar() {
         <span className={styles.pill}>{APP_VERSION}</span>
       </div>
 
-      <button type="button" className={styles.projectPill} title="Project settings" onClick={openSettings}>
-        <span className={styles.projectPillDot} />
-        <span className={styles.projectPillLabel}>{apiTitle}</span>
-        <span className={styles.projectPillChevron}>
-          <ChevronDown size={12} />
-        </span>
-      </button>
-
-      <div className={styles.versionGroup}>
-        <span className={styles.pillMono}>{apiVersion}</span>
-        <span className={styles.oasLabel}>OAS {apiOpenapiVersion}</span>
-      </div>
+      {currentProjectName !== null && (
+        <>
+          <div className={styles.divider} />
+          <span className={styles.projectName}>{currentProjectName}</span>
+          <div className={styles.versionGroup}>
+            <span className={styles.pillMono}>{apiVersion}</span>
+            <span className={styles.oasLabel}>OAS {apiOpenapiVersion}</span>
+          </div>
+        </>
+      )}
 
       <div className={styles.spacer} />
 

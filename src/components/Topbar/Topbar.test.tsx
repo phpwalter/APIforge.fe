@@ -1,0 +1,48 @@
+import { act, render, screen } from '@testing-library/react';
+import { Topbar } from './Topbar';
+import { useAppStore } from '../../state/useAppStore';
+import { useSpecStore } from '../../state/useSpecStore';
+
+const initialAppState = useAppStore.getState();
+const initialSpecState = useSpecStore.getState();
+
+beforeEach(() => {
+  useAppStore.setState(initialAppState, true);
+  useSpecStore.setState(initialSpecState, true);
+});
+
+describe('Topbar — project name display', () => {
+  it('shows nothing for the project when none is active', () => {
+    render(<Topbar />);
+    expect(screen.queryByText('Untitled API')).not.toBeInTheDocument();
+  });
+
+  it('shows the confirmed project name, not the OpenAPI document title', () => {
+    useSpecStore.getState().loadSampleProject();
+    useAppStore.getState().startProject('Untitled API');
+    useAppStore.getState().confirmProjectName('test');
+    // apiTitle (the OpenAPI document's own info.title) stays at its default here — the title
+    // bar must reflect currentProjectName instead, matching what the user actually typed.
+    expect(useAppStore.getState().apiTitle).toBe('Untitled API');
+
+    render(<Topbar />);
+
+    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.queryByText('Untitled API')).not.toBeInTheDocument();
+  });
+
+  it('updates immediately if the project is renamed via Project Settings', () => {
+    useSpecStore.getState().loadSampleProject();
+    useAppStore.getState().startProject('Untitled API');
+    useAppStore.getState().confirmProjectName('test');
+    render(<Topbar />);
+    expect(screen.getByText('test')).toBeInTheDocument();
+
+    act(() => {
+      useAppStore.getState().setProjectName('Renamed Project');
+    });
+
+    expect(screen.getByText('Renamed Project')).toBeInTheDocument();
+    expect(screen.queryByText('test')).not.toBeInTheDocument();
+  });
+});

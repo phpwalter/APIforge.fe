@@ -43,38 +43,13 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
-.projectPill {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 8px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 600;
+.projectName {
+  font-size: 13px;
+  font-weight: 700;
   color: var(--text);
-}
-
-.projectPillDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--warn);
-  flex: none;
-}
-
-.projectPillLabel {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.projectPillChevron {
-  display: flex;
-  color: var(--text-faint);
 }
 
 .versionGroup {
@@ -186,11 +161,7 @@
     display: none;
   }
 
-  .projectPill {
-    min-width: 0;
-  }
-
-  .projectPillLabel {
+  .projectName {
     max-width: 96px;
   }
 

@@ -37,7 +37,13 @@ export function AppShell() {
   const projectFromVersionControlOpen = useAppStore((s) => s.projectFromVersionControlOpen);
   const unsavedChangesPromptOpen = useAppStore((s) => s.unsavedChangesPromptOpen);
   const loadProjectOpen = useAppStore((s) => s.loadProjectOpen);
+  const currentProjectName = useAppStore((s) => s.currentProjectName);
   const hasDocument = useSpecStore((s) => s.hasDocument);
+  // A brand-new/imported project already has real content (spec store, id) the moment its
+  // source action runs, but isn't shown here until it's actually named — see
+  // src/components/Project/ProjectNameModal.tsx. Until then this stays on the empty state, with
+  // the naming prompt as the only thing visible on top of it.
+  const hasNamedProject = hasDocument && currentProjectName !== null;
 
   useEffect(() => {
     initProjectAutosave();
@@ -48,7 +54,7 @@ export function AppShell() {
       <Topbar />
       <div className={shellStyles.body}>
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
-          {hasDocument ? (
+          {hasNamedProject ? (
             <>
               <CanvasHeader />
               {canvasTab === 'design' && <DesignCanvas />}
