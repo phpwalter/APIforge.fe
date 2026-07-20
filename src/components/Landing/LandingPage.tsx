@@ -43,9 +43,9 @@ export function LandingPage() {
           </div>
           <h1 className={styles.heroTitle}>APIforge 2.0 Compiler</h1>
           <p className={styles.heroSubtitle}>
-            Design APIs by modeling customer actions, data intent, and parameter arguments. The
-            compiler automatically projects transport details, REST paths, parameter locations,
-            and live diagnostic telemetry.
+            Design REST APIs visually — pick HTTP methods, define paths and parameters, and
+            model reusable schemas. The compiler turns your design into a clean, ready-to-export
+            OpenAPI 3.1 document, with a live preview and diagnostics as you go.
           </p>
 
           <div className={styles.cards}>
@@ -54,10 +54,11 @@ export function LandingPage() {
                 <span className={styles.cardIcon}>
                   <Layers size={14} />
                 </span>
-                1. Capability Model
+                1. Visual Endpoint Editor
               </p>
               <p className={styles.cardDesc}>
-                Define resources and business actions without writing transport routes.
+                Pick a method, define the path, and configure parameters, headers, and responses
+                — no YAML required.
               </p>
             </div>
             <div className={styles.card}>
@@ -68,12 +69,12 @@ export function LandingPage() {
                 2. Compiled REST
               </p>
               <p className={styles.cardDesc}>
-                Watch the compiler map parameters to paths, query strings, and body structures.
+                Watch your design compile into a live, ready-to-export OpenAPI document.
               </p>
             </div>
           </div>
 
-          <p className={styles.gateNote}>Please sign in to access your projects and capabilities</p>
+          <p className={styles.gateNote}>Please sign in to access your projects</p>
         </div>
 
         <footer className={styles.footer}>
