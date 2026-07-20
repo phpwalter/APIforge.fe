@@ -45,7 +45,7 @@ export function Topbar() {
 
       <button type="button" className={styles.projectPill} title="Project settings" onClick={openSettings}>
         <span className={styles.projectPillDot} />
-        <span>{apiTitle}</span>
+        <span className={styles.projectPillLabel}>{apiTitle}</span>
         <span className={styles.projectPillChevron}>
           <ChevronDown size={12} />
         </span>

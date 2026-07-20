@@ -66,6 +66,12 @@
   flex: none;
 }
 
+.projectPillLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .projectPillChevron {
   display: flex;
   color: var(--text-faint);
@@ -117,6 +123,10 @@
   background: var(--text-faint);
 }
 
+.saveBadgeLabel {
+  white-space: nowrap;
+}
+
 .iconBtn {
   width: 32px;
   height: 32px;
@@ -156,6 +166,46 @@
 .menuAnchorTight {
   composes: menuAnchor;
   margin-left: 2px;
+}
+
+/* Narrow viewports: the header is a single non-wrapping row, so trim it down to what still fits
+   rather than letting later items get clipped off-screen — drop decorative/duplicate info first
+   (brand wordmark, version pills, save-state text), then tighten spacing. */
+@media (max-width: 640px) {
+  .header {
+    gap: 6px;
+    padding: 0 8px;
+  }
+
+  .brandName,
+  .pill {
+    display: none;
+  }
+
+  .versionGroup {
+    display: none;
+  }
+
+  .projectPill {
+    min-width: 0;
+  }
+
+  .projectPillLabel {
+    max-width: 96px;
+  }
+
+  .saveBadgeLabel {
+    display: none;
+  }
+
+  .iconBtn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .divider {
+    display: none;
+  }
 }
 
 .menuScrim {

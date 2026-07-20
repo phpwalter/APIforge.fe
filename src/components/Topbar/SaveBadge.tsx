@@ -24,7 +24,7 @@ export function SaveBadge() {
   return (
     <span className={styles.saveBadge} title={title}>
       <span className={styles.saveBadgeDot} data-state={saveState} />
-      {label}
+      <span className={styles.saveBadgeLabel}>{label}</span>
     </span>
   );
 }
