@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, LoaderCircle } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
+import { useSpecStore } from '../../state/useSpecStore';
 import { formatRelativeTime } from '../../lib/projects';
 import { listServerProjects, type ServerProjectSummary } from '../../lib/api/projects';
 import { openServerProjectIntoSettings } from '../../lib/loadServerProject';
-import { importOpenApiFileIntoSettings, IMPORT_ACCEPT } from '../../lib/importHandler';
+import { importOpenApiFile, IMPORT_ACCEPT } from '../../lib/importHandler';
 import styles from './LoadProjectDialog.module.css';
 
 type AsyncState<T> = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: T };
@@ -14,8 +15,10 @@ type AsyncState<T> = { status: 'loading' } | { status: 'error'; message: string 
  * /projects, proposed in docs/project-server-storage-api-proposal.md — not built yet, so this
  * shows an error state until the backend catches up), plus entry points into the other two ways
  * to bring in a project: importing a file from disk, or browsing a connected Version Control
- * repo. Picking a project or importing a file both drop straight into Project Settings ::
- * General with the loaded data; Version Control keeps its own existing flow (naming popup) unchanged.
+ * repo. Picking a project drops straight into Project Settings :: General with the loaded data.
+ * Importing a file behaves exactly like the empty-state's Import link — named directly from the
+ * document's own title, no popup — this dialog just closes itself once that succeeds. Version
+ * Control keeps its own existing flow (naming popup) unchanged.
  */
 export function LoadProjectDialog() {
   const closeDialog = useAppStore((s) => s.closeLoadProjectDialog);
@@ -93,7 +96,10 @@ export function LoadProjectDialog() {
             onChange={(e) => {
               const file = e.target.files?.[0];
               e.target.value = '';
-              if (file) void importOpenApiFileIntoSettings(file);
+              if (!file) return;
+              void importOpenApiFile(file).then(() => {
+                if (useSpecStore.getState().importStatus?.type === 'success') closeDialog();
+              });
             }}
           />
           <button type="button" className={styles.btnSecondary} onClick={() => fileInputRef.current?.click()}>

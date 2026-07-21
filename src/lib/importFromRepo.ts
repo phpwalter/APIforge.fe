@@ -19,7 +19,7 @@ export function importFromGithubFile(file: GithubFileContent): void {
       version: parsed.version,
       openapiVersion: parsed.openapiVersion,
     });
-    useAppStore.getState().startProject(parsed.title);
+    useAppStore.getState().startProjectNamed(parsed.title);
     setImportStatus({ type: 'success', message: `Imported ${parsed.title} from ${file.path}.` });
   } catch (err) {
     const message =

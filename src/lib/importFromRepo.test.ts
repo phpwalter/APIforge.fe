@@ -29,7 +29,7 @@ function base64File(overrides: Partial<GithubFileContent> = {}): GithubFileConte
 }
 
 describe('importFromGithubFile', () => {
-  it('decodes base64 content, imports it, and starts a named project', () => {
+  it('decodes base64 content, imports it, and names the project directly, no naming popup', () => {
     importFromGithubFile(base64File());
 
     const spec = useSpecStore.getState();
@@ -38,8 +38,8 @@ describe('importFromGithubFile', () => {
 
     const app = useAppStore.getState();
     expect(app.apiTitle).toBe('Repo API');
-    expect(app.projectNamePromptOpen).toBe(true);
-    expect(app.projectNamePromptDefault).toBe('Repo API');
+    expect(app.currentProjectName).toBe('Repo API');
+    expect(app.projectNamePromptOpen).toBe(false);
   });
 
   it('sets an error import status and rethrows when the file content fails to parse', () => {

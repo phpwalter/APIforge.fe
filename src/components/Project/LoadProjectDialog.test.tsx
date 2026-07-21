@@ -106,7 +106,7 @@ describe('LoadProjectDialog', () => {
     expect(useAppStore.getState().projectSettingsOpen).toBe(true);
   });
 
-  it('Import OpenAPI Document loads the file into Project Settings and closes this dialog', async () => {
+  it('Import OpenAPI Document behaves exactly like the empty-state Import link, and closes this dialog', async () => {
     const user = userEvent.setup();
     vi.mocked(listServerProjects).mockResolvedValue([]);
     useAppStore.setState({ loadProjectOpen: true });
@@ -127,11 +127,27 @@ describe('LoadProjectDialog', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, file);
 
+    await waitFor(() => expect(useAppStore.getState().loadProjectOpen).toBe(false));
     const app = useAppStore.getState();
     expect(useSpecStore.getState().hasDocument).toBe(true);
     expect(app.currentProjectName).toBe('Imported API');
-    expect(app.projectSettingsOpen).toBe(true);
-    expect(app.loadProjectOpen).toBe(false);
+    // No detour through Project Settings — lands directly in the editor, same as the splash Import link.
+    expect(app.projectSettingsOpen).toBe(false);
+  });
+
+  it('Import OpenAPI Document leaves the dialog open when the file fails to parse', async () => {
+    const user = userEvent.setup();
+    vi.mocked(listServerProjects).mockResolvedValue([]);
+    useAppStore.setState({ loadProjectOpen: true });
+    render(<LoadProjectDialog />);
+    await waitFor(() => expect(screen.getByText(/No projects saved to the server yet/)).toBeInTheDocument());
+
+    const file = new File([JSON.stringify({ not: 'an openapi doc' })], 'spec.json', { type: 'application/json' });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, file);
+
+    await waitFor(() => expect(useSpecStore.getState().importStatus?.type).toBe('error'));
+    expect(useAppStore.getState().loadProjectOpen).toBe(true);
   });
 
   it('Load from Version Control closes this dialog and opens the version control modal', async () => {

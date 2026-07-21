@@ -180,6 +180,10 @@ interface AppState {
   projectNamePromptOpen: boolean;
   projectNamePromptDefault: string;
   startProject: (defaultName: string) => void;
+  /** Import (from disk or Version Control) — the document's own title is already known, so this
+   * skips the naming popup entirely and locks the project name in immediately, same trim/fallback
+   * rule as confirmProjectName(). */
+  startProjectNamed: (name: string) => void;
   confirmProjectName: (name: string) => void;
   /** Cancel / Escape / backdrop on the naming prompt — discards the project that startProject()
    * just created (or that Import/Load Sample/Version Control just populated), unlike
@@ -193,10 +197,6 @@ interface AppState {
   /** The Load Project dialog's "Open" action — same as openExistingProject, but also drops
    * straight into Project Settings :: General so the loaded data is immediately visible. */
   openExistingProjectIntoSettings: (id: string, name: string) => void;
-  /** The Load Project dialog's "Import OpenAPI Document" action — same as startProject, but
-   * skips the small naming popup and opens Project Settings :: General instead (its Project
-   * Name field already covers naming, prefilled with the document's own title). */
-  startProjectIntoSettings: (defaultName: string) => void;
   /** Topbar :: More actions :: Close Project — also clears the project id so autosave stops. */
   closeProject: () => void;
   /** True from startProject() (New Project / Import / Load from Version Control) until the
@@ -464,6 +464,14 @@ export const useAppStore = create<AppState>()(
       moreMenuOpen: false,
       isNewProject: true,
     }),
+  startProjectNamed: (name) =>
+    set({
+      currentProjectId: generateProjectId(),
+      currentProjectName: name.trim() || 'Untitled Project',
+      projectNamePromptOpen: false,
+      moreMenuOpen: false,
+      isNewProject: true,
+    }),
   confirmProjectName: (name) =>
     set({ currentProjectName: name.trim() || 'Untitled Project', projectNamePromptOpen: false }),
   cancelProjectName: () => {
@@ -484,16 +492,6 @@ export const useAppStore = create<AppState>()(
       currentProjectName: name,
       moreMenuOpen: false,
       isNewProject: false,
-      loadProjectOpen: false,
-      projectSettingsOpen: true,
-    }),
-  startProjectIntoSettings: (defaultName) =>
-    set({
-      currentProjectId: generateProjectId(),
-      currentProjectName: defaultName,
-      projectNamePromptOpen: false,
-      moreMenuOpen: false,
-      isNewProject: true,
       loadProjectOpen: false,
       projectSettingsOpen: true,
     }),

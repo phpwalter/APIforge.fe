@@ -1,4 +1,4 @@
-import { importOpenApiFile, importOpenApiFileIntoSettings } from './importHandler';
+import { importOpenApiFile } from './importHandler';
 import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
 
@@ -31,13 +31,14 @@ describe('importOpenApiFile', () => {
     expect(useAppStore.getState().apiVersion).toBe('1.2.3');
   });
 
-  it('starts a new named project, defaulting the name to the document title', async () => {
+  it('starts a new project named directly from the document title, no naming popup', async () => {
     await importOpenApiFile(fileFor(VALID_DOC));
 
     const app = useAppStore.getState();
     expect(app.currentProjectId).not.toBeNull();
-    expect(app.projectNamePromptOpen).toBe(true);
-    expect(app.projectNamePromptDefault).toBe('Imported API');
+    expect(app.currentProjectName).toBe('Imported API');
+    expect(app.projectNamePromptOpen).toBe(false);
+    expect(app.isNewProject).toBe(true);
   });
 
   it('sets an error import status and does not start a project when the file fails to parse', async () => {
@@ -46,27 +47,5 @@ describe('importOpenApiFile', () => {
     expect(useSpecStore.getState().importStatus?.type).toBe('error');
     expect(useSpecStore.getState().hasDocument).toBe(false);
     expect(useAppStore.getState().currentProjectId).toBeNull();
-  });
-});
-
-describe('importOpenApiFileIntoSettings', () => {
-  it('imports the file and drops straight into Project Settings, skipping the naming popup', async () => {
-    await importOpenApiFileIntoSettings(fileFor(VALID_DOC));
-
-    const app = useAppStore.getState();
-    expect(useSpecStore.getState().hasDocument).toBe(true);
-    expect(app.currentProjectId).not.toBeNull();
-    expect(app.currentProjectName).toBe('Imported API');
-    expect(app.projectNamePromptOpen).toBe(false);
-    expect(app.projectSettingsOpen).toBe(true);
-    expect(app.isNewProject).toBe(true);
-  });
-
-  it('sets an error import status and does not start a project when the file fails to parse', async () => {
-    await importOpenApiFileIntoSettings(fileFor({ not: 'an openapi doc' }));
-
-    expect(useSpecStore.getState().importStatus?.type).toBe('error');
-    expect(useAppStore.getState().currentProjectId).toBeNull();
-    expect(useAppStore.getState().projectSettingsOpen).toBe(false);
   });
 });

@@ -362,6 +362,23 @@ describe('useAppStore', () => {
     expect(first).not.toBe(second);
   });
 
+  it('startProjectNamed generates a fresh id and names the project directly, no naming popup', () => {
+    useAppStore.setState({ moreMenuOpen: true });
+    useAppStore.getState().startProjectNamed('Imported API');
+
+    const s = useAppStore.getState();
+    expect(s.currentProjectId).not.toBeNull();
+    expect(s.currentProjectName).toBe('Imported API');
+    expect(s.projectNamePromptOpen).toBe(false);
+    expect(s.isNewProject).toBe(true);
+    expect(s.moreMenuOpen).toBe(false);
+  });
+
+  it('startProjectNamed falls back to "Untitled Project" for a blank name', () => {
+    useAppStore.getState().startProjectNamed('   ');
+    expect(useAppStore.getState().currentProjectName).toBe('Untitled Project');
+  });
+
   it('confirmProjectName locks in the name and closes the prompt', () => {
     useAppStore.getState().startProject('Untitled API');
     useAppStore.getState().confirmProjectName('My API');
@@ -461,19 +478,6 @@ describe('useAppStore', () => {
     expect(s.currentProjectId).toBe('ws-1');
     expect(s.currentProjectName).toBe('Saved API');
     expect(s.isNewProject).toBe(false);
-    expect(s.loadProjectOpen).toBe(false);
-    expect(s.projectSettingsOpen).toBe(true);
-  });
-
-  it('startProjectIntoSettings starts a fresh project, skips the naming popup, closes Load Project, and opens Project Settings', () => {
-    useAppStore.setState({ loadProjectOpen: true });
-    useAppStore.getState().startProjectIntoSettings('Imported API');
-
-    const s = useAppStore.getState();
-    expect(s.currentProjectId).not.toBeNull();
-    expect(s.currentProjectName).toBe('Imported API');
-    expect(s.projectNamePromptOpen).toBe(false);
-    expect(s.isNewProject).toBe(true);
     expect(s.loadProjectOpen).toBe(false);
     expect(s.projectSettingsOpen).toBe(true);
   });

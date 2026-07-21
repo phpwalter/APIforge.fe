@@ -4,7 +4,12 @@ import { parseOpenApiDocument, OpenApiImportError } from './openapiImport';
 
 export const IMPORT_ACCEPT = '.yaml,.yml,.json,.xml,application/json,text/yaml,application/xml,text/xml';
 
-async function doImport(file: File, startProject: (defaultTitle: string) => void): Promise<void> {
+/**
+ * Shared by every "import an OpenAPI file" entry point (empty-state's Import link, Load Project
+ * dialog's Import button) — establishes a fresh project named directly from the document's own
+ * title, no naming popup, since the title is already known.
+ */
+export async function importOpenApiFile(file: File): Promise<void> {
   const { setImportStatus, importSpec } = useSpecStore.getState();
   try {
     const text = await file.text();
@@ -16,7 +21,7 @@ async function doImport(file: File, startProject: (defaultTitle: string) => void
       version: parsed.version,
       openapiVersion: parsed.openapiVersion,
     });
-    startProject(parsed.title);
+    useAppStore.getState().startProjectNamed(parsed.title);
 
     setImportStatus({
       type: 'success',
@@ -29,22 +34,4 @@ async function doImport(file: File, startProject: (defaultTitle: string) => void
         : `Unexpected error reading "${file.name}": ${err instanceof Error ? err.message : String(err)}`;
     setImportStatus({ type: 'error', message });
   }
-}
-
-/**
- * Establishes a fresh project for this import — see Settings :: Plugins-adjacent Recent
- * Projects / autosave (src/lib/projectAutosave.ts). Defaults the name prompt to the
- * document's own title, editable before it's saved.
- */
-export async function importOpenApiFile(file: File): Promise<void> {
-  return doImport(file, (title) => useAppStore.getState().startProject(title));
-}
-
-/**
- * Load Project dialog's "Import OpenAPI Document" button — same import pipeline, but drops
- * straight into Project Settings :: General (prefilled with the document's own title) instead
- * of the small naming popup.
- */
-export async function importOpenApiFileIntoSettings(file: File): Promise<void> {
-  return doImport(file, (title) => useAppStore.getState().startProjectIntoSettings(title));
 }
