@@ -8,6 +8,7 @@ import {
 } from '../../lib/api/securityTypes';
 import { ApiError } from '../../lib/api/client';
 import { useSpecStore } from '../../state/useSpecStore';
+import type { ProjectSettingsDraft } from '../Project/projectSettingsDraft';
 import styles from './SecuritySettingsPanel.module.css';
 
 type FetchState =
@@ -15,15 +16,17 @@ type FetchState =
   | { status: 'error'; message: string }
   | { status: 'ready'; types: SecurityTypeDto[] };
 
-export function SecuritySettingsPanel() {
+interface SecuritySettingsPanelProps {
+  draft: ProjectSettingsDraft;
+  onChange: (patch: Partial<ProjectSettingsDraft>) => void;
+}
+
+export function SecuritySettingsPanel({ draft, onChange }: SecuritySettingsPanelProps) {
   const [state, setState] = useState<FetchState>({ status: 'loading' });
 
+  // "N endpoints use this" is real, current data — not something drafted, unlike enabled
+  // schemes/scopes/legacy-removal (which only take effect on OK/Apply, see projectSettingsDraft.ts).
   const endpoints = useSpecStore((s) => s.endpoints);
-  const enabledSecuritySchemes = useSpecStore((s) => s.enabledSecuritySchemes);
-  const setSecuritySchemeEnabled = useSpecStore((s) => s.setSecuritySchemeEnabled);
-  const securityScopes = useSpecStore((s) => s.securityScopes);
-  const setSecurityScopes = useSpecStore((s) => s.setSecurityScopes);
-  const removeSecurityFromAllEndpoints = useSpecStore((s) => s.removeSecurityFromAllEndpoints);
 
   const load = () => {
     setState({ status: 'loading' });
@@ -41,12 +44,13 @@ export function SecuritySettingsPanel() {
   useEffect(() => {
     if (state.status !== 'ready') return;
     const usedNames = new Set(endpoints.flatMap((e) => e.security));
-    state.types.forEach((t) => {
-      if (usedNames.has(t.openapi_name) && !enabledSecuritySchemes.includes(t.openapi_name)) {
-        setSecuritySchemeEnabled(t.openapi_name, true);
-      }
-    });
-    // Reconcile only when the fetch completes, not on every store change — otherwise unchecking
+    const toEnable = state.types
+      .map((t) => t.openapi_name)
+      .filter((name) => usedNames.has(name) && !draft.enabledSecuritySchemes.includes(name));
+    if (toEnable.length > 0) {
+      onChange({ enabledSecuritySchemes: [...draft.enabledSecuritySchemes, ...toEnable] });
+    }
+    // Reconcile only when the fetch completes, not on every draft change — otherwise unchecking
     // a scheme the user no longer wants would immediately be re-enabled by this same effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);
@@ -69,10 +73,10 @@ export function SecuritySettingsPanel() {
   const { types } = state;
   const knownOpenapiNames = new Set(types.map((t) => t.openapi_name));
 
-  // Scheme names already assigned to endpoints (e.g. via the method editor's
-  // free-text "+ Add auth") that aren't in the fetched catalog.
+  // Scheme names already assigned to endpoints (e.g. via the method editor's free-text "+ Add
+  // auth") that aren't in the fetched catalog, and haven't already been removed in this draft.
   const legacyNames = [...new Set(endpoints.flatMap((e) => e.security))].filter(
-    (name) => !knownOpenapiNames.has(name),
+    (name) => !knownOpenapiNames.has(name) && !draft.removedLegacySchemes.includes(name),
   );
 
   return (
@@ -88,14 +92,20 @@ export function SecuritySettingsPanel() {
       <div>
         <div className={styles.grid}>
           {types.map((t) => {
-            const isChecked = enabledSecuritySchemes.includes(t.openapi_name);
+            const isChecked = draft.enabledSecuritySchemes.includes(t.openapi_name);
             const hasScopes = securityTypeHasScopes(t);
             return (
               <button
                 key={t.id}
                 type="button"
                 className={styles.card}
-                onClick={() => setSecuritySchemeEnabled(t.openapi_name, !isChecked)}
+                onClick={() =>
+                  onChange({
+                    enabledSecuritySchemes: isChecked
+                      ? draft.enabledSecuritySchemes.filter((n) => n !== t.openapi_name)
+                      : [...draft.enabledSecuritySchemes, t.openapi_name],
+                  })
+                }
               >
                 <span className={styles.checkbox} data-checked={isChecked}>
                   {isChecked && <Check size={13} />}
@@ -108,9 +118,13 @@ export function SecuritySettingsPanel() {
                       <div className={styles.scopesLabel}>Scopes</div>
                       <input
                         className={styles.scopesInput}
-                        value={securityScopes[t.openapi_name] ?? scopesFromFlows(t.flows)}
+                        value={draft.securityScopes[t.openapi_name] ?? scopesFromFlows(t.flows)}
                         placeholder="Comma-separated, e.g. read:charges, write:charges"
-                        onChange={(e) => setSecurityScopes(t.openapi_name, e.target.value)}
+                        onChange={(e) =>
+                          onChange({
+                            securityScopes: { ...draft.securityScopes, [t.openapi_name]: e.target.value },
+                          })
+                        }
                       />
                     </div>
                   )}
@@ -128,7 +142,7 @@ export function SecuritySettingsPanel() {
                 type="button"
                 className={styles.card}
                 title="Uncheck to remove this scheme from every endpoint"
-                onClick={() => removeSecurityFromAllEndpoints(name)}
+                onClick={() => onChange({ removedLegacySchemes: [...draft.removedLegacySchemes, name] })}
               >
                 <span className={styles.checkbox} data-checked="true">
                   <Check size={13} />

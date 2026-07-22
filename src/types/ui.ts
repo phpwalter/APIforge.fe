@@ -26,6 +26,8 @@ export interface UserProfile {
   /** Raw backend timestamp strings (created_at / last_login_at) — formatted for display where shown. */
   memberSince?: string;
   lastLoginAt?: string;
+  useGravatar?: boolean;
+  gravatarEmail?: string;
 }
 
 /**

@@ -1,16 +1,24 @@
 import { useState, type ComponentType } from 'react';
 import { X, SlidersVertical, Route, ShieldCog } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
+import { useSpecStore } from '../../state/useSpecStore';
+import { saveNow } from '../../lib/projectAutosave';
 import { GeneralSettingsPanel } from '../SettingsModal/GeneralSettingsPanel';
 import { ServersSettingsPanel } from '../SettingsModal/ServersSettingsPanel';
 import { SecuritySettingsPanel } from '../SettingsModal/SecuritySettingsPanel';
+import { snapshotFromStore, type ProjectSettingsDraft } from './projectSettingsDraft';
 import styles from '../SettingsModal/SettingsModal.module.css';
+
+interface ProjectPanelProps {
+  draft: ProjectSettingsDraft;
+  onChange: (patch: Partial<ProjectSettingsDraft>) => void;
+}
 
 interface ProjectCategory {
   key: string;
   label: string;
   icon: ComponentType<{ size?: number }>;
-  panel: ComponentType;
+  panel: ComponentType<ProjectPanelProps>;
 }
 
 const CATEGORIES: ProjectCategory[] = [
@@ -23,14 +31,57 @@ const CATEGORIES: ProjectCategory[] = [
  * Per-project settings (General / Servers & External Docs / Security Schemes) — split out from
  * the app-level Settings modal since these describe the document you're editing, not the app.
  * Opened from Topbar :: More actions :: Project Settings.
+ *
+ * Edits across all three tabs are held as a local draft, not written live — OK and Apply commit
+ * the draft to the real stores. Apply stays disabled until the draft actually differs from the
+ * baseline it was opened/last-applied with, since there'd be nothing new to save; OK instead
+ * stays enabled for the rest of this open once any edit has been made, even right after an Apply,
+ * since it always has a dialog to dismiss. Cancel just closes, discarding the draft untouched.
  */
 export function ProjectSettingsModal() {
   const closeProjectSettings = useAppStore((s) => s.closeProjectSettings);
-  const isNewProject = useAppStore((s) => s.isNewProject);
   const [activeKey, setActiveKey] = useState(CATEGORIES[0].key);
+  const [draft, setDraft] = useState<ProjectSettingsDraft>(snapshotFromStore);
+  const [baseline, setBaseline] = useState<ProjectSettingsDraft>(snapshotFromStore);
+  const [everEdited, setEverEdited] = useState(false);
 
   const active = CATEGORIES.find((c) => c.key === activeKey) ?? CATEGORIES[0];
   const Panel = active.panel;
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+
+  const handleChange = (patch: Partial<ProjectSettingsDraft>) => {
+    setEverEdited(true);
+    setDraft((d) => ({ ...d, ...patch }));
+  };
+
+  const commit = () => {
+    useAppStore.getState().applyProjectSettingsDraft({
+      currentProjectName: draft.currentProjectName,
+      apiOpenapiVersion: draft.apiOpenapiVersion,
+      apiTitle: draft.apiTitle,
+      apiVersion: draft.apiVersion,
+      apiDescription: draft.apiDescription,
+      apiTermsOfService: draft.apiTermsOfService,
+      apiContact: draft.apiContact,
+      apiLicense: draft.apiLicense,
+      apiServers: draft.apiServers,
+      apiExternalDocs: draft.apiExternalDocs,
+    });
+    useSpecStore
+      .getState()
+      .applySecurityDraft(draft.enabledSecuritySchemes, draft.securityScopes, draft.removedLegacySchemes);
+    saveNow();
+  };
+
+  const handleOk = () => {
+    commit();
+    closeProjectSettings();
+  };
+
+  const handleApply = () => {
+    commit();
+    setBaseline(draft);
+  };
 
   return (
     <div className={styles.scrim} onClick={closeProjectSettings}>
@@ -72,29 +123,27 @@ export function ProjectSettingsModal() {
               </button>
             </div>
             <div className={styles.paneBody}>
-              <Panel />
+              <Panel draft={draft} onChange={handleChange} />
             </div>
           </div>
         </div>
 
         <div className={styles.footer}>
           <span className={styles.footerSpacer} />
-          {isNewProject ? (
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnSave}`}
-              disabled
-              title="Save to server — coming soon"
-            >
-              Save
-            </button>
-          ) : (
-            <button type="button" className={`${styles.btn} ${styles.btnOk}`} onClick={closeProjectSettings}>
-              OK
-            </button>
-          )}
+          <button type="button" className={`${styles.btn} ${styles.btnOk}`} disabled={!everEdited} onClick={handleOk}>
+            OK
+          </button>
           <button type="button" className={`${styles.btn} ${styles.btnCancel}`} onClick={closeProjectSettings}>
             Cancel
+          </button>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnApply}`}
+            disabled={!isDirty}
+            title="Save this project locally right now, without closing"
+            onClick={handleApply}
+          >
+            Apply
           </button>
         </div>
       </div>

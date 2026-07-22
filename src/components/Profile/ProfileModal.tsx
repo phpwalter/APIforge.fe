@@ -9,6 +9,7 @@ import { getAuthToken } from '../../lib/api/authToken';
 import { GITHUB_PLUGIN } from '../../lib/plugins/github';
 import { GITLAB_PLUGIN } from '../../lib/plugins/gitlab';
 import { BITBUCKET_PLUGIN } from '../../lib/plugins/bitbucket';
+import { gravatarUrl } from '../../lib/gravatar';
 import styles from './ProfileModal.module.css';
 
 // Reuses each plugin's own lazy loader (see types.ts for why settingsPanel is a loader, not a
@@ -38,6 +39,9 @@ export function ProfileModal() {
 
   const [name, setName] = useState(userProfile.name);
   const [bio, setBio] = useState(userProfile.bio ?? '');
+  const [useGravatar, setUseGravatar] = useState(userProfile.useGravatar ?? false);
+  const [gravatarEmail, setGravatarEmail] = useState(userProfile.gravatarEmail ?? '');
+  const [avatarUrl, setAvatarUrl] = useState(userProfile.avatarUrl);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,24 +56,61 @@ export function ProfileModal() {
     return () => window.removeEventListener('keydown', onKey);
   }, [closeProfile]);
 
+  const handleGravatarActivate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setUseGravatar(isChecked);
+    if (isChecked) {
+      const email = userProfile.email;
+      setGravatarEmail(email);
+      setAvatarUrl(gravatarUrl(email));
+    } else {
+      setAvatarUrl(undefined);
+    }
+  };
+
+  const handleGravatarEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      updateUserProfile({ gravatarEmail: gravatarEmail });
+      setAvatarUrl(gravatarUrl(gravatarEmail));
+    }
+  };
+
   const save = async () => {
     setSaving(true);
     setError(null);
     const trimmedName = name.trim() || userProfile.name;
     const trimmedBio = bio.trim() || undefined;
+    const trimmedGravatarEmail = gravatarEmail.trim() || undefined;
 
     // No real session (demo sign-in has no bearer token) — nothing to persist server-side, just
     // keep the edit local, same as everything else in demo mode.
     if (!getAuthToken()) {
-      updateUserProfile({ name: trimmedName, bio: trimmedBio });
+      updateUserProfile({
+        name: trimmedName,
+        bio: trimmedBio,
+        useGravatar,
+        gravatarEmail: trimmedGravatarEmail,
+        avatarUrl: useGravatar ? gravatarUrl(trimmedGravatarEmail || userProfile.email) : undefined,
+      });
       setSaving(false);
       closeProfile();
       return;
     }
 
     try {
-      const me = await updateMe({ display_name: trimmedName, bio: trimmedBio });
-      updateUserProfile({ name: me.display_name ?? trimmedName, bio: me.bio ?? trimmedBio });
+      const me = await updateMe({
+        display_name: trimmedName,
+        bio: trimmedBio,
+        use_gravatar: useGravatar,
+        gravatar_email: trimmedGravatarEmail,
+      });
+      updateUserProfile({
+        name: me.display_name ?? trimmedName,
+        bio: me.bio ?? trimmedBio,
+        useGravatar: me.use_gravatar,
+        gravatarEmail: me.gravatar_email,
+        avatarUrl: me.avatar_url,
+      });
       closeProfile();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save to your account — try again.');
@@ -91,7 +132,7 @@ export function ProfileModal() {
         <div className={styles.body}>
           <div className={styles.identityRow}>
             <span className={styles.avatarLg}>
-              <AvatarContent profile={userProfile} />
+              <AvatarContent profile={{ ...userProfile, avatarUrl }} />
             </span>
             <div className={styles.identityText}>
               <div className={styles.email}>{userProfile.email}</div>
@@ -121,6 +162,28 @@ export function ProfileModal() {
               onChange={(e) => setBio(e.target.value)}
               placeholder="A little about you…"
             />
+          </div>
+
+          <div className={styles.separator} />
+
+          <div className={styles.field}>
+            <div className={styles.fieldLabel}>Use Gravatar</div>
+            <div className={styles.gravatarRow}>
+              <input
+                type="checkbox"
+                className={styles.checkbox}
+                checked={useGravatar}
+                onChange={handleGravatarActivate}
+              />
+              <input
+                className={styles.textInput}
+                value={gravatarEmail}
+                onChange={(e) => setGravatarEmail(e.target.value)}
+                onKeyDown={handleGravatarEmailKeyDown}
+                placeholder="Gravatar email address"
+                disabled={!useGravatar}
+              />
+            </div>
           </div>
 
           {error && <div className={styles.errorMsg}>{error}</div>}

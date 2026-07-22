@@ -1,0 +1,1590 @@
+openapi: 3.0.3
+info:
+  title: ApiForge APIx
+  version: 1.0.0
+paths:
+  /:
+    get:
+      responses:
+        '200':
+          description: OK
+      summary: Service landing payload
+      tags:
+        - Meta
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accepttring
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+  /health:
+    get:
+      responses:
+        '204':
+          description: No Content
+        '503':
+          description: Service Unavailable
+      summary: Health probe
+      tags:
+        - Meta
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /auth/{provider}:
+    get:
+      responses:
+        '302':
+          description: Response
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                example: https://accounts.google.com/o/oauth2/v2/auth?client_id=1050683999172-5mf8utbh803f63jga6196do742s9v4aj.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=apiforge_state&access_type=online
+            Content-Type:
+              required: true
+              schema:
+                type: string
+                example: text/html;charset=utf-8
+            X-API-Version:
+              required: true
+              schema:
+                type: string
+                example: v1
+      summary: Redirect to OAuth provider login
+      tags:
+        - Authentication
+      parameters:
+        - name: return_to
+          in: query
+          required: true
+          schema:
+            type: string
+            example: http%3A%2F%2Flocalhost%3A5173
+        - name: Upgrade-Insecure-Requests
+          in: header
+          required: true
+          schema:
+            type: string
+            example: '1'
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+            example: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+        - name: Referer
+          in: header
+          required: true
+          schema:
+            type: string
+            example: http://localhost:5175/
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+            example: gzip, deflate, br, zstd
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+            example: en-US,en;q=0.9
+        - name: Cookie
+          in: header
+          required: true
+          schema:
+            type: string
+            example: Phpstorm-1edb35b3=0606e2ee-ce15-44c4-b00b-b75cfde92094; Webstorm-14ab9a57=0d862a58-f939-4d35-9778-0f472d5c71a5; Webstorm-14ab9e16=df044e30-3fce-4845-be8f-a6591e49af1c
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+    post:
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+      summary: Sign in with OAuth provider
+      tags:
+        - Authentication
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+  /auth/google/callback:
+    get:
+      responses:
+        '302':
+          description: Found
+      summary: Google OAuth Callback
+      tags:
+        - Authentication
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: error
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /auth/github/callback:
+    get:
+      responses:
+        '302':
+          description: Found
+      summary: GitHub OAuth Callback
+      tags:
+        - Authentication
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /auth/{provider}/signout:
+    post:
+      responses:
+        '200':
+          description: OK
+      summary: Sign out from session
+      tags:
+        - Authentication
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /auth/{provider}/link:
+    post:
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+      summary: Link an OAuth identity to the active session
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+  /auth/{provider}/unlink:
+    post:
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+      summary: Unlink an OAuth identity from the active session
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /auth/me:
+    get:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+      summary: Current authenticated user
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+    patch:
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+      summary: Update authenticated user settings
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+  /users:
+    get:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+      summary: List all users
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /projects:
+    get:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+      summary: List all projects
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+    post:
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+      summary: Create a project
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /projects/{id}:
+    get:
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+      summary: Retrieve a project
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+    patch:
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+      summary: Update a project
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+      summary: Delete a project
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /projects/{projectId}/documents:
+    get:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+      summary: List project documents
+      tags:
+        - Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+    post:
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+      summary: Create project document
+      tags:
+        - Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /documents/{id}:
+    get:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+      summary: Retrieve a document
+      tags:
+        - Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+    patch:
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+      summary: Update a document
+      tags:
+        - Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /documents/{id}/validation:
+    get:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+      summary: Validate document
+      tags:
+        - Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /documents/{id}/derived-state:
+    get:
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+      summary: Retrieve derived state
+      tags:
+        - Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /headers/request:
+    get:
+      responses:
+        '200':
+          description: OK
+      summary: Retrieve request headers
+      tags:
+        - Components
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /headers/authentication:
+    get:
+      responses:
+        '200':
+          description: OK
+      summary: Retrieve authentication headers
+      tags:
+        - Components
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+  /securityTypes:
+    get:
+      responses:
+        '302':
+          description: Response
+          headers:
+            X-API-Version:
+              required: true
+              schema:
+                type: string
+                example: v1
+            Content-Type:
+              required: true
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSecurityScheme'
+      summary: Retrieve all security scheme types
+      tags:
+        - security
+      parameters:
+        - name: X-API-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: v1
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+            example: application/json
+        - name: Accept-Encoding
+          in: header
+          required: true
+          schema:
+            type: string
+            example: gzip, deflate, br, zstd
+        - name: Accept-Language
+          in: header
+          required: true
+          schema:
+            type: string
+            example: en-US,en;q=0.9
+        - name: Origin
+          in: header
+          required: true
+          schema:
+            type: string
+            example: http://localhost:5173
+        - name: Referer
+          in: header
+          required: true
+          schema:
+            type: string
+            example: http://localhost:5173
+  /auth:
+    get:
+      responses:
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleErrorEnvelope'
+      summary: dead endpoint. nothing here
+      operationId: getAuth
+      tags:
+        - Authentication
+components:
+  schemas:
+    User:
+      type: object
+      properties: {}
+    ServiceLanding:
+      type: object
+      properties:
+        service:
+          type: string
+        status:
+          type: string
+        current_version:
+          type: string
+        supported_versions:
+          type: array
+          items:
+            type: string
+        version_header:
+          type: string
+        endpoints:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        database:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+    AuthRequest:
+      type: object
+      properties:
+        credential:
+          type: string
+    OAuthRedirectEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+    UserUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        company:
+          type: string
+        bio:
+          type: string
+        preferences:
+          type: object
+    ApiHeader:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        example:
+          type: string
+        url:
+          type: string
+          format: uri
+    ApiSecurityScheme:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/Uuid'
+              security_scheme_type_id:
+                $ref: '#/components/schemas/Uuid'
+              slug:
+                type: string
+                example: cookie-auth
+              name:
+                type: string
+                example: Session Cookie Authentication
+              description:
+                type: string
+                example: Session or access token supplied as a cookie.
+              openapi_name:
+                type: string
+                example: cookieAuth
+              format:
+                type: string
+                nullable: true
+              example:
+                type: string
+                example: 'Cookie: access_token=<token>'
+              scheme:
+                type: string
+                nullable: true
+              bearer_format:
+                type: string
+                format: uri
+                nullable: true
+              location:
+                type: string
+                example: cookie
+                nullable: true
+              parameter_name:
+                type: string
+                example: access_token
+              openid_connect_url:
+                type: string
+                nullable: true
+              flows:
+                type: string
+                nullable: true
+              is_active:
+                type: object
+              metadata:
+                type: object
+              created_at:
+                $ref: '#/components/schemas/DateTime'
+              updated_at:
+                $ref: '#/components/schemas/DateTime'
+              deleted_at:
+                $ref: '#/components/schemas/DateTime'
+              test:
+                type: string
+    SimpleErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: string
+    UnauthorizedEnvelope:
+      type: object
+      properties:
+        error:
+          type: string
+    RouteNotFoundEnvelope:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        method:
+          type: string
+        path:
+          type: string
+        url:
+          type: string
+          format: uri
+        query:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        owner_user_id:
+          type: string
+          format: uuid
+        owner_type:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        visibility:
+          type: string
+        metadata:
+          type: object
+        last_opened_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        archived_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    ApiDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        document:
+          type: object
+        created_by:
+          type: string
+          format: uuid
+        updated_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+    ValidationResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        finding_count:
+          type: integer
+        findings:
+          type: array
+          items:
+            type: string
+    ValidationFinding:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+        target:
+          type: array
+          items:
+            type: string
+    DerivedDocumentState:
+      type: object
+      properties:
+        operation_count:
+          type: integer
+        operations:
+          type: array
+          items:
+            type: string
+    DerivedOperation:
+      type: object
+      properties:
+        id:
+          type: string
+        method:
+          type: string
+        path:
+          type: string
+        label:
+          type: string
+        readiness:
+          type: string
+        findings:
+          type: array
+          items:
+            type: string
+    bearerAuth:
+      type: object
+      properties:
+        type:
+          type: string
+    Uuid:
+      type: string
+      format: uuid
+      description: Canonical RFC 4122 UUID identifier.
+      example: string
+    TimeWithTimezone:
+      type: string
+      format: time
+      description: Time of day with UTC marker or offset.
+      example: string
+    DateTime:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp in RFC 3339 date-time format.
+      example: string
+    IsActive:
+      type: boolean
+      description: Whether the entity is currently active.
+      example: true
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

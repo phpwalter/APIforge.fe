@@ -578,38 +578,52 @@ describe('schema field operations', () => {
 });
 
 describe('security schemes', () => {
-  it('enables a scheme and later disables it, cascading removal from every endpoint', () => {
+  it('applySecurityDraft enables a scheme, and later disabling it cascades removal from every endpoint', () => {
     useSpecStore.getState().pickMethod('/a', 'GET');
     useSpecStore.getState().pickMethod('/b', 'GET');
     const [epA, epB] = useSpecStore.getState().endpoints;
 
-    useSpecStore.getState().setSecuritySchemeEnabled('bearerAuth', true);
+    useSpecStore.getState().applySecurityDraft(['bearerAuth'], {}, []);
     useSpecStore.getState().addSecurity(epA.id, 'bearerAuth');
     useSpecStore.getState().addSecurity(epB.id, 'bearerAuth');
     let s = useSpecStore.getState();
     expect(s.enabledSecuritySchemes).toEqual(['bearerAuth']);
     expect(s.endpoints.every((e) => e.security.includes('bearerAuth'))).toBe(true);
 
-    useSpecStore.getState().setSecuritySchemeEnabled('bearerAuth', false);
+    useSpecStore.getState().applySecurityDraft([], {}, []);
     s = useSpecStore.getState();
     expect(s.enabledSecuritySchemes).toEqual([]);
     expect(s.endpoints.every((e) => e.security.length === 0)).toBe(true);
   });
 
-  it('stores per-scheme scopes independently of the enabled list', () => {
-    useSpecStore.getState().setSecurityScopes('oauth2', 'read:things, write:things');
+  it('applySecurityDraft stores per-scheme scopes independently of the enabled list', () => {
+    useSpecStore.getState().applySecurityDraft([], { oauth2: 'read:things, write:things' }, []);
     expect(useSpecStore.getState().securityScopes.oauth2).toBe('read:things, write:things');
   });
 
-  it('removes a legacy scheme from every endpoint without touching the enabled catalog list', () => {
+  it('applySecurityDraft removes a legacy scheme from every endpoint without touching the enabled catalog list', () => {
     useSpecStore.getState().pickMethod('/a', 'GET');
     const ep = useSpecStore.getState().endpoints[0];
     useSpecStore.getState().addSecurity(ep.id, 'customLegacyScheme');
 
-    useSpecStore.getState().removeSecurityFromAllEndpoints('customLegacyScheme');
+    useSpecStore.getState().applySecurityDraft([], {}, ['customLegacyScheme']);
     const s = useSpecStore.getState();
     expect(s.endpoints[0].security).toEqual([]);
     expect(s.enabledSecuritySchemes).toEqual([]);
+  });
+
+  it('applySecurityDraft is a no-op on endpoints when nothing enabled/removed changed', () => {
+    useSpecStore.getState().pickMethod('/a', 'GET');
+    useSpecStore.getState().applySecurityDraft(['bearerAuth'], {}, []);
+    const ep = useSpecStore.getState().endpoints[0];
+    useSpecStore.getState().addSecurity(ep.id, 'bearerAuth');
+
+    // Re-applying the same enabled list (nothing turned off, nothing legacy-removed) must not
+    // touch any endpoint's security array.
+    useSpecStore.getState().applySecurityDraft(['bearerAuth'], { bearerAuth: 'read' }, []);
+    const s = useSpecStore.getState();
+    expect(s.endpoints[0].security).toEqual(['bearerAuth']);
+    expect(s.securityScopes.bearerAuth).toBe('read');
   });
 
   it('seeds enabledSecuritySchemes with bearerAuth when loading the sample project', () => {

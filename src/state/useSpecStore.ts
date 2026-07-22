@@ -147,7 +147,7 @@ function slugify(path: string, method: HttpMethod): string {
   return verb + parts.map((p) => p[0].toUpperCase() + p.slice(1)).join('');
 }
 
-interface SpecState {
+export interface SpecState {
   hasDocument: boolean;
   importSpec: (parsed: { endpoints: Endpoint[]; schemas: Schema[] }) => void;
   loadSampleProject: () => void;
@@ -206,14 +206,21 @@ interface SpecState {
   addSecurity: (id: string, scheme: string) => void;
   removeSecurity: (id: string, scheme: string) => void;
 
-  // Security schemes (Settings :: Security panel) — which catalog scheme names are enabled
-  // project-wide, and their OAuth2/OIDC scopes. Drives the endpoint editor's "+ Add auth" suggestions.
+  // Security schemes (Project Settings :: Security panel) — which catalog scheme names are
+  // enabled project-wide, and their OAuth2/OIDC scopes. Drives the endpoint editor's "+ Add auth"
+  // suggestions.
   enabledSecuritySchemes: string[];
-  setSecuritySchemeEnabled: (name: string, enabled: boolean) => void;
   securityScopes: Record<string, string>;
-  setSecurityScopes: (name: string, scopes: string) => void;
-  /** Strips a scheme name from every endpoint's security list — used for "legacy" (uncataloged) scheme removal. */
-  removeSecurityFromAllEndpoints: (name: string) => void;
+  /** Project Settings :: Security's whole draft commits in one shot on OK/Apply (see
+   * src/components/Project/projectSettingsDraft.ts) — nothing in that tab writes live until
+   * this runs. Diffs the incoming enabled-list against the current one to find catalog schemes
+   * just turned off, unions that with removedLegacySchemes, and strips every matching scheme
+   * name from every endpoint's security[] in the same commit. */
+  applySecurityDraft: (
+    enabledSecuritySchemes: string[],
+    securityScopes: Record<string, string>,
+    removedLegacySchemes: string[],
+  ) => void;
 
   // Endpoints panel UI state
   panelSearch: string;
@@ -745,24 +752,24 @@ export const useSpecStore = create<SpecState>()(
     })),
 
   enabledSecuritySchemes: [],
-  setSecuritySchemeEnabled: (name, enabled) =>
-    set((s) => ({
-      enabledSecuritySchemes: enabled
-        ? s.enabledSecuritySchemes.includes(name)
-          ? s.enabledSecuritySchemes
-          : [...s.enabledSecuritySchemes, name]
-        : s.enabledSecuritySchemes.filter((n) => n !== name),
-      // Disabling a scheme cascades: no endpoint should keep requiring a scheme that's no longer enabled.
-      endpoints: enabled
-        ? s.endpoints
-        : s.endpoints.map((e) => (e.security.includes(name) ? { ...e, security: e.security.filter((sc) => sc !== name) } : e)),
-    })),
   securityScopes: {},
-  setSecurityScopes: (name, scopes) => set((s) => ({ securityScopes: { ...s.securityScopes, [name]: scopes } })),
-  removeSecurityFromAllEndpoints: (name) =>
-    set((s) => ({
-      endpoints: s.endpoints.map((e) => (e.security.includes(name) ? { ...e, security: e.security.filter((sc) => sc !== name) } : e)),
-    })),
+  applySecurityDraft: (enabledSecuritySchemes, securityScopes, removedLegacySchemes) =>
+    set((s) => {
+      const turnedOff = s.enabledSecuritySchemes.filter((n) => !enabledSecuritySchemes.includes(n));
+      const stripNames = new Set([...turnedOff, ...removedLegacySchemes]);
+      return {
+        enabledSecuritySchemes,
+        securityScopes,
+        endpoints:
+          stripNames.size === 0
+            ? s.endpoints
+            : s.endpoints.map((e) =>
+                e.security.some((sc) => stripNames.has(sc))
+                  ? { ...e, security: e.security.filter((sc) => !stripNames.has(sc)) }
+                  : e,
+              ),
+      };
+    }),
 
   panelSearch: '',
   setPanelSearch: (v) => set({ panelSearch: v }),

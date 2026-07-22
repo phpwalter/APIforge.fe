@@ -46,7 +46,7 @@ function resolveTheme(mode: ThemeMode): ThemeName {
   return mode;
 }
 
-interface AppState {
+export interface AppState {
   // Theme
   themeMode: ThemeMode;
   theme: ThemeName;
@@ -76,6 +76,25 @@ interface AppState {
   removeApiServer: (index: number) => void;
   setApiServerUrl: (index: number, url: string) => void;
   setApiExternalDocsField: (field: keyof ApiExternalDocs, value: string) => void;
+
+  /** Project Settings' General + Servers & External Docs tabs commit their whole draft in one
+   * shot on OK/Apply (see src/components/Project/projectSettingsDraft.ts) — nothing in those
+   * tabs writes live to the store until this runs. */
+  applyProjectSettingsDraft: (
+    patch: Pick<
+      AppState,
+      | 'currentProjectName'
+      | 'apiOpenapiVersion'
+      | 'apiTitle'
+      | 'apiVersion'
+      | 'apiDescription'
+      | 'apiTermsOfService'
+      | 'apiContact'
+      | 'apiLicense'
+      | 'apiServers'
+      | 'apiExternalDocs'
+    >,
+  ) => void;
 
   // Settings :: Code Preferences (x-apiforge.preferences)
   apiforgePreferences: ApiforgePreferences;
@@ -338,6 +357,7 @@ export const useAppStore = create<AppState>()(
     set((s) => ({ apiServers: s.apiServers.map((u, i) => (i === index ? url : u)) })),
   setApiExternalDocsField: (field, value) =>
     set((s) => ({ apiExternalDocs: { ...s.apiExternalDocs, [field]: value } })),
+  applyProjectSettingsDraft: (patch) => set(patch),
 
   apiforgePreferences: {
     operationIdStyle: 'lowerCamelCase',
@@ -373,12 +393,12 @@ export const useAppStore = create<AppState>()(
   closeUserMenu: () => set({ userMenuOpen: false }),
 
   signedIn: false,
-  userProfile: { name: '', email: '' },
+  userProfile: { name: '', email: '', avatarUrl: '', useGravatar: false, gravatarEmail: '' },
   authProvider: null,
   signIn: () =>
     set({
       signedIn: true,
-      userProfile: { name: 'James Taylor', email: 'james@acme-corp.com' },
+      userProfile: { name: 'James Taylor', email: 'james@acme-corp.com', avatarUrl: '' },
       userMenuOpen: false,
       authOpen: false,
       authProvider: null,
@@ -391,7 +411,7 @@ export const useAppStore = create<AppState>()(
       signOutProvider(authProvider).catch(() => {});
       clearAuthToken();
     }
-    set({ signedIn: false, userProfile: { name: '', email: '' }, authProvider: null, userMenuOpen: false });
+    set({ signedIn: false, userProfile: { name: '', email: '', avatarUrl: '', useGravatar: false, gravatarEmail: '' }, authProvider: null, userMenuOpen: false });
   },
   updateUserProfile: (patch) => set((s) => ({ userProfile: { ...s.userProfile, ...patch } })),
 

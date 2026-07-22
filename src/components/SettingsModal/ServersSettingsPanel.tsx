@@ -1,40 +1,44 @@
 import { Plus, X } from 'lucide-react';
-import { useAppStore } from '../../state/useAppStore';
+import type { ProjectSettingsDraft } from '../Project/projectSettingsDraft';
 import styles from './ServersSettingsPanel.module.css';
 
-export function ServersSettingsPanel() {
-  const apiServers = useAppStore((s) => s.apiServers);
-  const addApiServer = useAppStore((s) => s.addApiServer);
-  const removeApiServer = useAppStore((s) => s.removeApiServer);
-  const setApiServerUrl = useAppStore((s) => s.setApiServerUrl);
+interface ServersSettingsPanelProps {
+  draft: ProjectSettingsDraft;
+  onChange: (patch: Partial<ProjectSettingsDraft>) => void;
+}
 
-  const apiExternalDocs = useAppStore((s) => s.apiExternalDocs);
-  const setApiExternalDocsField = useAppStore((s) => s.setApiExternalDocsField);
-
+export function ServersSettingsPanel({ draft, onChange }: ServersSettingsPanelProps) {
   return (
     <>
       <div>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>Servers</span>
-          <button type="button" className={styles.addBtn} title="Add server" onClick={addApiServer}>
+          <button
+            type="button"
+            className={styles.addBtn}
+            title="Add server"
+            onClick={() => onChange({ apiServers: [...draft.apiServers, ''] })}
+          >
             <Plus size={12} />
           </button>
         </div>
-        {apiServers.length === 0 && <div className={styles.emptyText}>No servers defined.</div>}
+        {draft.apiServers.length === 0 && <div className={styles.emptyText}>No servers defined.</div>}
         <div className={styles.serverList}>
-          {apiServers.map((url, index) => (
+          {draft.apiServers.map((url, index) => (
             <div key={index} className={styles.serverRow}>
               <input
                 className={styles.serverInput}
                 value={url}
                 placeholder="https://api.example.com"
-                onChange={(e) => setApiServerUrl(index, e.target.value)}
+                onChange={(e) =>
+                  onChange({ apiServers: draft.apiServers.map((u, i) => (i === index ? e.target.value : u)) })
+                }
               />
               <button
                 type="button"
                 className={styles.removeBtn}
                 title="Remove server"
-                onClick={() => removeApiServer(index)}
+                onClick={() => onChange({ apiServers: draft.apiServers.filter((_, i) => i !== index) })}
               >
                 <X size={13} />
               </button>
@@ -50,15 +54,17 @@ export function ServersSettingsPanel() {
         <div className={styles.extDocsFields}>
           <input
             className={styles.textInputSmall}
-            value={apiExternalDocs.description}
+            value={draft.apiExternalDocs.description}
             placeholder="Description"
-            onChange={(e) => setApiExternalDocsField('description', e.target.value)}
+            onChange={(e) =>
+              onChange({ apiExternalDocs: { ...draft.apiExternalDocs, description: e.target.value } })
+            }
           />
           <input
             className={styles.monoInputSmall}
-            value={apiExternalDocs.url}
+            value={draft.apiExternalDocs.url}
             placeholder="https://docs.example.com"
-            onChange={(e) => setApiExternalDocsField('url', e.target.value)}
+            onChange={(e) => onChange({ apiExternalDocs: { ...draft.apiExternalDocs, url: e.target.value } })}
           />
         </div>
       </div>

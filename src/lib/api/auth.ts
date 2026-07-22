@@ -17,6 +17,8 @@ export interface MeResponse {
   bio?: string;
   created_at?: string;
   last_login_at?: string;
+  use_gravatar?: boolean;
+  gravatar_email?: string;
   [key: string]: unknown;
 }
 
@@ -134,6 +136,8 @@ export function fetchMe(): Promise<MeResponse> {
 export interface UpdateMeRequest {
   display_name?: string;
   bio?: string;
+  use_gravatar?: boolean;
+  gravatar_email?: string;
 }
 
 export function updateMe(patch: UpdateMeRequest): Promise<MeResponse> {

@@ -301,8 +301,14 @@
   color: var(--text);
 }
 
-.btnOk:hover {
+.btnOk:hover:not(:disabled) {
   border-color: var(--accent);
+}
+
+.btnOk:disabled {
+  color: var(--text-faint);
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btnCancel {
@@ -318,19 +324,16 @@
 .btnApply {
   border: 1px solid var(--border);
   background: transparent;
+  color: var(--text-dim);
+}
+
+.btnApply:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.btnApply:disabled {
   color: var(--text-faint);
   opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btnSave {
-  border: 1px solid #3b9c6e;
-  background: rgba(59, 156, 110, 0.14);
-  color: #3b9c6e;
-}
-
-.btnSave:disabled {
-  opacity: 0.6;
   cursor: not-allowed;
 }
 
