@@ -33,17 +33,33 @@ export function redirectToProviderSignIn(provider: string): void {
   window.location.href = apiUrl(`/auth/${provider}/signin`);
 }
 
+interface BeginAuthorizationResponse {
+  data?: { authorization_url?: string };
+}
+
 /**
- * Full-page navigation to the backend's OAuth entry point for linking — GET /auth/{provider}/link,
- * the redirect-out counterpart to the existing POST /auth/{provider}/link (which finalizes the
- * link against the active session once the OAuth round trip completes). Records the provider as
- * pending-LINK rather than pending-sign-in, so the callback's return (App.tsx) links it to the
- * already-signed-in account instead of replacing the active session (used by Settings :: Plugins /
- * the Profile dialog's Linked Profiles to connect e.g. GitHub via real OAuth).
+ * Begins linking an additional provider to the already-signed-in account. Unlike sign-in,
+ * this can't be a bare full-page navigation — the backend needs the bearer token to know
+ * *which* signed-in user to attach the identity to, and a plain `window.location.href` can't
+ * carry an Authorization header. So this first calls the authenticated POST /auth/{provider}/link
+ * (which returns an authorization_url the same shape POST /auth/{provider} does for sign-in),
+ * then navigates the browser there. Records the provider as pending-LINK so the callback's
+ * return (App.tsx) attaches it to the current account instead of treating it as a fresh
+ * sign-in — the actual link happens server-side when GET /auth/{provider}/callback completes,
+ * so there's no separate "finalize" call needed on return (used by Settings :: Plugins / the
+ * Profile dialog's Linked Profiles to connect e.g. GitHub via real OAuth).
  */
-export function redirectToProviderLink(provider: string): void {
-  setPendingLinkProvider(provider);
-  window.location.href = apiUrl(`/auth/${provider}/link`);
+export async function redirectToProviderLink(provider: string): Promise<void> {
+  try {
+    const result = await apiPost<BeginAuthorizationResponse>(`/auth/${provider}/link`);
+    const authorizationUrl = result.data?.authorization_url;
+    if (!authorizationUrl) return;
+    setPendingLinkProvider(provider);
+    window.location.href = authorizationUrl;
+  } catch {
+    // Nothing to recover to here beyond leaving the user on the current page — the connect
+    // button simply does nothing, matching how unlinkProvider() below fails silently too.
+  }
 }
 
 export interface AuthSessionUser {
@@ -82,6 +98,29 @@ export function readAuthSessionFromLocation(search: string): AuthSessionPayload 
   }
 }
 
+export interface AuthLinkPayload {
+  provider?: string;
+  username?: string;
+  display_name?: string;
+  avatar_url?: string;
+}
+
+/**
+ * Mirrors readAuthSessionFromLocation but for a completed *link* round trip — the callback
+ * sends back `?auth_link_session=<base64url JSON>` instead of `auth_session` (no token, since
+ * linking doesn't touch the active session), carrying just enough of the newly-linked profile
+ * to update the UI without an extra round trip.
+ */
+export function readAuthLinkFromLocation(search: string): AuthLinkPayload | null {
+  const raw = new URLSearchParams(search).get('auth_link_session');
+  if (!raw) return null;
+  try {
+    return JSON.parse(atob(base64UrlToBase64(raw))) as AuthLinkPayload;
+  } catch {
+    return null;
+  }
+}
+
 export function fetchMe(): Promise<MeResponse> {
   return apiGet<MeResponse>('/auth/me');
 }
@@ -103,10 +142,6 @@ export function updateMe(patch: UpdateMeRequest): Promise<MeResponse> {
 
 export function signOutProvider(provider: string): Promise<void> {
   return apiPost<void>(`/auth/${provider}/signout`);
-}
-
-export function linkProvider(provider: string): Promise<void> {
-  return apiPost<void>(`/auth/${provider}/link`);
 }
 
 export function unlinkProvider(provider: string): Promise<void> {

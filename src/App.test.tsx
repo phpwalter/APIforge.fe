@@ -3,7 +3,7 @@ import { StrictMode } from 'react';
 import App from './App';
 import { useAppStore } from './state/useAppStore';
 import { useSpecStore } from './state/useSpecStore';
-import { fetchMe, linkProvider, readAuthSessionFromLocation } from './lib/api/auth';
+import { fetchMe, readAuthLinkFromLocation, readAuthSessionFromLocation } from './lib/api/auth';
 import {
   getAuthToken,
   setAuthProvider,
@@ -17,7 +17,7 @@ import {
 vi.mock('./lib/api/auth', () => ({
   fetchMe: vi.fn(() => Promise.reject(new Error('not signed in'))),
   readAuthSessionFromLocation: vi.fn(() => null),
-  linkProvider: vi.fn(() => Promise.resolve()),
+  readAuthLinkFromLocation: vi.fn(() => null),
 }));
 
 const initialAppState = useAppStore.getState();
@@ -27,8 +27,8 @@ beforeEach(() => {
   useAppStore.setState(initialAppState, true);
   useSpecStore.setState(initialSpecState, true);
   vi.mocked(readAuthSessionFromLocation).mockReset().mockReturnValue(null);
+  vi.mocked(readAuthLinkFromLocation).mockReset().mockReturnValue(null);
   vi.mocked(fetchMe).mockReset().mockRejectedValue(new Error('not signed in'));
-  vi.mocked(linkProvider).mockReset().mockResolvedValue(undefined);
   window.history.replaceState({}, '', '/');
   localStorage.clear();
   sessionStorage.clear();
@@ -148,15 +148,16 @@ describe('App', () => {
   it('a link redirect (Settings :: Version Control) registers the connected identity instead of replacing the active session', async () => {
     useAppStore.setState({ signedIn: true, userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' }, authProvider: 'google' });
     setPendingLinkProvider('github');
-    window.history.replaceState({}, '', '/?auth_session=fake');
-    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
-      user: { username: 'octocat', display_name: 'The Octocat', avatar_url: 'https://example.com/octocat.png' },
-      token: { access_token: 'github-linked-token', token_type: 'Bearer', expires_in: 3600 },
+    window.history.replaceState({}, '', '/?auth_link_session=fake&foo=bar');
+    vi.mocked(readAuthLinkFromLocation).mockReturnValue({
+      provider: 'github',
+      username: 'octocat',
+      display_name: 'The Octocat',
+      avatar_url: 'https://example.com/octocat.png',
     });
 
     render(<App />);
 
-    await waitFor(() => expect(linkProvider).toHaveBeenCalledWith('github'));
     await waitFor(() =>
       expect(useAppStore.getState().versionControlLinks).toEqual({
         github: { username: 'octocat', avatarUrl: 'https://example.com/octocat.png' },
@@ -167,6 +168,9 @@ describe('App', () => {
     expect(useAppStore.getState().authProvider).toBe('google');
     expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
     expect(getAuthToken()).toBeNull();
+
+    // auth_link_session is one-time-use — it must not linger in the URL.
+    expect(window.location.search).toBe('?foo=bar');
   });
 
   it('restores the primary signed-in session from a real stored token after a link redirect completes', async () => {
@@ -178,15 +182,11 @@ describe('App', () => {
     setAuthProvider('google');
     vi.mocked(fetchMe).mockResolvedValue({ display_name: 'Ada Lovelace', email: 'ada@example.com' });
     setPendingLinkProvider('github');
-    window.history.replaceState({}, '', '/?auth_session=fake');
-    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
-      user: { username: 'octocat' },
-      token: { access_token: 'github-linked-token', token_type: 'Bearer', expires_in: 3600 },
-    });
+    window.history.replaceState({}, '', '/?auth_link_session=fake');
+    vi.mocked(readAuthLinkFromLocation).mockReturnValue({ provider: 'github', username: 'octocat' });
 
     render(<App />);
 
-    await waitFor(() => expect(linkProvider).toHaveBeenCalledWith('github'));
     // The link round trip alone must not leave the app stuck signed out.
     await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
     expect(useAppStore.getState().authProvider).toBe('google');

@@ -1,6 +1,6 @@
 import {
   fetchMe,
-  linkProvider,
+  readAuthLinkFromLocation,
   readAuthSessionFromLocation,
   redirectToProviderLink,
   redirectToProviderSignIn,
@@ -20,6 +20,7 @@ vi.mock('./client', () => ({
 
 beforeEach(() => {
   sessionStorage.clear();
+  vi.mocked(apiPost).mockReset();
 });
 
 describe('redirectToProviderSignIn', () => {
@@ -53,30 +54,54 @@ describe('redirectToProviderSignIn', () => {
 });
 
 describe('redirectToProviderLink', () => {
-  it('navigates the full page to the GET /auth/{provider}/link redirect-out counterpart of the existing POST /auth/{provider}/link', () => {
+  it('POSTs to the authenticated begin-link endpoint, then navigates to the returned authorization_url', async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: { authorization_url: 'https://github.com/login/oauth/authorize?client_id=abc' },
+    });
+
     const original = window.location;
     // @ts-expect-error -- deliberately replacing a read-only global for this one assertion
     delete window.location;
     window.location = { ...original, href: '' } as Location;
 
-    redirectToProviderLink('github');
+    await redirectToProviderLink('github');
 
-    expect(apiUrl).toHaveBeenCalledWith('/auth/github/link');
-    expect(window.location.href).toBe('http://api.test/auth/github/link');
+    expect(apiPost).toHaveBeenCalledWith('/auth/github/link');
+    expect(window.location.href).toBe('https://github.com/login/oauth/authorize?client_id=abc');
 
     window.location = original;
   });
 
-  it('records the provider as pending-LINK (not pending-sign-in), so the callback links it instead of replacing the active session', () => {
+  it('records the provider as pending-LINK (not pending-sign-in) once the authorization_url is known, so the callback links it instead of replacing the active session', async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: { authorization_url: 'https://github.com/login/oauth/authorize?client_id=abc' },
+    });
+
     const original = window.location;
     // @ts-expect-error -- deliberately replacing a read-only global for this one assertion
     delete window.location;
     window.location = { ...original, href: '' } as Location;
 
-    redirectToProviderLink('github');
+    await redirectToProviderLink('github');
 
     expect(takePendingLinkProvider()).toBe('github');
     expect(takePendingAuthProvider()).toBeNull();
+
+    window.location = original;
+  });
+
+  it('does nothing — no navigation, no pending marker — when the begin-link request fails', async () => {
+    vi.mocked(apiPost).mockRejectedValue(new Error('unauthorized'));
+
+    const original = window.location;
+    // @ts-expect-error -- deliberately replacing a read-only global for this one assertion
+    delete window.location;
+    window.location = { ...original, href: '' } as Location;
+
+    await redirectToProviderLink('github');
+
+    expect(window.location.href).toBe('');
+    expect(takePendingLinkProvider()).toBeNull();
 
     window.location = original;
   });
@@ -99,11 +124,6 @@ describe('auth API wrappers', () => {
   it('signOutProvider calls POST /auth/{provider}/signout', () => {
     signOutProvider('google');
     expect(apiPost).toHaveBeenCalledWith('/auth/google/signout');
-  });
-
-  it('linkProvider calls POST /auth/{provider}/link', () => {
-    linkProvider('google');
-    expect(apiPost).toHaveBeenCalledWith('/auth/google/link');
   });
 
   it('unlinkProvider calls POST /auth/{provider}/unlink', () => {
@@ -138,5 +158,24 @@ describe('readAuthSessionFromLocation', () => {
 
   it('returns null for a malformed (non-base64 or non-JSON) auth_session value', () => {
     expect(readAuthSessionFromLocation('?auth_session=not-valid-base64!!!')).toBeNull();
+  });
+});
+
+describe('readAuthLinkFromLocation', () => {
+  it('decodes a base64url auth_link_session payload', () => {
+    const payload = { provider: 'github', username: 'octocat', avatar_url: 'https://example.com/octocat.png' };
+    const encoded = btoa(JSON.stringify(payload))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    expect(readAuthLinkFromLocation(`?auth_link_session=${encoded}`)).toEqual(payload);
+  });
+
+  it('returns null when there is no auth_link_session param', () => {
+    expect(readAuthLinkFromLocation('?foo=bar')).toBeNull();
+  });
+
+  it('returns null for a malformed (non-base64 or non-JSON) auth_link_session value', () => {
+    expect(readAuthLinkFromLocation('?auth_link_session=not-valid-base64!!!')).toBeNull();
   });
 });
