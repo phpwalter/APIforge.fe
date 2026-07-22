@@ -189,7 +189,7 @@ describe('useAppStore', () => {
     expect(s.userMenuOpen).toBe(false);
     expect(s.authOpen).toBe(false);
     // Demo sign-in (providers without a real backend integration) still gets a fake identity.
-    expect(s.userProfile).toEqual({ name: 'James Taylor', email: 'james@acme-corp.com' });
+    expect(s.userProfile).toEqual({ name: 'James Taylor', email: 'james@acme-corp.com', avatarUrl: '' });
 
     useAppStore.setState({ userMenuOpen: true });
     useAppStore.getState().signOut();
@@ -252,7 +252,7 @@ describe('useAppStore', () => {
     const s = useAppStore.getState();
     expect(s.signedIn).toBe(false);
     expect(s.authProvider).toBe(null);
-    expect(s.userProfile).toEqual({ name: '', email: '' });
+    expect(s.userProfile).toEqual({ name: '', email: '', avatarUrl: '', useGravatar: false, gravatarEmail: '' });
   });
 
   it('connectVersionControlProvider stores the linked identity and persists it to localStorage', () => {

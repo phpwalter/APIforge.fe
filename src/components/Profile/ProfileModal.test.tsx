@@ -81,7 +81,12 @@ describe('ProfileModal', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(useAppStore.getState().profileOpen).toBe(false));
-    expect(updateMe).toHaveBeenCalledWith({ display_name: 'Ada Lovelace', bio: undefined });
+    expect(updateMe).toHaveBeenCalledWith({
+      display_name: 'Ada Lovelace',
+      bio: undefined,
+      use_gravatar: false,
+      gravatar_email: undefined,
+    });
     expect(useAppStore.getState().userProfile).toMatchObject({ name: 'Ada Lovelace', bio: 'Mathematician' });
   });
 
