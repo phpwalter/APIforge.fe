@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { X, LoaderCircle, Check } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
-import { PROVIDERS, providerLabel } from '../Auth/providers';
+import { providerLabel } from '../Auth/providers';
 import { ProviderIcon } from '../Auth/ProviderIcon';
 import { AvatarContent } from '../Topbar/UserMenu';
 import { updateMe } from '../../lib/api/auth';
@@ -46,7 +46,7 @@ export function ProfileModal() {
   const [error, setError] = useState<string | null>(null);
 
   const memberSince = formatDate(userProfile.memberSince);
-  const primaryProvider = authProvider && !HAS_OWN_LINKED_ROW.has(authProvider) ? PROVIDERS.find((p) => p.id === authProvider) : undefined;
+  const primaryProvider = authProvider && !HAS_OWN_LINKED_ROW.has(authProvider) ? authProvider : undefined;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -193,8 +193,8 @@ export function ProfileModal() {
 
             {primaryProvider && (
               <div className={styles.primaryRow}>
-                <ProviderIcon id={primaryProvider.id} src={primaryProvider.icon} className={styles.primaryIcon} />
-                <span className={styles.primaryLabel}>{primaryProvider.label}</span>
+                <ProviderIcon id={primaryProvider} className={styles.primaryIcon} />
+                <span className={styles.primaryLabel}>{providerLabel(primaryProvider)}</span>
                 <span className={styles.primaryBadge}>
                   <Check size={11} />
                   Primary

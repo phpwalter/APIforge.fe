@@ -3,6 +3,31 @@ import { setPendingAuthProvider, setPendingLinkProvider } from './authToken';
 
 const AUTH_API_VERSION = 'v1';
 
+
+export interface AuthProviderResponseItem {
+  code: string;
+  display_name: string;
+  supports_pkce: boolean;
+  supports_oidc: boolean;
+  signin_endpoint: string;
+  callback_endpoint: string;
+  exchange_endpoint: string;
+  display_order: number;
+}
+
+interface AuthProvidersResponse {
+  data?: AuthProviderResponseItem[];
+  meta?: { count?: number };
+}
+
+export async function fetchAuthProviders(): Promise<AuthProviderResponseItem[]> {
+  const response = await apiGet<AuthProvidersResponse>('/auth/providers', {
+    apiVersion: AUTH_API_VERSION,
+    authenticated: false,
+  });
+  return Array.isArray(response.data) ? response.data : [];
+}
+
 export interface MeResponse {
   id?: string;
   name?: string;
@@ -18,9 +43,9 @@ export interface MeResponse {
   [key: string]: unknown;
 }
 
-export function redirectToProviderSignIn(provider: string): void {
+export function redirectToProviderSignIn(provider: string, signinEndpoint: string): void {
   setPendingAuthProvider(provider);
-  window.location.href = apiUrl(`/auth/${encodeURIComponent(provider)}/signin`);
+  window.location.href = apiUrl(signinEndpoint);
 }
 
 interface BeginAuthorizationResponse {

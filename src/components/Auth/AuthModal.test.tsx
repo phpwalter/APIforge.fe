@@ -1,51 +1,77 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthModal } from './AuthModal';
+import { clearAuthProviderCacheForTests } from './providers';
 import { useAppStore } from '../../state/useAppStore';
-import { redirectToProviderSignIn } from '../../lib/api/auth';
+import { fetchAuthProviders, redirectToProviderSignIn } from '../../lib/api/auth';
 
 vi.mock('../../lib/api/auth', () => ({
+  fetchAuthProviders: vi.fn(),
   redirectToProviderSignIn: vi.fn(),
 }));
 
 const initialState = useAppStore.getState();
+const providers = [
+  {
+    code: 'google',
+    display_name: 'Google',
+    supports_pkce: true,
+    supports_oidc: true,
+    signin_endpoint: '/auth/google/signin',
+    callback_endpoint: '/auth/google/callback',
+    exchange_endpoint: '/auth/google/exchange',
+    display_order: 10,
+  },
+  {
+    code: 'github',
+    display_name: 'GitHub',
+    supports_pkce: false,
+    supports_oidc: false,
+    signin_endpoint: '/auth/github/signin',
+    callback_endpoint: '/auth/github/callback',
+    exchange_endpoint: '/auth/github/exchange',
+    display_order: 20,
+  },
+];
 
 beforeEach(() => {
   useAppStore.setState(initialState, true);
+  clearAuthProviderCacheForTests();
   vi.clearAllMocks();
+  vi.mocked(fetchAuthProviders).mockResolvedValue(providers);
 });
 
-describe('AuthModal — redirect loading state', () => {
-  it('clicking a live provider (GitHub) swaps its icon for a spinner and disables every provider button', async () => {
+describe('AuthModal — backend provider registry', () => {
+  it('loads providers from the backend and redirects through the returned signin endpoint', async () => {
     const user = userEvent.setup();
     render(<AuthModal />);
 
-    const githubBtn = screen.getByRole('button', { name: /GitHub/ });
-    await user.click(githubBtn);
+    const githubButton = await screen.findByRole('button', { name: /GitHub/ });
+    await user.click(githubButton);
 
-    expect(redirectToProviderSignIn).toHaveBeenCalledWith('github');
-    for (const btn of screen.getAllByRole('button', { name: /Google|Atlassian|GitHub|Confluence|Apple|Bitbucket/ })) {
-      expect(btn).toBeDisabled();
-    }
+    expect(fetchAuthProviders).toHaveBeenCalledTimes(1);
+    expect(redirectToProviderSignIn).toHaveBeenCalledWith('github', '/auth/github/signin');
+    expect(screen.getByRole('button', { name: /Google/ })).toBeDisabled();
+    expect(githubButton).toBeDisabled();
   });
 
-  it('sets a wait cursor on the modal scrim while redirecting', async () => {
-    const user = userEvent.setup();
+  it('shows the empty-provider message when the backend returns no active providers', async () => {
+    vi.mocked(fetchAuthProviders).mockResolvedValue([]);
     render(<AuthModal />);
-
-    await user.click(screen.getByRole('button', { name: /Google/ }));
-
-    expect(screen.getByRole('dialog').parentElement).toHaveAttribute('data-redirecting', 'true');
+    expect(await screen.findByText('No sign-in providers are currently available.')).toBeInTheDocument();
   });
 
-  it('a demo provider (no real backend) signs in instantly without entering the redirecting state', async () => {
+  it('shows an error and retries the provider request', async () => {
     const user = userEvent.setup();
+    vi.mocked(fetchAuthProviders)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(providers);
+
     render(<AuthModal />);
+    expect(await screen.findByText('Sign-in providers could not be loaded.')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Atlassian/ }));
-
-    expect(redirectToProviderSignIn).not.toHaveBeenCalled();
-    expect(useAppStore.getState().signedIn).toBe(true);
-    expect(screen.getByRole('button', { name: /Google/ })).not.toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Google/ })).toBeInTheDocument());
+    expect(fetchAuthProviders).toHaveBeenCalledTimes(2);
   });
 });

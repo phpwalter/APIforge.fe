@@ -1,43 +1,51 @@
-import { useEffect, useState } from 'react';
-import { Layers, LoaderCircle, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Layers, LoaderCircle, RotateCw, X } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { redirectToProviderSignIn } from '../../lib/api/auth';
-import { PROVIDERS } from './providers';
+import { loadAuthProviders, retryAuthProviders, type AuthProvider } from './providers';
 import { ProviderIcon } from './ProviderIcon';
 import styles from './AuthModal.module.css';
 
-/** Providers with a real backend OAuth round trip — everything else stays a demo instant sign-in. */
-const LIVE_PROVIDERS = new Set(['google', 'github']);
-
 export function AuthModal() {
   const closeAuth = useAppStore((s) => s.closeAuth);
-  const signIn = useAppStore((s) => s.signIn);
-  // Set right before the full-page redirect fires — there's a brief gap between that and the
-  // browser actually leaving this page, which otherwise looks like the button did nothing.
+  const [providers, setProviders] = useState<AuthProvider[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [redirectingTo, setRedirectingTo] = useState<string | null>(null);
 
+  const loadProviders = useCallback(async (retry = false) => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      setProviders(await (retry ? retryAuthProviders() : loadAuthProviders()));
+    } catch {
+      setProviders([]);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeAuth();
+    void loadProviders();
+  }, [loadProviders]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeAuth();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [closeAuth]);
 
-  // LIVE_PROVIDERS leave the SPA entirely for a real OAuth redirect through the backend. The rest
-  // have no backend integration yet, so they still complete sign-in instantly for demo purposes.
-  const signInWith = (providerId: string) => {
-    if (!LIVE_PROVIDERS.has(providerId)) {
-      signIn();
-      return;
-    }
-    setRedirectingTo(providerId);
-    redirectToProviderSignIn(providerId);
+  const signInWith = (provider: AuthProvider) => {
+    setRedirectingTo(provider.code);
+    redirectToProviderSignIn(provider.code, provider.signin_endpoint);
   };
 
   return (
     <div className={styles.scrim} data-redirecting={redirectingTo !== null} onClick={closeAuth}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div className={styles.modal} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
         <button type="button" className={styles.closeBtn} onClick={closeAuth} aria-label="Close">
           <X size={16} />
         </button>
@@ -55,35 +63,55 @@ export function AuthModal() {
           <span className={styles.dividerLine} />
         </div>
 
-        <div className={styles.grid}>
-          {PROVIDERS.map((provider) => (
-            <button
-              key={provider.id}
-              type="button"
-              className={styles.providerBtn}
-              disabled={redirectingTo !== null}
-              onClick={() => signInWith(provider.id)}
-            >
-              {redirectingTo === provider.id ? (
-                <LoaderCircle size={20} className={`${styles.providerIcon} ${styles.spin}`} />
-              ) : (
-                <ProviderIcon id={provider.id} src={provider.icon} className={styles.providerIcon} />
-              )}
-              {provider.label}
+        {loading && (
+          <div className={styles.providerState} aria-live="polite">
+            <LoaderCircle size={20} className={styles.spin} />
+            <span>Loading sign-in providers…</span>
+          </div>
+        )}
+
+        {!loading && loadError && (
+          <div className={styles.providerState} role="alert">
+            <span>Sign-in providers could not be loaded.</span>
+            <button type="button" className={styles.retryBtn} onClick={() => void loadProviders(true)}>
+              <RotateCw size={14} />
+              Retry
             </button>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {!loading && !loadError && providers.length === 0 && (
+          <div className={styles.providerState} aria-live="polite">
+            No sign-in providers are currently available.
+          </div>
+        )}
+
+        {!loading && !loadError && providers.length > 0 && (
+          <div className={styles.grid}>
+            {providers.map((provider) => (
+              <button
+                key={provider.code}
+                type="button"
+                className={styles.providerBtn}
+                disabled={redirectingTo !== null}
+                onClick={() => signInWith(provider)}
+              >
+                {redirectingTo === provider.code ? (
+                  <LoaderCircle size={20} className={`${styles.providerIcon} ${styles.spin}`} />
+                ) : (
+                  <ProviderIcon id={provider.code} className={styles.providerIcon} />
+                )}
+                {provider.display_name}
+              </button>
+            ))}
+          </div>
+        )}
 
         <p className={styles.legal}>
           By signing in, you agree to our{' '}
-          <button type="button" className={styles.legalLink}>
-            Terms of Service
-          </button>{' '}
+          <button type="button" className={styles.legalLink}>Terms of Service</button>{' '}
           and{' '}
-          <button type="button" className={styles.legalLink}>
-            Privacy Policy
-          </button>
-          .
+          <button type="button" className={styles.legalLink}>Privacy Policy</button>.
         </p>
       </div>
     </div>

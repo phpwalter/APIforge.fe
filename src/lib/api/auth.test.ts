@@ -1,5 +1,6 @@
 import {
   exchangeAuthorizationCode,
+  fetchAuthProviders,
   fetchMe,
   readAuthLinkFromLocation,
   readAuthorizationCodeFromLocation,
@@ -30,7 +31,7 @@ describe('OAuth navigation', () => {
   it('records the sign-in provider and navigates to the backend bootstrap route', () => {
     const original = window.location;
     Object.defineProperty(window, 'location', { configurable: true, value: { ...original, href: '' } });
-    redirectToProviderSignIn('github');
+    redirectToProviderSignIn('github', '/auth/github/signin');
     expect(apiUrl).toHaveBeenCalledWith('/auth/github/signin');
     expect(takePendingAuthProvider()).toBe('github');
     Object.defineProperty(window, 'location', { configurable: true, value: original });
@@ -91,6 +92,12 @@ describe('callback exchange', () => {
 });
 
 describe('versioned API wrappers', () => {
+  it('loads active providers as a public versioned request', async () => {
+    vi.mocked(apiGet).mockResolvedValue({ data: [], meta: { count: 0 } });
+    await expect(fetchAuthProviders()).resolves.toEqual([]);
+    expect(apiGet).toHaveBeenCalledWith('/auth/providers', { apiVersion: 'v1', authenticated: false });
+  });
+
   it('uses explicit endpoint versions', () => {
     fetchMe();
     updateMe({ display_name: 'Ada' });
