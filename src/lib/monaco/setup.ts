@@ -5,9 +5,9 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import 'monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import YamlWorker from 'monaco-yaml/yaml.worker.js?worker';
+import YamlWorker from 'monaco-yaml/lib/esm/yaml.worker.js?worker';
 import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import { configureMonacoYaml, type SchemasSettings } from 'monaco-yaml';
+import { setDiagnosticsOptions, type SchemasSettings } from 'monaco-yaml';
 import { openapi } from '@readme/openapi-schemas';
 
 declare global {
@@ -41,12 +41,12 @@ export function setupMonacoOpenApiEditors(): typeof monaco {
     const yamlSchemas: SchemasSettings[] = [
       { uri: schemaId, fileMatch: ['*'], schema: openapi.v31 as SchemasSettings['schema'] },
     ];
-    configureMonacoYaml(monaco, {
+    setDiagnosticsOptions({
       enableSchemaRequest: false,
       hover: true,
       completion: true,
       validate: true,
-      format: {},
+      format: true,
       schemas: yamlSchemas,
     });
 

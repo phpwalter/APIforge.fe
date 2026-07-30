@@ -1,5 +1,5 @@
 import { useState, type ComponentType } from 'react';
-import { X, SlidersVertical, Route, ShieldCog } from 'lucide-react';
+import { X, SlidersVertical, Route, Shield } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
 import { saveNow } from '../../lib/projectAutosave';
@@ -17,14 +17,14 @@ interface ProjectPanelProps {
 interface ProjectCategory {
   key: string;
   label: string;
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{ size?: number | string }>;
   panel: ComponentType<ProjectPanelProps>;
 }
 
 const CATEGORIES: ProjectCategory[] = [
   { key: 'general', label: 'General', icon: SlidersVertical, panel: GeneralSettingsPanel },
   { key: 'servers', label: 'Servers & External Docs', icon: Route, panel: ServersSettingsPanel },
-  { key: 'security', label: 'Security Schemes', icon: ShieldCog, panel: SecuritySettingsPanel },
+  { key: 'security', label: 'Security Schemes', icon: Shield, panel: SecuritySettingsPanel },
 ];
 
 /**

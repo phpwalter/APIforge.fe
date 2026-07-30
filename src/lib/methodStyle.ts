@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Plus, ArrowUpToLine, Pencil, Trash, SlidersHorizontal, Info, MapPinSearch, Braces } from 'lucide-react';
+import { ArrowDownToLine, Plus, ArrowUpToLine, Pencil, Trash, SlidersHorizontal, Info, Search, Braces } from 'lucide-react';
 import type { ComponentType } from 'react';
 import type { HttpMethod } from '../types/spec';
 
@@ -14,7 +14,7 @@ export function methodColor(method: HttpMethod): string {
   return METHOD_COLORS[method] || '#7c7c8a';
 }
 
-const METHOD_ICONS: Partial<Record<HttpMethod, ComponentType<{ size?: number }>>> = {
+const METHOD_ICONS: Partial<Record<HttpMethod, ComponentType<{ size?: number | string }>>> = {
   GET: ArrowDownToLine,
   POST: Plus,
   PUT: ArrowUpToLine,
@@ -22,10 +22,10 @@ const METHOD_ICONS: Partial<Record<HttpMethod, ComponentType<{ size?: number }>>
   DELETE: Trash,
   OPTIONS: SlidersHorizontal,
   HEAD: Info,
-  TRACE: MapPinSearch,
+  TRACE: Search,
 };
 
-export function methodIcon(method: HttpMethod): ComponentType<{ size?: number }> {
+export function methodIcon(method: HttpMethod): ComponentType<{ size?: number | string }> {
   return METHOD_ICONS[method] || Braces;
 }
 

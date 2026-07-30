@@ -1,6 +1,9 @@
 @echo off
 cls
 
+call npm run typecheck
+call npm run typecheck:tests
+
 call npm run build
 
 if errorlevel 1 (

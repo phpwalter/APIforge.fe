@@ -1,32 +1,81 @@
-# React + TypeScript + Vite
+# APIForge Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+APIForge is a visual OpenAPI design application built with React, TypeScript, Vite, Zustand, Monaco Editor, and Monaco YAML. It supports endpoint and schema design, OpenAPI import/export, OAuth sign-in, and source-control integrations.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 22.12 or later; `.nvmrc` currently pins 22.16.0
+- npm 10 or later
+- APIForge API server available locally or over HTTPS
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+cp .env.example .env.local
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Local configuration:
+
+```env
+VITE_API_SERVER=http://localhost:8080
+VITE_DEBUG=false
+```
+
+`VITE_*` variables are embedded in the browser bundle and must never contain secrets. During development, Vite proxies browser requests from `/api/*` to `VITE_API_SERVER` and removes the `/api` prefix. For example, `/api/auth/me` is forwarded to `http://localhost:8080/auth/me`.
+
+## Commands
+
+```bash
+npm run dev              # Development server
+npm run lint             # Oxlint, warnings fail the command
+npm run typecheck        # Application and build configuration
+npm run typecheck:tests  # Test source type-check
+npm test                 # Unit/component tests
+npm run test:coverage    # Coverage; thresholds are 100%
+npm run build            # Type-check and production bundle
+npm run check            # Complete local quality gate
+```
+
+Vitest coverage requires `@vitest/coverage-v8@1.6.0`, pinned to the current Vitest major. CI installs that exact provider without changing the committed lock file.
+
+## API versioning
+
+Every fetch-based API operation declares its required engine version at its call site. The shared client sends that value in `X-API-Version`. Do not add a global default: endpoint owners must deliberately select the version they consume.
+
+Full-page OAuth initiation cannot attach custom request headers. The sign-in initiation route is therefore treated as a bootstrap route; the code-exchange request is versioned normally.
+
+## Authentication
+
+OAuth callbacks return an opaque, short-lived, single-use `code`, never a bearer token. The frontend exchanges the code through `POST /auth/session/exchange`. See `docs/oauth-callback-contract.md`.
+
+Bearer access tokens are held in JavaScript module memory only. They are not written to browser storage. Until the backend supplies a secure refresh mechanism, reloading the page ends the frontend session.
+
+## OpenAPI preservation
+
+Imported OpenAPI fragments retain their original raw objects alongside the visual model. On export, editor-owned fields override the preserved fragment while unsupported fields remain intact. This prevents silent data loss when APIForge opens and saves documents containing features the UI cannot yet edit.
+
+## Source layout
+
+- `src/components` — feature and presentation components
+- `src/state` — Zustand application and specification state
+- `src/lib/api` — versioned API client and endpoint wrappers
+- `src/lib/openapiImport.ts` — OpenAPI parser and preservation layer
+- `src/lib/openapiExport.ts` — OpenAPI compiler and preservation merge
+- `src/types` — shared domain contracts
+- `docs` — backend contracts and deployment guidance
+
+## Production deployment
+
+The production server must route `/api/*` to the backend or serve the backend on the same origin. Configure the response headers in `docs/production-security-headers.md`. Keep source maps, environment files, credentials, and OAuth secrets out of the published frontend assets.
+
+## Dependency policy
+
+Major framework upgrades are intentionally deferred until the current security, type-check, test, coverage, and build gates are green. Apply dependency upgrades in isolated pull requests, review release notes and migration guides, and verify OpenAPI round-trip fixtures before merging.
+
+## Bundle architecture
+
+The production build keeps the main application separate from large, independently cacheable editor dependencies. Rollup assigns stable chunks for React and Zustand, Monaco Editor, Monaco YAML and its language-server dependencies, the OpenAPI 3.1 schema catalog, and document-processing utilities.
+
+Monaco-powered views remain loaded through dynamic imports, so editor code is not part of the initial application route. Do not import `src/lib/monaco/setup.ts` from an eagerly loaded component. Review the generated `dist/assets` sizes after dependency upgrades; an increase in the main application chunk should be investigated rather than hidden by raising Vite's warning limit.

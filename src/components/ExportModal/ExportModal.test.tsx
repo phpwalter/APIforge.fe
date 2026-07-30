@@ -10,7 +10,7 @@ vi.mock('../../lib/api/securityTypes', () => ({
 
 const { downloadTextFile, documentToYaml } = vi.hoisted(() => ({
   downloadTextFile: vi.fn(),
-  documentToYaml: vi.fn<(doc: unknown, indentSize?: number) => string>(),
+  documentToYaml: vi.fn<[unknown, number?], string>(),
 }));
 vi.mock('../../lib/openapiExport', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/openapiExport')>();

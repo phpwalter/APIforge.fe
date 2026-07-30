@@ -35,11 +35,11 @@ export interface GithubFileContent {
 }
 
 export function listGithubRepos(): Promise<GithubRepo[]> {
-  return apiGet<GithubRepo[]>('/repos/github');
+  return apiGet<GithubRepo[]>('/repos/github', { apiVersion: 'v1' });
 }
 
 export function listGithubBranches(owner: string, repo: string): Promise<GithubBranch[]> {
-  return apiGet<GithubBranch[]>(`/repos/github/${owner}/${repo}/branches`);
+  return apiGet<GithubBranch[]>(`/repos/github/${owner}/${repo}/branches`, { apiVersion: 'v1' });
 }
 
 /** Directory listing when path is a folder, or a single file's content when path is a file. */
@@ -50,5 +50,5 @@ export function getGithubContents(
   ref: string,
 ): Promise<GithubContentEntry[] | GithubFileContent> {
   const query = new URLSearchParams({ path, ref }).toString();
-  return apiGet<GithubContentEntry[] | GithubFileContent>(`/repos/github/${owner}/${repo}/contents?${query}`);
+  return apiGet<GithubContentEntry[] | GithubFileContent>(`/repos/github/${owner}/${repo}/contents?${query}`, { apiVersion: 'v1' });
 }

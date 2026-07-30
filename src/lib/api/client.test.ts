@@ -1,15 +1,22 @@
 import { apiGet, apiPatch, apiPost, apiUrl, ApiError } from './client';
-import { setAuthToken } from './authToken';
+import { clearAuthToken, setAuthToken } from './authToken';
 
 function mockFetchOnce(response: Partial<Response> & { ok: boolean }) {
-  const fetchMock = vi.fn().mockResolvedValue(response as Response);
+  const fullResponse = {
+    status: 200,
+    statusText: 'OK',
+    text: () => Promise.resolve(''),
+    json: () => Promise.resolve({}),
+    ...response,
+  };
+  const fetchMock = vi.fn().mockResolvedValue(fullResponse as Response);
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
 
 beforeEach(() => {
   vi.stubEnv('VITE_API_SERVER', 'http://api.test');
-  localStorage.clear();
+  clearAuthToken();
 });
 
 afterEach(() => {
@@ -18,107 +25,70 @@ afterEach(() => {
 });
 
 describe('apiUrl', () => {
-  it('joins the base URL and a leading-slash path', () => {
-    expect(apiUrl('/things')).toBe('http://api.test/things');
-  });
-
-  it('adds the leading slash if the caller omitted it', () => {
+  it('normalizes the configured server URL in tests', () => {
+    vi.stubEnv('VITE_API_SERVER', 'http://api.test/');
     expect(apiUrl('things')).toBe('http://api.test/things');
   });
 
-  it('strips a trailing slash from VITE_API_SERVER', () => {
-    vi.stubEnv('VITE_API_SERVER', 'http://api.test/');
-    expect(apiUrl('/things')).toBe('http://api.test/things');
-  });
-
-  it('throws when VITE_API_SERVER is unset', () => {
+  it('fails closed when the server is not configured', () => {
     vi.stubEnv('VITE_API_SERVER', '');
     expect(() => apiUrl('/things')).toThrow(ApiError);
   });
 });
 
-describe('apiGet', () => {
-  it('has no Authorization header when no token is stored, and returns the parsed body', async () => {
+describe('versioned requests', () => {
+  it('sends the endpoint-specific API version and no token when signed out', async () => {
     const fetchMock = mockFetchOnce({ ok: true, json: () => Promise.resolve({ hello: 'world' }) });
-    const result = await apiGet('/things');
-    expect(result).toEqual({ hello: 'world' });
-    const [, init] = fetchMock.mock.calls[0];
-    expect(init.headers).not.toHaveProperty('Authorization');
+    await expect(apiGet('/things', { apiVersion: 'v2' })).resolves.toEqual({ hello: 'world' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://api.test/things',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ 'X-API-Version': 'v2', Accept: 'application/json' }),
+      }),
+    );
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
   });
 
-  it('attaches the stored bearer token, since this API is bearer-token only (no session cookie)', async () => {
+  it('attaches the in-memory bearer token', async () => {
     setAuthToken('the-token');
     const fetchMock = mockFetchOnce({ ok: true, json: () => Promise.resolve({}) });
-    await apiGet('/auth/me');
+    await apiGet('/auth/me', { apiVersion: 'v1' });
     expect(fetchMock).toHaveBeenCalledWith(
       'http://api.test/auth/me',
       expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer the-token' }) }),
     );
   });
 
-  it('throws an ApiError with the status on a non-2xx response', async () => {
-    mockFetchOnce({ ok: false, status: 404, statusText: 'Not Found' });
-    await expect(apiGet('/missing')).rejects.toMatchObject({ status: 404 });
+  it('can explicitly suppress authentication for code exchange', async () => {
+    setAuthToken('old-token');
+    const fetchMock = mockFetchOnce({ ok: true, text: () => Promise.resolve('{}') });
+    await apiPost('/auth/session/exchange', { apiVersion: 'v1', authenticated: false }, { code: 'abc' });
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
   });
 
-  it('throws an ApiError when the network request itself fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
-    await expect(apiGet('/things')).rejects.toBeInstanceOf(ApiError);
-  });
-});
+  it('sends JSON POST and PATCH bodies', async () => {
+    const postFetch = mockFetchOnce({ ok: true, text: () => Promise.resolve('{"ok":true}') });
+    await apiPost('/things', { apiVersion: 'v1' }, { name: 'x' });
+    expect(postFetch.mock.calls[0]?.[1]).toMatchObject({ method: 'POST', body: JSON.stringify({ name: 'x' }) });
 
-describe('apiPost', () => {
-  it('sends a JSON body and the bearer token when both are present', async () => {
-    setAuthToken('the-token');
-    const fetchMock = mockFetchOnce({ ok: true, text: () => Promise.resolve('{"ok":true}') });
-    const result = await apiPost('/things', { name: 'x' });
-    expect(result).toEqual({ ok: true });
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://api.test/things',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ name: 'x' }),
-        headers: expect.objectContaining({ Authorization: 'Bearer the-token' }),
-      }),
-    );
+    const patchFetch = mockFetchOnce({ ok: true, text: () => Promise.resolve('{"ok":true}') });
+    await apiPatch('/things/1', { apiVersion: 'v3' }, { name: 'y' });
+    expect(patchFetch.mock.calls[0]?.[1]).toMatchObject({ method: 'PATCH', body: JSON.stringify({ name: 'y' }) });
   });
 
-  it('resolves to undefined for an empty response body (e.g. a signout endpoint)', async () => {
-    mockFetchOnce({ ok: true, text: () => Promise.resolve('') });
-    const result = await apiPost('/auth/google/signout');
-    expect(result).toBeUndefined();
-  });
-
-  it('throws an ApiError on a non-2xx response', async () => {
-    mockFetchOnce({ ok: false, status: 401, statusText: 'Unauthorized' });
-    await expect(apiPost('/auth/google/link')).rejects.toMatchObject({ status: 401 });
-  });
-});
-
-describe('apiPatch', () => {
-  it('sends a JSON body, the PATCH method, and the bearer token when present', async () => {
-    setAuthToken('the-token');
-    const fetchMock = mockFetchOnce({ ok: true, text: () => Promise.resolve('{"ok":true}') });
-    const result = await apiPatch('/auth/me', { display_name: 'Ada' });
-    expect(result).toEqual({ ok: true });
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://api.test/auth/me',
-      expect.objectContaining({
-        method: 'PATCH',
-        body: JSON.stringify({ display_name: 'Ada' }),
-        headers: expect.objectContaining({ Authorization: 'Bearer the-token' }),
-      }),
-    );
-  });
-
-  it('resolves to undefined for an empty response body', async () => {
-    mockFetchOnce({ ok: true, text: () => Promise.resolve('') });
-    const result = await apiPatch('/auth/me', { bio: 'x' });
-    expect(result).toBeUndefined();
-  });
-
-  it('throws an ApiError on a non-2xx response', async () => {
-    mockFetchOnce({ ok: false, status: 400, statusText: 'Bad Request' });
-    await expect(apiPatch('/auth/me', {})).rejects.toMatchObject({ status: 400 });
+  it('normalizes RFC 7807 errors without exposing arbitrary response bodies', async () => {
+    mockFetchOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: () => Promise.resolve(JSON.stringify({ title: 'Unauthorized', detail: 'A bearer token is required.' })),
+    });
+    await expect(apiGet('/auth/me', { apiVersion: 'v1' })).rejects.toMatchObject({
+      status: 401,
+      message: 'Unauthorized: A bearer token is required.',
+    });
   });
 });

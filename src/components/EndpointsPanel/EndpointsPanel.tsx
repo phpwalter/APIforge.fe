@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { Timeline as EndpointsIcon, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { List as EndpointsIcon, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
 import { buildEndpointsPanelGroups } from '../../lib/endpointsPanelGroups';
 import { usePanelResize } from '../../lib/usePanelResize';

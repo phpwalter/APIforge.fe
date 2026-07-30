@@ -6,8 +6,8 @@ import { DEFAULT_COLOR_STYLE_PREFS } from '../../lib/colorStyle';
 // Mirrors ProjectionMonacoEditor.test.tsx's fake `monaco` namespace — jsdom can't run real Monaco.
 const model = { dispose: vi.fn() };
 const editor = { layout: vi.fn(), render: vi.fn(), dispose: vi.fn() };
-const createModel = vi.fn(() => model);
-const create = vi.fn(() => editor);
+const createModel = vi.fn<[string, string, unknown], typeof model>(() => model);
+const create = vi.fn<[unknown, Record<string, unknown>], typeof editor>(() => editor);
 const setTheme = vi.fn();
 const defineTheme = vi.fn();
 

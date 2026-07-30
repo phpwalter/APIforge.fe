@@ -10,11 +10,11 @@ vi.mock('./client', () => ({
 describe('ai API wrappers', () => {
   it('aiComplete calls POST /ai/complete with the request body', () => {
     aiComplete({ system: 'sys', prompt: 'do the thing', max_tokens: 200 });
-    expect(apiPost).toHaveBeenCalledWith('/ai/complete', { system: 'sys', prompt: 'do the thing', max_tokens: 200 });
+    expect(apiPost).toHaveBeenCalledWith('/ai/complete', { apiVersion: 'v1' }, { system: 'sys', prompt: 'do the thing', max_tokens: 200 });
   });
 
   it('fetchAiStatus calls GET /ai/status', () => {
     fetchAiStatus();
-    expect(apiGet).toHaveBeenCalledWith('/ai/status');
+    expect(apiGet).toHaveBeenCalledWith('/ai/status', { apiVersion: 'v1' });
   });
 });

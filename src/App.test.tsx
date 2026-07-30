@@ -1,24 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { StrictMode } from 'react';
 import App from './App';
 import { useAppStore } from './state/useAppStore';
 import { useSpecStore } from './state/useSpecStore';
-import { fetchMe, readAuthLinkFromLocation, readAuthSessionFromLocation } from './lib/api/auth';
-import {
-  getAuthToken,
-  setAuthProvider,
-  setAuthToken,
-  setPendingAuthProvider,
-  setPendingLinkProvider,
-} from './lib/api/authToken';
+import { exchangeAuthorizationCode } from './lib/api/auth';
+import { clearAuthToken, getAuthToken, setPendingAuthProvider, setPendingLinkProvider } from './lib/api/authToken';
 
-// App boots by checking for a real backend session — keep that hermetic in tests rather than
-// letting it hit the network, by always resolving to "not signed in" here by default.
-vi.mock('./lib/api/auth', () => ({
-  fetchMe: vi.fn(() => Promise.reject(new Error('not signed in'))),
-  readAuthSessionFromLocation: vi.fn(() => null),
-  readAuthLinkFromLocation: vi.fn(() => null),
-}));
+vi.mock('./lib/api/auth', async () => {
+  const actual = await vi.importActual<typeof import('./lib/api/auth')>('./lib/api/auth');
+  return {
+    ...actual,
+    exchangeAuthorizationCode: vi.fn(),
+  };
+});
 
 const initialAppState = useAppStore.getState();
 const initialSpecState = useSpecStore.getState();
@@ -26,185 +19,120 @@ const initialSpecState = useSpecStore.getState();
 beforeEach(() => {
   useAppStore.setState(initialAppState, true);
   useSpecStore.setState(initialSpecState, true);
-  vi.mocked(readAuthSessionFromLocation).mockReset().mockReturnValue(null);
-  vi.mocked(readAuthLinkFromLocation).mockReset().mockReturnValue(null);
-  vi.mocked(fetchMe).mockReset().mockRejectedValue(new Error('not signed in'));
-  window.history.replaceState({}, '', '/');
+  clearAuthToken();
   localStorage.clear();
   sessionStorage.clear();
+  window.history.replaceState({}, '', '/');
+  vi.mocked(exchangeAuthorizationCode).mockReset();
 });
 
-describe('App', () => {
-  it('shows the landing page when signed out', () => {
+describe('App public OAuth callback route', () => {
+  it('shows the landing page on the public root route', () => {
     render(<App />);
-    expect(screen.getByText('APIforge')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
   });
 
-  it('shows the app shell when signed in', () => {
-    useAppStore.setState({ signedIn: true });
-    render(<App />);
-    expect(screen.getByText('No API document loaded')).toBeInTheDocument();
-  });
-
-  it('hydrates a real session from the OAuth callback\'s auth_session redirect param and strips it from the URL', async () => {
-    window.history.replaceState({}, '', '/?auth_session=fake&foo=bar');
-    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
-      user: { display_name: 'Walter Torres', email: 'otrwalter@gmail.com' },
-      token: { access_token: 'the-token', token_type: 'Bearer', expires_in: 3600 },
-    });
-
-    render(<App />);
-
-    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
-    expect(useAppStore.getState().userProfile).toEqual({ name: 'Walter Torres', email: 'otrwalter@gmail.com' });
-    expect(useAppStore.getState().authProvider).toBe('google');
-    expect(getAuthToken()).toBe('the-token');
-
-    // auth_session is one-time-use — it must not linger in the URL (bookmarkable, sent as a Referer, etc.)
-    expect(window.location.search).toBe('?foo=bar');
-  });
-
-  it('maps bio/created_at/last_login_at from a real backend session into the profile', async () => {
-    window.history.replaceState({}, '', '/?auth_session=fake');
-    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
-      user: {
-        display_name: 'Walter Torres',
-        email: 'otrwalter@gmail.com',
-        bio: 'Building APIforge',
-        created_at: '2026-07-07 23:04:26.110224+00',
-        last_login_at: '2026-07-15 04:13:55+00',
-      },
-      token: { access_token: 'the-token', token_type: 'Bearer', expires_in: 3600 },
-    });
-
-    render(<App />);
-
-    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
-    expect(useAppStore.getState().userProfile).toMatchObject({
-      bio: 'Building APIforge',
-      memberSince: '2026-07-07 23:04:26.110224+00',
-      lastLoginAt: '2026-07-15 04:13:55+00',
-    });
-  });
-
-  it('does not let StrictMode\'s double effect invocation re-fetch and clobber the profile with a thinner shape', async () => {
-    window.history.replaceState({}, '', '/?auth_session=fake');
-    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
-      user: { display_name: 'Walter Torres', email: 'otrwalter@gmail.com' },
-      token: { access_token: 'the-token', token_type: 'Bearer', expires_in: 3600 },
-    });
-    // Simulates the real bug this guards against: /auth/me returning a much thinner object than
-    // the auth_session redirect payload did (its documented schema is an empty `properties: {}`).
-    vi.mocked(fetchMe).mockResolvedValue({});
-
-    render(
-      <StrictMode>
-        <App />
-      </StrictMode>,
-    );
-
-    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
-    expect(useAppStore.getState().userProfile).toEqual({ name: 'Walter Torres', email: 'otrwalter@gmail.com' });
-    expect(fetchMe).not.toHaveBeenCalled();
-  });
-
-  it('tags the session with whichever provider was recorded as pending before the redirect (e.g. GitHub, not just Google)', async () => {
-    setPendingAuthProvider('github');
-    window.history.replaceState({}, '', '/?auth_session=fake');
-    vi.mocked(readAuthSessionFromLocation).mockReturnValue({
+  it('exchanges a callback returned to the frontend root before rendering sign in', async () => {
+    window.history.replaceState({}, '', '/?code=root-code&provider=google');
+    vi.mocked(exchangeAuthorizationCode).mockResolvedValue({
       user: { display_name: 'Ada Lovelace', email: 'ada@example.com' },
-      token: { access_token: 'the-token', token_type: 'Bearer', expires_in: 3600 },
+      token: { token_type: 'Bearer', access_token: 'root-memory-token', expires_in: 3600 },
     });
 
     render(<App />);
 
+    expect(screen.getByRole('heading', { name: 'Completing sign-in' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sign In' })).not.toBeInTheDocument();
     await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
-    expect(useAppStore.getState().authProvider).toBe('github');
+    expect(exchangeAuthorizationCode).toHaveBeenCalledWith('root-code', 'google');
+    expect(getAuthToken()).toBe('root-memory-token');
+    expect(window.location.pathname).toBe('/');
+    expect(window.location.search).toBe('');
   });
 
-  it('restores a session from a token stored on an earlier visit, tagged with that visit\'s provider', async () => {
-    setAuthToken('stored-token');
-    setAuthProvider('github');
-    vi.mocked(fetchMe).mockResolvedValue({ display_name: 'Ada Lovelace', email: 'ada@example.com' });
+  it('exchanges the callback code using the provider supplied by the backend', async () => {
+    window.history.replaceState({}, '', '/oauth/callback?code=one-time&provider=google');
+    vi.mocked(exchangeAuthorizationCode).mockResolvedValue({
+      user: { display_name: 'Ada Lovelace', email: 'ada@example.com' },
+      token: { token_type: 'Bearer', access_token: 'memory-token', expires_in: 3600 },
+    });
 
     render(<App />);
 
+    expect(screen.getByRole('heading', { name: 'Completing sign-in' })).toBeInTheDocument();
     await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
-    expect(useAppStore.getState().authProvider).toBe('github');
-    expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
+    expect(exchangeAuthorizationCode).toHaveBeenCalledWith('one-time', 'google');
+    expect(getAuthToken()).toBe('memory-token');
+    expect(localStorage.length).toBe(0);
+    expect(window.location.pathname).toBe('/');
+    expect(window.location.search).toBe('');
   });
 
-  it('does not attempt to restore a session from a token with no associated provider (inconsistent stored state)', async () => {
-    setAuthToken('stored-token');
-    // No setAuthProvider call — simulates leftover/corrupted state.
+
+  it('rejects a callback provider that conflicts with the pending sign-in request', async () => {
+    setPendingAuthProvider('github');
+    window.history.replaceState({}, '', '/oauth/callback?code=one-time&provider=google');
 
     render(<App />);
 
-    await waitFor(() => expect(fetchMe).not.toHaveBeenCalled());
+    expect(await screen.findByText(/does not match the sign-in request/i)).toBeInTheDocument();
+    expect(exchangeAuthorizationCode).not.toHaveBeenCalled();
     expect(useAppStore.getState().signedIn).toBe(false);
   });
 
-  it('a link redirect (Settings :: Version Control) registers the connected identity instead of replacing the active session', async () => {
-    useAppStore.setState({ signedIn: true, userProfile: { name: 'Ada Lovelace', email: 'ada@example.com' }, authProvider: 'google' });
-    setPendingLinkProvider('github');
-    window.history.replaceState({}, '', '/?auth_link_session=fake&foo=bar');
-    vi.mocked(readAuthLinkFromLocation).mockReturnValue({
-      provider: 'github',
-      username: 'octocat',
-      display_name: 'The Octocat',
-      avatar_url: 'https://example.com/octocat.png',
+  it('falls back to the pending provider when the callback omits provider', async () => {
+    setPendingAuthProvider('github');
+    window.history.replaceState({}, '', '/oauth/callback?code=one-time');
+    vi.mocked(exchangeAuthorizationCode).mockResolvedValue({
+      user: { display_name: 'Ada Lovelace', email: 'ada@example.com' },
+      token: { access_token: 'memory-token' },
     });
 
     render(<App />);
 
-    await waitFor(() =>
-      expect(useAppStore.getState().versionControlLinks).toEqual({
-        github: { username: 'octocat', avatarUrl: 'https://example.com/octocat.png' },
-      }),
-    );
-
-    // The primary session is untouched by the link — it must not be clobbered by the linked identity.
-    expect(useAppStore.getState().authProvider).toBe('google');
-    expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
-    expect(getAuthToken()).toBeNull();
-
-    // auth_link_session is one-time-use — it must not linger in the URL.
-    expect(window.location.search).toBe('?foo=bar');
+    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
+    expect(exchangeAuthorizationCode).toHaveBeenCalledWith('one-time', 'github');
   });
 
-  it('restores the primary signed-in session from a real stored token after a link redirect completes', async () => {
-    // Simulates the real scenario the earlier test doesn't: the user was actually signed in (a
-    // real token+provider in localStorage) before clicking "Connect with GitHub", not just
-    // in-memory store state — so the fresh page load after the redirect starts fully signed out
-    // until the bootstrap effect restores it.
-    setAuthToken('stored-token');
-    setAuthProvider('google');
-    vi.mocked(fetchMe).mockResolvedValue({ display_name: 'Ada Lovelace', email: 'ada@example.com' });
+  it('shows a public error page when code or provider is missing', async () => {
+    window.history.replaceState({}, '', '/oauth/callback?code=untrusted');
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Sign-in failed' })).toBeInTheDocument();
+    expect(exchangeAuthorizationCode).not.toHaveBeenCalled();
+    expect(screen.getByRole('link', { name: 'Return to sign in' })).toHaveAttribute('href', '/');
+  });
+
+  it('hydrates a linked version-control provider after exchange', async () => {
     setPendingLinkProvider('github');
-    window.history.replaceState({}, '', '/?auth_link_session=fake');
-    vi.mocked(readAuthLinkFromLocation).mockReturnValue({ provider: 'github', username: 'octocat' });
+    window.history.replaceState({}, '', '/oauth/callback?code=link-code&provider=github');
+    vi.mocked(exchangeAuthorizationCode).mockResolvedValue({
+      user: { display_name: 'Ada Lovelace', email: 'ada@example.com' },
+      token: { access_token: 'renewed-token' },
+      linked_profile: {
+        provider: 'github',
+        username: 'octocat',
+        avatar_url: 'https://example.com/avatar.png',
+      },
+    });
 
     render(<App />);
 
-    // The link round trip alone must not leave the app stuck signed out.
     await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
-    expect(useAppStore.getState().authProvider).toBe('google');
-    expect(useAppStore.getState().userProfile).toEqual({ name: 'Ada Lovelace', email: 'ada@example.com' });
+    expect(useAppStore.getState().versionControlLinks.github).toEqual({
+      username: 'octocat',
+      avatarUrl: 'https://example.com/avatar.png',
+    });
   });
 
-  it('shows a loading splash — neither the landing page nor the app shell — while a stored session is still being verified', async () => {
-    setAuthToken('stored-token');
-    setAuthProvider('github');
-    let resolveFetchMe: (me: { display_name: string; email: string }) => void = () => {};
-    vi.mocked(fetchMe).mockReturnValue(new Promise((resolve) => (resolveFetchMe = resolve)));
+  it('shows the exchange failure without navigating to a protected page', async () => {
+    window.history.replaceState({}, '', '/oauth/callback?code=expired&provider=google');
+    vi.mocked(exchangeAuthorizationCode).mockRejectedValue(new Error('The authorization code has expired.'));
 
     render(<App />);
 
-    expect(screen.queryByRole('button', { name: 'Sign In' })).not.toBeInTheDocument();
-    expect(screen.queryByText('No API document loaded')).not.toBeInTheDocument();
-
-    resolveFetchMe({ display_name: 'Ada Lovelace', email: 'ada@example.com' });
-    await waitFor(() => expect(useAppStore.getState().signedIn).toBe(true));
+    expect(await screen.findByText('The authorization code has expired.')).toBeInTheDocument();
+    expect(useAppStore.getState().signedIn).toBe(false);
+    expect(window.location.pathname).toBe('/oauth/callback');
   });
 });

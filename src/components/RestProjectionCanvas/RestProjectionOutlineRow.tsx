@@ -5,7 +5,7 @@ import {
   FileText,
   Tag,
   Route,
-  IdCard,
+  Contact,
   Server,
   Component as ComponentsIcon,
   Waypoints,
@@ -16,11 +16,11 @@ import { useSpecStore } from '../../state/useSpecStore';
 import { isOutlineGroupDefaultExpanded, type OutlineNode } from '../../lib/restProjectionOutline';
 import styles from './RestProjectionOutlinePanel.module.css';
 
-const NODE_ICON: Partial<Record<string, ComponentType<{ size?: number }>>> = {
+const NODE_ICON: Partial<Record<string, ComponentType<{ size?: number | string }>>> = {
   general: FileText,
   tags: Tag,
   paths: Route,
-  operationId: IdCard,
+  operationId: Contact,
   servers: Server,
   components: ComponentsIcon,
   security: KeyRound,

@@ -1,60 +1,49 @@
 /**
- * The backend is bearer-token only (no session cookie) — GET /auth/me responds 401 "Missing
- * bearer token" without one. The token itself arrives via the OAuth callback redirect's
- * auth_session payload (see App.tsx) and is kept here so it survives a page reload. The provider
- * is stored alongside it — needed to call the right /auth/{provider}/signout endpoint later,
- * since the redirect payload itself doesn't say which provider produced it.
+ * Bearer credentials are deliberately kept in module memory only. They are never written to
+ * localStorage, sessionStorage, IndexedDB, cookies, or the URL. A full page reload therefore
+ * ends the frontend session until the backend supplies a secure refresh mechanism.
  */
-const TOKEN_KEY = 'apiforge_auth_token';
-const PROVIDER_KEY = 'apiforge_auth_provider';
-/** Session-scoped: only needed for the moment between the redirect out and the callback's return. */
+let authToken: string | null = null;
+let authProvider: string | null = null;
+
 const PENDING_PROVIDER_KEY = 'apiforge_pending_auth_provider';
-/**
- * Separate from PENDING_PROVIDER_KEY: a "link" redirect (Settings :: Version Control, connecting
- * an additional provider to the already-signed-in account) must not be mistaken for a fresh
- * sign-in when the callback returns, or it would clobber the active session.
- */
 const PENDING_LINK_PROVIDER_KEY = 'apiforge_pending_link_provider';
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return authToken;
 }
 
 export function setAuthToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  authToken = token;
 }
 
 export function getAuthProvider(): string | null {
-  return localStorage.getItem(PROVIDER_KEY);
+  return authProvider;
 }
 
 export function setAuthProvider(provider: string): void {
-  localStorage.setItem(PROVIDER_KEY, provider);
+  authProvider = provider;
 }
 
 export function clearAuthToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(PROVIDER_KEY);
+  authToken = null;
+  authProvider = null;
 }
 
-/** Recorded right before redirecting to the backend's OAuth entry point for a given provider. */
 export function setPendingAuthProvider(provider: string): void {
   sessionStorage.setItem(PENDING_PROVIDER_KEY, provider);
 }
 
-/** Reads and clears the pending provider — one-shot, matching the one-shot auth_session redirect param. */
 export function takePendingAuthProvider(): string | null {
   const provider = sessionStorage.getItem(PENDING_PROVIDER_KEY);
   sessionStorage.removeItem(PENDING_PROVIDER_KEY);
   return provider;
 }
 
-/** Recorded right before redirecting to link an additional provider (Settings :: Version Control). */
 export function setPendingLinkProvider(provider: string): void {
   sessionStorage.setItem(PENDING_LINK_PROVIDER_KEY, provider);
 }
 
-/** Reads and clears the pending link provider — one-shot, same pattern as takePendingAuthProvider. */
 export function takePendingLinkProvider(): string | null {
   const provider = sessionStorage.getItem(PENDING_LINK_PROVIDER_KEY);
   sessionStorage.removeItem(PENDING_LINK_PROVIDER_KEY);

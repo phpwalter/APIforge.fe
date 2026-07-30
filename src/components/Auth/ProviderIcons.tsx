@@ -9,7 +9,7 @@ import githubLogo from '../../assets/github.svg';
 import gitlabLogo from '../../assets/GitLab.svg';
 import bitbucketLogo from '../../assets/bitbucket.svg';
 
-export type IconProps = SVGProps<SVGSVGElement> & { size?: number };
+export type IconProps = SVGProps<SVGSVGElement> & { size?: number | string };
 export type IconComponent = (props: IconProps) => ReactElement;
 
 function MonogramBadge({

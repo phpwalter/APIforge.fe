@@ -15,18 +15,17 @@ import {
   SwatchBook,
   Binary,
   AlignLeft,
-  MonitorCog,
   Share2,
   Languages,
   RefreshCw,
-  WifiSync,
+  Wifi,
 } from 'lucide-react';
 
 export interface SettingsCategory {
   key: string;
   label: string;
   keywords: string;
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{ size?: number | string }>;
   /** One level of nested items shown/expanded under this category in the settings rail. */
   children?: SettingsCategory[];
 }
@@ -88,12 +87,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     key: 'system',
     label: 'System Settings',
     keywords: 'system data sharing language region updates backup sync',
-    icon: MonitorCog,
+    icon: Monitor,
     children: [
       { key: 'dataSharing', label: 'Data Sharing', keywords: 'data sharing privacy telemetry analytics', icon: Share2 },
       { key: 'languageRegion', label: 'Language & Region', keywords: 'language region locale timezone', icon: Languages },
       { key: 'updates', label: 'Updates', keywords: 'updates version release changelog', icon: RefreshCw },
-      { key: 'backupSync', label: 'Backup & Sync', keywords: 'sync cloud backup devices', icon: WifiSync },
+      { key: 'backupSync', label: 'Backup & Sync', keywords: 'sync cloud backup devices', icon: Wifi },
     ],
   },
   { key: 'cookies', label: 'Cookies', keywords: 'cookies privacy analytics marketing consent', icon: Cookie },

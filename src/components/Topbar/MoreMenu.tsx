@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  LayersPlus,
   Layers,
   Share2,
   FolderOpen,
@@ -63,7 +62,7 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
       <div className={styles.moreMenu} role="menu">
         <button type="button" className={styles.menuItem} onClick={run(requestNewProject)}>
           <span className={styles.menuItemIcon}>
-            <LayersPlus size={16} />
+            <Layers size={16} />
           </span>
           <span className={styles.menuItemTrailing}>New Project</span>
         </button>

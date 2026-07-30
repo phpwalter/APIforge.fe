@@ -17,9 +17,9 @@ export interface ServerProjectDocument extends ServerProjectSummary {
 }
 
 export function listServerProjects(): Promise<ServerProjectSummary[]> {
-  return apiGet<ServerProjectSummary[]>('/projects');
+  return apiGet<ServerProjectSummary[]>('/projects', { apiVersion: 'v1' });
 }
 
 export function getServerProject(id: string): Promise<ServerProjectDocument> {
-  return apiGet<ServerProjectDocument>(`/projects/${id}`);
+  return apiGet<ServerProjectDocument>(`/projects/${id}`, { apiVersion: 'v1' });
 }

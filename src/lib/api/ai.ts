@@ -17,7 +17,7 @@ export interface AiCompleteResponse {
 }
 
 export function aiComplete(request: AiCompleteRequest): Promise<AiCompleteResponse> {
-  return apiPost<AiCompleteResponse>('/ai/complete', request);
+  return apiPost<AiCompleteResponse>('/ai/complete', { apiVersion: 'v1' }, request);
 }
 
 export interface AiStatusResponse {
@@ -26,5 +26,5 @@ export interface AiStatusResponse {
 }
 
 export function fetchAiStatus(): Promise<AiStatusResponse> {
-  return apiGet<AiStatusResponse>('/ai/status');
+  return apiGet<AiStatusResponse>('/ai/status', { apiVersion: 'v1' });
 }

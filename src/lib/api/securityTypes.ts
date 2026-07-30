@@ -30,7 +30,7 @@ export interface SecurityTypesResponse {
 }
 
 export async function fetchSecurityTypes(): Promise<SecurityTypeDto[]> {
-  const res = await apiGet<SecurityTypesResponse>('/securityTypes');
+  const res = await apiGet<SecurityTypesResponse>('/securityTypes', { apiVersion: 'v1' });
   return res.data;
 }
 

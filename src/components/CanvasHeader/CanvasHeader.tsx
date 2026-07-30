@@ -12,7 +12,7 @@ const TABS: CanvasTabDef[] = [
   { id: 'diagnostics', label: 'Diagnostics' },
 ];
 
-const TAB_ICONS: Record<CanvasTabId, ComponentType<{ size?: number }>> = {
+const TAB_ICONS: Record<CanvasTabId, ComponentType<{ size?: number | string }>> = {
   design: Route,
   schema: Braces,
   rest: Code,

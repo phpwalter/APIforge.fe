@@ -29,20 +29,45 @@ interface RawOperation {
   tags?: string[];
   security?: Record<string, unknown>[];
   parameters?: RawParameter[];
-  requestBody?: { description?: string };
+  requestBody?: RawRequestBody;
   responses?: Record<string, RawResponse>;
 }
 
-interface RawParameter {
+interface RawParameter extends Record<string, unknown> {
   name?: string;
   in?: string;
   required?: boolean;
-  schema?: { nullable?: boolean; example?: unknown };
+  deprecated?: boolean;
+  style?: string;
+  explode?: boolean;
+  allowReserved?: boolean;
+  schema?: RawParameterSchema;
 }
 
-interface RawResponseHeader {
+interface RawParameterSchema extends Record<string, unknown> {
+  type?: string;
+  format?: string;
+  nullable?: boolean;
+  example?: unknown;
+  pattern?: string;
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  enum?: unknown[];
+  default?: unknown;
+}
+
+interface RawRequestBody extends Record<string, unknown> {
+  description?: string;
   required?: boolean;
-  schema?: { nullable?: boolean; example?: unknown };
+  content?: Record<string, { schema?: RawResponseSchema }>;
+}
+
+
+interface RawResponseHeader extends Record<string, unknown> {
+  required?: boolean;
+  schema?: RawParameterSchema;
 }
 
 interface RawResponseSchema {
@@ -51,7 +76,7 @@ interface RawResponseSchema {
   items?: { $ref?: string };
 }
 
-interface RawResponse {
+interface RawResponse extends Record<string, unknown> {
   description?: string;
   headers?: Record<string, RawResponseHeader>;
   content?: Record<string, { schema?: RawResponseSchema }>;
@@ -75,7 +100,7 @@ interface RawSchemaProperty {
   required?: string[];
 }
 
-interface RawSchema {
+interface RawSchema extends Record<string, unknown> {
   type?: string;
   format?: string;
   description?: string;
@@ -200,6 +225,24 @@ function refNameFromPointer(ref: string | undefined): string | undefined {
   return m ? m[1] : undefined;
 }
 
+function parameterSchema(schema: RawParameterSchema | undefined) {
+  if (!schema) return undefined;
+  const type = schema.type && ['string', 'integer', 'number', 'boolean', 'array', 'object'].includes(schema.type)
+    ? (schema.type as SchemaFieldType)
+    : undefined;
+  return {
+    ...(type ? { type } : {}),
+    ...(schema.format ? { format: schema.format } : {}),
+    ...(schema.pattern ? { pattern: schema.pattern } : {}),
+    ...(schema.minimum !== undefined ? { minimum: schema.minimum } : {}),
+    ...(schema.maximum !== undefined ? { maximum: schema.maximum } : {}),
+    ...(schema.minLength !== undefined ? { minLength: schema.minLength } : {}),
+    ...(schema.maxLength !== undefined ? { maxLength: schema.maxLength } : {}),
+    ...(schema.enum ? { enum: schema.enum } : {}),
+    ...(schema.default !== undefined ? { default: schema.default } : {}),
+  };
+}
+
 function buildResponseHeaders(headers: Record<string, RawResponseHeader> | undefined): HeaderParam[] {
   return Object.entries(headers ?? {}).map(([name, h]) => ({
     id: makeId('hd'),
@@ -207,6 +250,8 @@ function buildResponseHeaders(headers: Record<string, RawResponseHeader> | undef
     required: !!h?.required,
     nullable: !!h?.schema?.nullable,
     example: h?.schema?.example !== undefined ? String(h.schema.example) : '',
+    schema: parameterSchema(h?.schema),
+    raw: { ...h },
   }));
 }
 
@@ -243,10 +288,10 @@ function buildParamsAndHeaders(
     const nullable = !!p.schema?.nullable;
     const example = p.schema?.example !== undefined ? String(p.schema.example) : '';
     if (p.in === 'header') {
-      headers.push({ id: makeId('hd'), name: p.name!, required: !!p.required, nullable, example });
+      headers.push({ id: makeId('hd'), name: p.name!, required: !!p.required, nullable, example, schema: parameterSchema(p.schema), raw: { ...p } });
     } else {
       const loc: ParamLocation = p.in === 'path' ? 'path' : p.in === 'cookie' ? 'cookie' : 'query';
-      params.push({ id: makeId('pm'), name: p.name!, in: loc, required: !!p.required, nullable, example });
+      params.push({ id: makeId('pm'), name: p.name!, in: loc, required: !!p.required, nullable, example, schema: parameterSchema(p.schema), style: p.style, explode: p.explode, allowReserved: p.allowReserved, deprecated: p.deprecated, raw: { ...p } });
     }
   });
   return { params, headers };
@@ -279,6 +324,7 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         headers: buildResponseHeaders(r?.headers),
         contentTypes: r?.content ? Object.keys(r.content) : ['application/json'],
         ...responseBody(r?.content),
+        raw: { ...(r ?? {}) },
       }));
 
       endpoints.push({
@@ -293,6 +339,12 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         headers,
         requestBodyEnabled: !!raw.requestBody,
         requestBodyDescription: raw.requestBody?.description ?? '',
+        requestBodyRequired: raw.requestBody?.required ?? false,
+        requestBodyContentTypes: raw.requestBody?.content ? Object.keys(raw.requestBody.content) : ['application/json'],
+        requestBodySchema: responseBody(raw.requestBody?.content).schema,
+        requestBodySchemaIsArray: responseBody(raw.requestBody?.content).schemaIsArray,
+        requestBodyRaw: raw.requestBody ? { ...raw.requestBody } : undefined,
+        raw: { ...raw },
         responses: responses.length
           ? responses
           : [
@@ -387,10 +439,11 @@ export function parseOpenApiDocument(text: string, filename: string): ParsedOpen
         scalarFormat: s.format,
         scalarDescription: s.description ?? '',
         scalarPrimitiveKey: s['x-apiforge-primitive'],
+        raw: { ...s },
       };
     }
     const fields = propertiesToFields(s?.properties, new Set(s?.required ?? []), 0);
-    return { id: makeId('sc'), name, fields, contentTypes: ['application/json'] };
+    return { id: makeId('sc'), name, fields, contentTypes: ['application/json'], raw: { ...s } };
   });
 
   return {

@@ -31,7 +31,7 @@ function parseScopeNames(scopes: string | undefined): string[] {
 }
 
 function schemaObjWithVariant(schema: Schema, variant: ExportVariant): Record<string, unknown> {
-  const obj = compileSchemaObj(schema);
+  const obj = { ...(schema.raw ?? {}), ...compileSchemaObj(schema) };
   if (variant === 'full' && schema.scalar && schema.scalarPrimitiveKey) {
     return { ...obj, 'x-apiforge-primitive': schema.scalarPrimitiveKey };
   }
@@ -74,27 +74,38 @@ function legacySecuritySchemeObject(): Record<string, unknown> {
   return { type: 'apiKey', in: 'header', name: 'Authorization' };
 }
 
-function paramSchema(nullable: boolean, example: string): Record<string, unknown> {
+function paramSchema(item: Param | HeaderParam): Record<string, unknown> {
+  const rawSchema = item.raw && typeof item.raw.schema === 'object' && item.raw.schema !== null
+    ? (item.raw.schema as Record<string, unknown>)
+    : {};
   return {
-    type: 'string',
-    ...(nullable ? { nullable: true } : {}),
-    ...(example ? { example } : {}),
+    ...rawSchema,
+    ...(item.schema ?? {}),
+    type: item.schema?.type ?? (typeof rawSchema.type === 'string' ? rawSchema.type : 'string'),
+    ...(item.nullable ? { nullable: true } : { nullable: false }),
+    ...(item.example ? { example: item.example } : {}),
   };
 }
 
 function buildParameters(params: Param[], headers: HeaderParam[]): Record<string, unknown>[] {
   return [
     ...params.map((p) => ({
+      ...(p.raw ?? {}),
       name: p.name,
       in: p.in,
       required: p.in === 'path' ? true : p.required,
-      schema: paramSchema(p.nullable, p.example),
+      ...(p.style ? { style: p.style } : {}),
+      ...(p.explode !== undefined ? { explode: p.explode } : {}),
+      ...(p.allowReserved !== undefined ? { allowReserved: p.allowReserved } : {}),
+      ...(p.deprecated !== undefined ? { deprecated: p.deprecated } : {}),
+      schema: paramSchema(p),
     })),
     ...headers.map((h) => ({
+      ...(h.raw ?? {}),
       name: h.name,
       in: 'header',
       required: h.required,
-      schema: paramSchema(h.nullable, h.example),
+      schema: paramSchema(h),
     })),
   ];
 }
@@ -103,11 +114,12 @@ function buildResponses(endpoint: Endpoint, schemaNames: Set<string>): Record<st
   const responses: Record<string, unknown> = {};
   endpoint.responses.forEach((r) => {
     const response: Record<string, unknown> = {
+      ...(r.raw ?? {}),
       description: r.description || HTTP_STATUS_TEXT[r.code] || 'Response',
     };
     if (r.headers.length) {
       response.headers = Object.fromEntries(
-        r.headers.map((h) => [h.name, { required: h.required, schema: paramSchema(h.nullable, h.example) }]),
+        r.headers.map((h) => [h.name, { ...(h.raw ?? {}), required: h.required, schema: paramSchema(h) }]),
       );
     }
     if (r.schema && schemaNames.has(r.schema)) {
@@ -123,6 +135,7 @@ function buildResponses(endpoint: Endpoint, schemaNames: Set<string>): Record<st
 
 function buildOperation(endpoint: Endpoint, schemaNames: Set<string>): Record<string, unknown> {
   const op: Record<string, unknown> = {
+    ...(endpoint.raw ?? {}),
     responses: buildResponses(endpoint, schemaNames),
   };
   if (endpoint.summary) op.summary = endpoint.summary;
@@ -134,11 +147,29 @@ function buildOperation(endpoint: Endpoint, schemaNames: Set<string>): Record<st
   const parameters = buildParameters(endpoint.params, endpoint.headers);
   if (parameters.length) op.parameters = parameters;
   if (endpoint.requestBodyEnabled) {
+    const contentTypes = endpoint.requestBodyContentTypes?.length
+      ? endpoint.requestBodyContentTypes
+      : ['application/json'];
+    const requestSchema = endpoint.requestBodySchema && schemaNames.has(endpoint.requestBodySchema)
+      ? endpoint.requestBodySchemaIsArray
+        ? { type: 'array', items: { $ref: `#/components/schemas/${endpoint.requestBodySchema}` } }
+        : { $ref: `#/components/schemas/${endpoint.requestBodySchema}` }
+      : undefined;
+    const rawContent = endpoint.requestBodyRaw?.content && typeof endpoint.requestBodyRaw.content === 'object'
+      ? (endpoint.requestBodyRaw.content as Record<string, unknown>)
+      : {};
     op.requestBody = {
+      ...(endpoint.requestBodyRaw ?? {}),
       ...(endpoint.requestBodyDescription ? { description: endpoint.requestBodyDescription } : {}),
-      required: true,
-      content: { 'application/json': {} },
+      required: endpoint.requestBodyRequired ?? false,
+      content: Object.fromEntries(contentTypes.map((contentType) => {
+        const existing = rawContent[contentType];
+        const media = existing && typeof existing === 'object' ? existing as Record<string, unknown> : {};
+        return [contentType, requestSchema ? { ...media, schema: requestSchema } : media];
+      })),
     };
+  } else {
+    delete op.requestBody;
   }
   return op;
 }

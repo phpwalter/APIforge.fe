@@ -96,8 +96,8 @@ describe('buildOpenApiDocument', () => {
       summary: 'Get a user',
       operationId: 'getUser',
       tags: ['Users'],
-      params: [{ id: 'pm_1', name: 'id', in: 'path', required: false }],
-      headers: [{ id: 'hd_1', name: 'X-Trace-Id', required: false }],
+      params: [{ id: 'pm_1', name: 'id', in: 'path', required: false, nullable: false, example: '' }],
+      headers: [{ id: 'hd_1', name: 'X-Trace-Id', required: false, nullable: false, example: '' }],
       responses: [{ id: 'res_1', code: '200', description: 'OK', headers: [], contentTypes: ['application/json'], schema: '', schemaIsArray: false }],
     });
     const doc = buildOpenApiDocument(baseParams({ endpoints: [endpoint] })) as {
@@ -141,7 +141,7 @@ describe('buildOpenApiDocument', () => {
   });
 
   it('marks path parameters as required regardless of the stored flag', () => {
-    const endpoint = baseEndpoint({ params: [{ id: 'pm_1', name: 'id', in: 'path', required: false }] });
+    const endpoint = baseEndpoint({ params: [{ id: 'pm_1', name: 'id', in: 'path', required: false, nullable: false, example: '' }] });
     const doc = buildOpenApiDocument(baseParams({ endpoints: [endpoint] })) as {
       paths: Record<string, Record<string, Record<string, unknown>>>;
     };

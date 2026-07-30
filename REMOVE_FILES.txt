@@ -1,0 +1,3 @@
+# Files to Remove
+
+Delete the repository-root `.env` file after applying this package. Use `.env.example` as the committed template and place local values in `.env.local`, which is ignored by Git.

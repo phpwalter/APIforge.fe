@@ -17,7 +17,7 @@ export interface FieldActionContext {
 
 export interface PluginFieldAction {
   id: string;
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{ size?: number | string }>;
   /** Shown as a tooltip on the inline button. */
   label: string;
   /** Returns the field's new value. Throwing surfaces as an inline error, not a crash. */
@@ -26,7 +26,7 @@ export interface PluginFieldAction {
 
 export interface PluginToolbarAction {
   id: string;
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{ size?: number | string }>;
   label: string;
   run: () => void;
 }
@@ -34,7 +34,7 @@ export interface PluginToolbarAction {
 export interface Plugin {
   id: string;
   label: string;
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<{ size?: number | string }>;
   description: string;
   /** Shown in Settings :: Plugins — first-party plugins are all "APIforge" for now. */
   author: string;

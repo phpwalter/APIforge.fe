@@ -40,7 +40,7 @@ const createModel = vi.fn((value: string, language: string) => {
   modelLanguage = language;
   return model;
 });
-const create = vi.fn(() => editor);
+const create = vi.fn<[unknown, Record<string, unknown>], typeof editor>(() => editor);
 const setTheme = vi.fn();
 const defineTheme = vi.fn();
 const setModelLanguage = vi.fn((_model: unknown, language: string) => {

@@ -9,18 +9,19 @@ vi.mock('./client', () => ({
 describe('repos API wrappers', () => {
   it('listGithubRepos calls GET /repos/github', () => {
     listGithubRepos();
-    expect(apiGet).toHaveBeenCalledWith('/repos/github');
+    expect(apiGet).toHaveBeenCalledWith('/repos/github', { apiVersion: 'v1' });
   });
 
   it('listGithubBranches calls GET /repos/github/{owner}/{repo}/branches', () => {
     listGithubBranches('octocat', 'hello-world');
-    expect(apiGet).toHaveBeenCalledWith('/repos/github/octocat/hello-world/branches');
+    expect(apiGet).toHaveBeenCalledWith('/repos/github/octocat/hello-world/branches', { apiVersion: 'v1' });
   });
 
   it('getGithubContents calls GET /repos/github/{owner}/{repo}/contents with path and ref as query params', () => {
     getGithubContents('octocat', 'hello-world', 'docs/openapi.yaml', 'main');
     expect(apiGet).toHaveBeenCalledWith(
       '/repos/github/octocat/hello-world/contents?path=docs%2Fopenapi.yaml&ref=main',
+      { apiVersion: 'v1' },
     );
   });
 });

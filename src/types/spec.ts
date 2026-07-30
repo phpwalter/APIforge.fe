@@ -21,7 +21,24 @@ export interface ApiExternalDocs {
 
 export type ParamLocation = 'query' | 'path' | 'header' | 'cookie';
 
-export interface Param {
+export interface PreservedOpenApi {
+  /** Original OpenAPI fragment retained so unsupported fields survive import/export round trips. */
+  raw?: Record<string, unknown>;
+}
+
+export interface ParameterSchemaShape {
+  type?: SchemaFieldType;
+  format?: string;
+  pattern?: string;
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  enum?: unknown[];
+  default?: unknown;
+}
+
+export interface Param extends PreservedOpenApi {
   id: string;
   name: string;
   in: ParamLocation;
@@ -29,10 +46,15 @@ export interface Param {
   nullable: boolean;
   /** Free-text example shown for this parameter. */
   example: string;
+  schema?: ParameterSchemaShape;
+  style?: string;
+  explode?: boolean;
+  allowReserved?: boolean;
+  deprecated?: boolean;
 }
 
 /** Headers are always string-typed — no type picker, per the handoff README. */
-export interface HeaderParam {
+export interface HeaderParam extends PreservedOpenApi {
   id: string;
   name: string;
   required: boolean;
@@ -41,9 +63,10 @@ export interface HeaderParam {
   nullable: boolean;
   /** Free-text example shown for this header. */
   example: string;
+  schema?: ParameterSchemaShape;
 }
 
-export interface ResponseEntry {
+export interface ResponseEntry extends PreservedOpenApi {
   id: string;
   code: string;
   description: string;
@@ -56,7 +79,7 @@ export interface ResponseEntry {
   schemaIsArray: boolean;
 }
 
-export interface Endpoint {
+export interface Endpoint extends PreservedOpenApi {
   id: string;
   path: string;
   method: HttpMethod;
@@ -68,6 +91,11 @@ export interface Endpoint {
   headers: HeaderParam[];
   requestBodyEnabled: boolean;
   requestBodyDescription: string;
+  requestBodyRequired?: boolean;
+  requestBodyContentTypes?: string[];
+  requestBodySchema?: string;
+  requestBodySchemaIsArray?: boolean;
+  requestBodyRaw?: Record<string, unknown>;
   responses: ResponseEntry[];
 }
 
@@ -125,7 +153,7 @@ export type SchemaField = SchemaFieldRef | SchemaFieldPrimitive | SchemaFieldCus
  * A reusable schema — either an object schema (`fields`) or a scalar/primitive
  * schema (`scalar: true`, described by the scalar* fields instead).
  */
-export interface Schema {
+export interface Schema extends PreservedOpenApi {
   id: string;
   name: string;
   scalar?: boolean;
