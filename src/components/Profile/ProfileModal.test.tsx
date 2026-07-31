@@ -69,11 +69,11 @@ describe('ProfileModal', () => {
     const user = userEvent.setup();
     setAuthToken('the-token');
     useAppStore.setState({
-      userProfile: { name: 'Ada', email: 'ada@example.com' },
+      userProfile: { name: 'Ada', email: 'ada@example.com', recordVersion: 4 },
       authProvider: 'github',
       profileOpen: true,
     });
-    vi.mocked(updateMe).mockResolvedValue({ display_name: 'Ada Lovelace', bio: 'Mathematician' });
+    vi.mocked(updateMe).mockResolvedValue({ display_name: 'Ada Lovelace', bio: 'Mathematician', record_version: 5 });
 
     render(<ProfileModal />);
     await user.clear(screen.getByPlaceholderText('Your name'));
@@ -82,19 +82,37 @@ describe('ProfileModal', () => {
 
     await waitFor(() => expect(useAppStore.getState().profileOpen).toBe(false));
     expect(updateMe).toHaveBeenCalledWith({
+      record_version: 4,
       display_name: 'Ada Lovelace',
       bio: undefined,
       use_gravatar: false,
       gravatar_email: undefined,
     });
-    expect(useAppStore.getState().userProfile).toMatchObject({ name: 'Ada Lovelace', bio: 'Mathematician' });
+    expect(useAppStore.getState().userProfile).toMatchObject({ name: 'Ada Lovelace', bio: 'Mathematician', recordVersion: 5 });
+  });
+
+  it('does not send PATCH when the authenticated profile has no record version', async () => {
+    const user = userEvent.setup();
+    setAuthToken('the-token');
+    useAppStore.setState({
+      userProfile: { name: 'Ada', email: 'ada@example.com' },
+      authProvider: 'github',
+      profileOpen: true,
+    });
+
+    render(<ProfileModal />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText(/profile version is unavailable/i)).toBeInTheDocument();
+    expect(updateMe).not.toHaveBeenCalled();
+    expect(useAppStore.getState().profileOpen).toBe(true);
   });
 
   it('shows an inline error and keeps the dialog open when the save fails', async () => {
     const user = userEvent.setup();
     setAuthToken('the-token');
     useAppStore.setState({
-      userProfile: { name: 'Ada', email: 'ada@example.com' },
+      userProfile: { name: 'Ada', email: 'ada@example.com', recordVersion: 2 },
       authProvider: 'github',
       profileOpen: true,
     });

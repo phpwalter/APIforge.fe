@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
-import { exchangeAuthorizationCode, readOAuthCallbackFromLocation } from '../../lib/api/auth';
+import { exchangeAuthorizationCode, fetchMe, readOAuthCallbackFromLocation } from '../../lib/api/auth';
 import {
   clearAuthToken,
   setAuthProvider,
@@ -21,6 +21,9 @@ function profileFrom(me: {
   bio?: string;
   created_at?: string;
   last_login_at?: string;
+  use_gravatar?: boolean;
+  gravatar_email?: string;
+  record_version?: number;
 }): UserProfile {
   return {
     name: me.name ?? me.display_name ?? me.username ?? me.email ?? 'Signed in user',
@@ -29,6 +32,9 @@ function profileFrom(me: {
     bio: me.bio || undefined,
     memberSince: me.created_at || undefined,
     lastLoginAt: me.last_login_at || undefined,
+    useGravatar: me.use_gravatar ?? false,
+    gravatarEmail: me.gravatar_email || undefined,
+    recordVersion: me.record_version,
   };
 }
 
@@ -68,7 +74,7 @@ export function OAuthCallbackPage() {
     }
 
     exchangeAuthorizationCode(callback.code, provider)
-      .then((session) => {
+      .then(async (session) => {
         const accessToken = session.token?.access_token;
         if (!accessToken) {
           throw new Error('The authorization exchange returned no access token.');
@@ -76,8 +82,13 @@ export function OAuthCallbackPage() {
 
         setAuthToken(accessToken);
         setAuthProvider(provider);
+        const me = await fetchMe();
+        if (!Number.isInteger(me.record_version) || (me.record_version ?? 0) < 1) {
+          throw new Error('The authenticated-user response did not include a valid record_version.');
+        }
+
         window.history.replaceState({}, '', '/');
-        hydrateSession(profileFrom(session.user ?? {}), provider);
+        hydrateSession(profileFrom(me), provider);
 
         if (
           linkProvider &&

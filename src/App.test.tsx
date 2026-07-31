@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { useAppStore } from './state/useAppStore';
 import { useSpecStore } from './state/useSpecStore';
-import { exchangeAuthorizationCode } from './lib/api/auth';
+import { exchangeAuthorizationCode, fetchMe } from './lib/api/auth';
 import { clearAuthToken, getAuthToken, setPendingAuthProvider, setPendingLinkProvider } from './lib/api/authToken';
 
 vi.mock('./lib/api/auth', async () => {
@@ -10,6 +10,7 @@ vi.mock('./lib/api/auth', async () => {
   return {
     ...actual,
     exchangeAuthorizationCode: vi.fn(),
+    fetchMe: vi.fn(),
   };
 });
 
@@ -24,6 +25,12 @@ beforeEach(() => {
   sessionStorage.clear();
   window.history.replaceState({}, '', '/');
   vi.mocked(exchangeAuthorizationCode).mockReset();
+  vi.mocked(fetchMe).mockReset();
+  vi.mocked(fetchMe).mockResolvedValue({
+    display_name: 'Ada Lovelace',
+    email: 'ada@example.com',
+    record_version: 1,
+  });
 });
 
 describe('App public OAuth callback route', () => {

@@ -134,7 +134,7 @@ export interface AppState {
   authProvider: string | null;
   /** Instant demo sign-in for providers without a real backend integration yet. */
   signIn: () => void;
-  /** Populates a real session after the backend's OAuth round trip resolves via GET /auth/me. */
+  /** Populates a real session after the backend's OAuth round trip resolves via POST /auth/me. */
   hydrateSession: (profile: UserProfile, provider: string) => void;
   signOut: () => void;
   /** Merges into the signed-in profile — used by the My Profile dialog after a successful (or local-only) save. */

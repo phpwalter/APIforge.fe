@@ -1,6 +1,5 @@
 import {
   exchangeAuthorizationCode,
-  fetchAuthProviders,
   fetchMe,
   readAuthLinkFromLocation,
   readAuthorizationCodeFromLocation,
@@ -11,7 +10,7 @@ import {
   unlinkProvider,
   updateMe,
 } from './auth';
-import { apiGet, apiPatch, apiPost, apiUrl } from './client';
+import { apiPatch, apiPost, apiUrl } from './client';
 import { takePendingAuthProvider, takePendingLinkProvider } from './authToken';
 
 vi.mock('./client', () => ({
@@ -31,7 +30,7 @@ describe('OAuth navigation', () => {
   it('records the sign-in provider and navigates to the backend bootstrap route', () => {
     const original = window.location;
     Object.defineProperty(window, 'location', { configurable: true, value: { ...original, href: '' } });
-    redirectToProviderSignIn('github', '/auth/github/signin');
+    redirectToProviderSignIn('github');
     expect(apiUrl).toHaveBeenCalledWith('/auth/github/signin');
     expect(takePendingAuthProvider()).toBe('github');
     Object.defineProperty(window, 'location', { configurable: true, value: original });
@@ -91,20 +90,52 @@ describe('callback exchange', () => {
   });
 });
 
-describe('versioned API wrappers', () => {
-  it('loads active providers as a public versioned request', async () => {
-    vi.mocked(apiGet).mockResolvedValue({ data: [], meta: { count: 0 } });
-    await expect(fetchAuthProviders()).resolves.toEqual([]);
-    expect(apiGet).toHaveBeenCalledWith('/auth/providers', { apiVersion: 'v1', authenticated: false });
+describe('authenticated-user response contract', () => {
+
+  it('unwraps POST /auth/me and preserves record_version', async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-1',
+          display_name: 'Ada Lovelace',
+          email: 'ada@example.com',
+          record_version: 7,
+        },
+      },
+      meta: {},
+    });
+
+    await expect(fetchMe()).resolves.toMatchObject({ record_version: 7 });
   });
 
+  it('unwraps PATCH /auth/me and returns the incremented record_version', async () => {
+    vi.mocked(apiPatch).mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-1',
+          display_name: 'Ada Lovelace',
+          email: 'ada@example.com',
+          record_version: 8,
+        },
+      },
+      meta: {},
+    });
+
+    await expect(updateMe({ record_version: 7, display_name: 'Ada Lovelace' })).resolves.toMatchObject({
+      record_version: 8,
+    });
+  });
+
+});
+
+describe('versioned API wrappers', () => {
   it('uses explicit endpoint versions', () => {
     fetchMe();
-    updateMe({ display_name: 'Ada' });
+    updateMe({ record_version: 3, display_name: 'Ada' });
     signOutProvider('google');
     unlinkProvider('google');
-    expect(apiGet).toHaveBeenCalledWith('/auth/me', { apiVersion: 'v1' });
-    expect(apiPatch).toHaveBeenCalledWith('/auth/me', { apiVersion: 'v1' }, { display_name: 'Ada' });
+    expect(apiPost).toHaveBeenCalledWith('/auth/me', { apiVersion: 'v1' });
+    expect(apiPatch).toHaveBeenCalledWith('/auth/me', { apiVersion: 'v1' }, { record_version: 3, display_name: 'Ada' });
     expect(apiPost).toHaveBeenCalledWith('/auth/google/signout', { apiVersion: 'v1' });
     expect(apiPost).toHaveBeenCalledWith('/auth/google/unlink', { apiVersion: 'v1' });
   });

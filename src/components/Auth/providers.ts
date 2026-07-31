@@ -1,15 +1,6 @@
-import { fetchAuthProviders } from '../../lib/api/auth';
+import { fetchAuthProviders, type AuthProvider } from '../../lib/api/auth';
 
-export interface AuthProvider {
-  code: string;
-  display_name: string;
-  supports_pkce: boolean;
-  supports_oidc: boolean;
-  signin_endpoint: string;
-  callback_endpoint: string;
-  exchange_endpoint: string;
-  display_order: number;
-}
+export type { AuthProvider } from '../../lib/api/auth';
 
 let cachedProviders: AuthProvider[] | null = null;
 let pendingRequest: Promise<AuthProvider[]> | null = null;
@@ -38,7 +29,7 @@ export async function loadAuthProviders(): Promise<AuthProvider[]> {
       pendingRequest = null;
     });
 
-  return pendingRequest;
+  return pendingRequest!;
 }
 
 export async function retryAuthProviders(): Promise<AuthProvider[]> {

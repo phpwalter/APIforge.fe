@@ -3,31 +3,6 @@ import { setPendingAuthProvider, setPendingLinkProvider } from './authToken';
 
 const AUTH_API_VERSION = 'v1';
 
-
-export interface AuthProviderResponseItem {
-  code: string;
-  display_name: string;
-  supports_pkce: boolean;
-  supports_oidc: boolean;
-  signin_endpoint: string;
-  callback_endpoint: string;
-  exchange_endpoint: string;
-  display_order: number;
-}
-
-interface AuthProvidersResponse {
-  data?: AuthProviderResponseItem[];
-  meta?: { count?: number };
-}
-
-export async function fetchAuthProviders(): Promise<AuthProviderResponseItem[]> {
-  const response = await apiGet<AuthProvidersResponse>('/auth/providers', {
-    apiVersion: AUTH_API_VERSION,
-    authenticated: false,
-  });
-  return Array.isArray(response.data) ? response.data : [];
-}
-
 export interface MeResponse {
   id?: string;
   name?: string;
@@ -40,12 +15,42 @@ export interface MeResponse {
   last_login_at?: string;
   use_gravatar?: boolean;
   gravatar_email?: string;
+  record_version?: number;
   [key: string]: unknown;
 }
 
-export function redirectToProviderSignIn(provider: string, signinEndpoint: string): void {
-  setPendingAuthProvider(provider);
-  window.location.href = apiUrl(signinEndpoint);
+export function redirectToProviderSignIn(provider: string, signinEndpoint?: string): void {
+  const normalizedProvider = provider.trim().toLowerCase();
+  setPendingAuthProvider(normalizedProvider);
+  const endpoint = signinEndpoint?.trim() || `/auth/${encodeURIComponent(normalizedProvider)}/signin`;
+  window.location.href = apiUrl(endpoint);
+}
+
+export interface AuthProvider {
+  code: string;
+  display_name: string;
+  supports_pkce: boolean;
+  supports_oidc: boolean;
+  signin_endpoint: string;
+  callback_endpoint: string;
+  exchange_endpoint: string;
+  display_order: number;
+}
+
+interface AuthProvidersEnvelope {
+  data: AuthProvider[];
+  meta: {
+    count: number;
+    [key: string]: unknown;
+  };
+}
+
+export async function fetchAuthProviders(): Promise<AuthProvider[]> {
+  const response = await apiGet<AuthProvidersEnvelope>('/auth/providers', {
+    apiVersion: AUTH_API_VERSION,
+    authenticated: false,
+  });
+  return Array.isArray(response.data) ? response.data : [];
 }
 
 interface BeginAuthorizationResponse {
@@ -154,19 +159,46 @@ export function readAuthLinkFromLocation(search: string): AuthLinkPayload | null
   }
 }
 
-export function fetchMe(): Promise<MeResponse> {
-  return apiGet<MeResponse>('/auth/me', { apiVersion: 'v1' });
+interface MeEnvelope {
+  data: MeResponse | { user: MeResponse };
+  meta?: Record<string, unknown>;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function requireMeData(response: MeEnvelope): MeResponse {
+  if (!isRecord(response.data)) {
+    throw new ApiError('The authenticated-user response did not include data.');
+  }
+
+  if ('user' in response.data) {
+    if (!isRecord(response.data.user)) {
+      throw new ApiError('The authenticated-user response did not include a user object.');
+    }
+    return response.data.user as MeResponse;
+  }
+
+  return response.data as MeResponse;
+}
+
+export async function fetchMe(): Promise<MeResponse> {
+  const response = await apiPost<MeEnvelope>('/auth/me', { apiVersion: AUTH_API_VERSION });
+  return requireMeData(response);
 }
 
 export interface UpdateMeRequest {
+  record_version: number;
   display_name?: string;
   bio?: string;
   use_gravatar?: boolean;
   gravatar_email?: string;
 }
 
-export function updateMe(patch: UpdateMeRequest): Promise<MeResponse> {
-  return apiPatch<MeResponse>('/auth/me', { apiVersion: 'v1' }, patch);
+export async function updateMe(patch: UpdateMeRequest): Promise<MeResponse> {
+  const response = await apiPatch<MeEnvelope>('/auth/me', { apiVersion: AUTH_API_VERSION }, patch);
+  return requireMeData(response);
 }
 
 export function signOutProvider(provider: string): Promise<void> {

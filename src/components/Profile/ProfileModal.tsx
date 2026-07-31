@@ -98,7 +98,12 @@ export function ProfileModal() {
     }
 
     try {
+      if (!Number.isInteger(userProfile.recordVersion) || (userProfile.recordVersion ?? 0) < 1) {
+        throw new Error('Your profile version is unavailable. Sign in again before saving.');
+      }
+
       const me = await updateMe({
+        record_version: userProfile.recordVersion!,
         display_name: trimmedName,
         bio: trimmedBio,
         use_gravatar: useGravatar,
@@ -110,6 +115,7 @@ export function ProfileModal() {
         useGravatar: me.use_gravatar,
         gravatarEmail: me.gravatar_email,
         avatarUrl: me.avatar_url,
+        recordVersion: me.record_version,
       });
       closeProfile();
     } catch (err) {

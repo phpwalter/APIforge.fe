@@ -27,22 +27,16 @@ export class ApiError extends Error {
   }
 }
 
-function baseUrl(): string {
-  if (import.meta.env.MODE === 'test') {
-    const url = import.meta.env.VITE_API_SERVER;
-    if (!url) {
-      throw new ApiError(
-        'VITE_API_SERVER is not set — copy .env.example to .env.local and configure the API server URL.',
-      );
-    }
-    return url.replace(/\/+$/, '');
-  }
-  return '/api';
-}
-
+/**
+ * Return an application-relative API endpoint.
+ *
+ * In development, Vite proxies /auth requests to the API server. In production,
+ * the public web server must route the same /auth paths to the API service.
+ * Keeping the browser request same-origin avoids CORS and preserves the canonical
+ * endpoint path, for example GET /auth/providers and POST /auth/me.
+ */
 export function apiUrl(path: string): string {
-  const finalPath = path.startsWith('/') ? path : `/${path}`;
-  return `${baseUrl()}${finalPath}`;
+  return path.startsWith('/') ? path : `/${path}`;
 }
 
 function requestHeaders(base: Record<string, string>, options: ApiRequestOptions): Record<string, string> {
@@ -51,10 +45,12 @@ function requestHeaders(base: Record<string, string>, options: ApiRequestOptions
     'X-API-Version': options.apiVersion,
     ...base,
   };
+
   if (options.authenticated !== false) {
     const token = getAuthToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
+
   return headers;
 }
 
@@ -65,6 +61,7 @@ function isProblemDetails(value: unknown): value is ProblemDetails {
 async function newApiError(res: Response, path: string): Promise<ApiError> {
   const text = await res.text();
   let problem: ProblemDetails | undefined;
+
   if (text) {
     try {
       const parsed: unknown = JSON.parse(text);
@@ -73,15 +70,23 @@ async function newApiError(res: Response, path: string): Promise<ApiError> {
       // Non-JSON error bodies are intentionally not copied into user-facing messages.
     }
   }
+
   const message = problem?.title
     ? `${problem.title}${problem.detail ? `: ${problem.detail}` : ''}`
     : `${path} responded ${res.status} ${res.statusText}`;
+
   return new ApiError(message, res.status, problem);
 }
 
-async function request<T>(method: 'GET' | 'POST' | 'PATCH', path: string, options: ApiRequestOptions, body?: unknown): Promise<T> {
+async function request<T>(
+  method: 'GET' | 'POST' | 'PATCH',
+  path: string,
+  options: ApiRequestOptions,
+  body?: unknown,
+): Promise<T> {
   const url = apiUrl(path);
   let res: Response;
+
   try {
     res = await fetch(url, {
       method,
@@ -91,6 +96,7 @@ async function request<T>(method: 'GET' | 'POST' | 'PATCH', path: string, option
   } catch (err) {
     throw new ApiError(`Could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
   }
+
   if (!res.ok) throw await newApiError(res, path);
 
   if (method === 'GET') {
@@ -105,6 +111,7 @@ async function request<T>(method: 'GET' | 'POST' | 'PATCH', path: string, option
 
   const text = await res.text();
   if (!text) return undefined as T;
+
   try {
     return JSON.parse(text) as T;
   } catch (err) {

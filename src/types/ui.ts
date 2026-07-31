@@ -29,6 +29,8 @@ export interface UserProfile {
   lastLoginAt?: string;
   useGravatar?: boolean;
   gravatarEmail?: string;
+  /** Optimistic-concurrency version returned by POST/PATCH /auth/me. */
+  recordVersion?: number;
 }
 
 /**
