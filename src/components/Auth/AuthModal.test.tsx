@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { AuthModal } from './AuthModal';
 import { clearAuthProviderCacheForTests } from './providers';
 import { useAppStore } from '../../state/useAppStore';
-import { fetchAuthProviders, redirectToProviderSignIn } from '../../lib/api/auth';
+import { checkAuthProviders, fetchAuthProviders, redirectToProviderSignIn } from '../../lib/api/auth';
 
 vi.mock('../../lib/api/auth', () => ({
+  checkAuthProviders: vi.fn(),
   fetchAuthProviders: vi.fn(),
   redirectToProviderSignIn: vi.fn(),
 }));
@@ -38,7 +39,8 @@ beforeEach(() => {
   useAppStore.setState(initialState, true);
   clearAuthProviderCacheForTests();
   vi.clearAllMocks();
-  vi.mocked(fetchAuthProviders).mockResolvedValue(providers);
+  vi.mocked(fetchAuthProviders).mockResolvedValue({ providers, etag: '"providers-v1"', notModified: false });
+  vi.mocked(checkAuthProviders).mockResolvedValue({ providers: [], etag: '"providers-v1"', notModified: true });
 });
 
 describe('AuthModal — backend provider registry', () => {
@@ -56,7 +58,7 @@ describe('AuthModal — backend provider registry', () => {
   });
 
   it('shows the empty-provider message when the backend returns no active providers', async () => {
-    vi.mocked(fetchAuthProviders).mockResolvedValue([]);
+    vi.mocked(fetchAuthProviders).mockResolvedValue({ providers: [], etag: '"providers-empty"', notModified: false });
     render(<AuthModal />);
     expect(await screen.findByText('No sign-in providers are currently available.')).toBeInTheDocument();
   });
@@ -65,7 +67,7 @@ describe('AuthModal — backend provider registry', () => {
     const user = userEvent.setup();
     vi.mocked(fetchAuthProviders)
       .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce(providers);
+      .mockResolvedValueOnce({ providers, etag: '"providers-v1"', notModified: false });
 
     render(<AuthModal />);
     expect(await screen.findByText('Sign-in providers could not be loaded.')).toBeInTheDocument();

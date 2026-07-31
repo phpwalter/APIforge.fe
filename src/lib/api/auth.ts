@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost, apiUrl, ApiError } from './client';
+import { apiGetResponse, apiHead, apiPatch, apiPost, apiUrl, ApiError } from './client';
 import { setPendingAuthProvider, setPendingLinkProvider } from './authToken';
 
 const AUTH_API_VERSION = 'v1';
@@ -45,12 +45,46 @@ interface AuthProvidersEnvelope {
   };
 }
 
-export async function fetchAuthProviders(): Promise<AuthProvider[]> {
-  const response = await apiGet<AuthProvidersEnvelope>('/auth/providers', {
+export interface AuthProvidersResult {
+  providers: AuthProvider[];
+  etag: string | null;
+  notModified: boolean;
+}
+
+export async function checkAuthProviders(etag: string): Promise<AuthProvidersResult> {
+  const response = await apiHead('/auth/providers', {
     apiVersion: AUTH_API_VERSION,
     authenticated: false,
+    headers: { 'If-None-Match': etag },
   });
-  return Array.isArray(response.data) ? response.data : [];
+
+  return {
+    providers: [],
+    etag: response.headers.get('ETag'),
+    notModified: response.status === 304,
+  };
+}
+
+export async function fetchAuthProviders(etag?: string): Promise<AuthProvidersResult> {
+  const response = await apiGetResponse<AuthProvidersEnvelope>('/auth/providers', {
+    apiVersion: AUTH_API_VERSION,
+    authenticated: false,
+    headers: etag ? { 'If-None-Match': etag } : undefined,
+  });
+
+  if (!('data' in response)) {
+    return {
+      providers: [],
+      etag: response.headers.get('ETag') ?? etag ?? null,
+      notModified: response.status === 304,
+    };
+  }
+
+  return {
+    providers: Array.isArray(response.data.data) ? response.data.data : [],
+    etag: response.headers.get('ETag'),
+    notModified: false,
+  };
 }
 
 interface BeginAuthorizationResponse {

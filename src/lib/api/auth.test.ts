@@ -14,7 +14,8 @@ import { apiPatch, apiPost, apiUrl } from './client';
 import { takePendingAuthProvider, takePendingLinkProvider } from './authToken';
 
 vi.mock('./client', () => ({
-  apiGet: vi.fn(),
+  apiGetResponse: vi.fn(),
+  apiHead: vi.fn(),
   apiPost: vi.fn(),
   apiPatch: vi.fn(),
   apiUrl: vi.fn((path: string) => `http://api.test${path}`),

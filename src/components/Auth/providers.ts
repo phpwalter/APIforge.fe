@@ -1,8 +1,21 @@
-import { fetchAuthProviders, type AuthProvider } from '../../lib/api/auth';
+import {
+  checkAuthProviders,
+  fetchAuthProviders,
+  type AuthProvider,
+  type AuthProvidersResult,
+} from '../../lib/api/auth';
 
 export type { AuthProvider } from '../../lib/api/auth';
 
+const STORAGE_KEY = 'apiforge.auth.providers.v1';
+
+interface StoredProviderCache {
+  etag: string;
+  providers: AuthProvider[];
+}
+
 let cachedProviders: AuthProvider[] | null = null;
+let cachedEtag: string | null = null;
 let pendingRequest: Promise<AuthProvider[]> | null = null;
 
 function normalizeProvider(provider: AuthProvider): AuthProvider {
@@ -14,28 +27,87 @@ function normalizeProvider(provider: AuthProvider): AuthProvider {
   };
 }
 
+function normalizeProviders(providers: AuthProvider[]): AuthProvider[] {
+  return providers
+    .map(normalizeProvider)
+    .sort((left, right) => left.display_order - right.display_order || left.display_name.localeCompare(right.display_name));
+}
+
+function readStoredCache(): StoredProviderCache | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+
+    const candidate = parsed as Partial<StoredProviderCache>;
+    if (typeof candidate.etag !== 'string' || !Array.isArray(candidate.providers)) return null;
+
+    return {
+      etag: candidate.etag,
+      providers: normalizeProviders(candidate.providers),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredCache(etag: string | null, providers: AuthProvider[]): void {
+  if (!etag) {
+    sessionStorage.removeItem(STORAGE_KEY);
+    return;
+  }
+
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ etag, providers } satisfies StoredProviderCache));
+}
+
+function acceptResult(result: AuthProvidersResult, fallback?: AuthProvider[]): AuthProvider[] {
+  if (result.notModified && fallback) return fallback;
+
+  const providers = normalizeProviders(result.providers);
+  cachedProviders = providers;
+  cachedEtag = result.etag;
+  writeStoredCache(result.etag, providers);
+  return providers;
+}
+
+async function loadFromNetwork(forceGet: boolean): Promise<AuthProvider[]> {
+  const stored = cachedProviders && cachedEtag
+    ? { providers: cachedProviders, etag: cachedEtag }
+    : readStoredCache();
+
+  if (!forceGet && stored) {
+    cachedProviders = stored.providers;
+    cachedEtag = stored.etag;
+
+    try {
+      const head = await checkAuthProviders(stored.etag);
+      if (head.notModified) return stored.providers;
+    } catch {
+      // The agreed recovery path is a full GET, not stale-cache fallback.
+    }
+
+    const refreshed = await fetchAuthProviders(stored.etag);
+    if (refreshed.notModified) return stored.providers;
+    return acceptResult(refreshed);
+  }
+
+  return acceptResult(await fetchAuthProviders());
+}
+
 export async function loadAuthProviders(): Promise<AuthProvider[]> {
-  if (cachedProviders) return cachedProviders;
   if (pendingRequest) return pendingRequest;
 
-  pendingRequest = fetchAuthProviders()
-    .then((providers) => {
-      cachedProviders = providers
-        .map(normalizeProvider)
-        .sort((left, right) => left.display_order - right.display_order || left.display_name.localeCompare(right.display_name));
-      return cachedProviders;
-    })
-    .finally(() => {
-      pendingRequest = null;
-    });
+  pendingRequest = loadFromNetwork(false).finally(() => {
+    pendingRequest = null;
+  });
 
-  return pendingRequest!;
+  return pendingRequest;
 }
 
 export async function retryAuthProviders(): Promise<AuthProvider[]> {
-  cachedProviders = null;
   pendingRequest = null;
-  return loadAuthProviders();
+  return loadFromNetwork(true);
 }
 
 export function getCachedAuthProvider(providerCode: string): AuthProvider | undefined {
@@ -52,5 +124,7 @@ export function providerLabel(providerCode: string): string {
 
 export function clearAuthProviderCacheForTests(): void {
   cachedProviders = null;
+  cachedEtag = null;
   pendingRequest = null;
+  sessionStorage.removeItem(STORAGE_KEY);
 }

@@ -5,6 +5,8 @@ export interface ApiRequestOptions {
   apiVersion: string;
   /** Set only for endpoints that intentionally do not require the active bearer token. */
   authenticated?: boolean;
+  /** Additional request headers, such as If-None-Match for conditional requests. */
+  headers?: Record<string, string>;
 }
 
 export interface ProblemDetails {
@@ -13,6 +15,17 @@ export interface ProblemDetails {
   status?: number;
   detail?: string;
   instance?: string;
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  status: number;
+  headers: Headers;
+}
+
+export interface ApiHeadResponse {
+  status: number;
+  headers: Headers;
 }
 
 export class ApiError extends Error {
@@ -32,8 +45,6 @@ export class ApiError extends Error {
  *
  * In development, Vite proxies /auth requests to the API server. In production,
  * the public web server must route the same /auth paths to the API service.
- * Keeping the browser request same-origin avoids CORS and preserves the canonical
- * endpoint path, for example GET /auth/providers and POST /auth/me.
  */
 export function apiUrl(path: string): string {
   return path.startsWith('/') ? path : `/${path}`;
@@ -43,6 +54,7 @@ function requestHeaders(base: Record<string, string>, options: ApiRequestOptions
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'X-API-Version': options.apiVersion,
+    ...options.headers,
     ...base,
   };
 
@@ -78,17 +90,16 @@ async function newApiError(res: Response, path: string): Promise<ApiError> {
   return new ApiError(message, res.status, problem);
 }
 
-async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH',
+async function executeRequest(
+  method: 'GET' | 'HEAD' | 'POST' | 'PATCH',
   path: string,
   options: ApiRequestOptions,
   body?: unknown,
-): Promise<T> {
+): Promise<Response> {
   const url = apiUrl(path);
-  let res: Response;
 
   try {
-    res = await fetch(url, {
+    return await fetch(url, {
       method,
       headers: requestHeaders(body === undefined ? {} : { 'Content-Type': 'application/json' }, options),
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -96,18 +107,28 @@ async function request<T>(
   } catch (err) {
     throw new ApiError(`Could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
   }
+}
 
+async function parseJsonResponse<T>(res: Response, path: string): Promise<T> {
+  try {
+    return (await res.json()) as T;
+  } catch (err) {
+    throw new ApiError(
+      `${path} returned a response that was not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
+async function request<T>(
+  method: 'GET' | 'POST' | 'PATCH',
+  path: string,
+  options: ApiRequestOptions,
+  body?: unknown,
+): Promise<T> {
+  const res = await executeRequest(method, path, options, body);
   if (!res.ok) throw await newApiError(res, path);
 
-  if (method === 'GET') {
-    try {
-      return (await res.json()) as T;
-    } catch (err) {
-      throw new ApiError(
-        `${path} returned a response that was not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-  }
+  if (method === 'GET') return parseJsonResponse<T>(res, path);
 
   const text = await res.text();
   if (!text) return undefined as T;
@@ -123,6 +144,19 @@ async function request<T>(
 
 export function apiGet<T>(path: string, options: ApiRequestOptions): Promise<T> {
   return request<T>('GET', path, options);
+}
+
+export async function apiGetResponse<T>(path: string, options: ApiRequestOptions): Promise<ApiResponse<T> | ApiHeadResponse> {
+  const res = await executeRequest('GET', path, options);
+  if (res.status === 304) return { status: res.status, headers: res.headers };
+  if (!res.ok) throw await newApiError(res, path);
+  return { data: await parseJsonResponse<T>(res, path), status: res.status, headers: res.headers };
+}
+
+export async function apiHead(path: string, options: ApiRequestOptions): Promise<ApiHeadResponse> {
+  const res = await executeRequest('HEAD', path, options);
+  if (res.status !== 304 && !res.ok) throw await newApiError(res, path);
+  return { status: res.status, headers: res.headers };
 }
 
 export function apiPost<T = void>(path: string, options: ApiRequestOptions, body?: unknown): Promise<T> {
