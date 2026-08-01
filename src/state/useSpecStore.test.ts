@@ -243,17 +243,39 @@ describe('useSpecStore', () => {
     expect(useSpecStore.getState().endpoints[0].responses).toHaveLength(initialCount);
   });
 
-  it('adds a response with the default code for a given status class', () => {
+  it('adds the next unused response code for a selected status class', () => {
     useSpecStore.getState().pickMethod('/users', 'GET');
     const id = useSpecStore.getState().endpoints[0].id;
 
+    useSpecStore.getState().addResponseForClass(id, '2xx');
+    let responses = useSpecStore.getState().endpoints[0].responses;
+    expect(responses[responses.length - 1].code).toBe('201');
+
+    useSpecStore.getState().addResponseForClass(id, '2xx');
+    responses = useSpecStore.getState().endpoints[0].responses;
+    expect(responses[responses.length - 1].code).toBe('202');
+
     useSpecStore.getState().addResponseForClass(id, '4xx');
-    const responses = useSpecStore.getState().endpoints[0].responses;
+    responses = useSpecStore.getState().endpoints[0].responses;
     expect(responses[responses.length - 1].code).toBe('400');
 
-    useSpecStore.getState().addResponseForClass(id, '5xx');
-    const updated = useSpecStore.getState().endpoints[0].responses;
-    expect(updated[updated.length - 1].code).toBe('500');
+    useSpecStore.getState().addResponseForClass(id, '4xx');
+    responses = useSpecStore.getState().endpoints[0].responses;
+    expect(responses[responses.length - 1].code).toBe('401');
+  });
+
+  it('fills the first available gap in the configured response-code sequence', () => {
+    useSpecStore.getState().pickMethod('/users', 'GET');
+    const id = useSpecStore.getState().endpoints[0].id;
+
+    useSpecStore.getState().addResponseForClass(id, '2xx');
+    let responses = useSpecStore.getState().endpoints[0].responses;
+    const addedId = responses[responses.length - 1].id;
+    useSpecStore.getState().setResponse(id, addedId, { code: '204' });
+
+    useSpecStore.getState().addResponseForClass(id, '2xx');
+    responses = useSpecStore.getState().endpoints[0].responses;
+    expect(responses[responses.length - 1].code).toBe('201');
   });
 
   it('tracks the active response status class per endpoint', () => {

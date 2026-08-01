@@ -27,6 +27,35 @@ export const CODES_BY_CLASS: Record<ResponseClass, string[]> = {
   '5xx': ['500', '501', '502', '503', '504'],
 };
 
+
+/**
+ * Returns the first unused response code in the selected status class.
+ * Standard codes are preferred in the order defined by CODES_BY_CLASS.
+ * If every listed standard code is already present, the first unused numeric
+ * code in the class is returned as a deterministic fallback.
+ */
+export function nextAvailableCodeForClass(
+  existingCodes: Iterable<string>,
+  cls: ResponseClass,
+): string {
+  const used = new Set(
+    Array.from(existingCodes)
+      .map((code) => code.trim())
+      .filter((code) => classOf(code) === cls),
+  );
+
+  const standardCode = CODES_BY_CLASS[cls].find((code) => !used.has(code));
+  if (standardCode) return standardCode;
+
+  const classStart = Number.parseInt(cls[0], 10) * 100;
+  for (let code = classStart; code < classStart + 100; code += 1) {
+    const candidate = String(code);
+    if (!used.has(candidate)) return candidate;
+  }
+
+  return DEFAULT_CODE_FOR_CLASS[cls];
+}
+
 export function classOf(code: string): string {
   const n = parseInt(code, 10);
   return `${isNaN(n) ? 1 : Math.floor(n / 100)}xx`;

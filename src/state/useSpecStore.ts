@@ -12,7 +12,7 @@ import type {
   SchemaFieldType,
 } from '../types/spec';
 import { METHOD_PRIORITY } from '../lib/methodStyle';
-import { DEFAULT_CODE_FOR_CLASS, type ResponseClass } from '../lib/responseClass';
+import { nextAvailableCodeForClass, type ResponseClass } from '../lib/responseClass';
 import { findPrimitive } from '../lib/primitives';
 import { fieldSubtreeEnd, fieldSiblingBounds } from '../lib/schemaTree';
 import type { SchemaCompileFormat } from '../lib/schemaCompile';
@@ -738,17 +738,32 @@ export const useSpecStore = create<SpecState>()(
     })),
 
   addResponse: (id) => {
+    const endpoint = get().endpoints.find((candidate) => candidate.id === id);
+    if (!endpoint) return;
+
     const responseId = makeId('res');
+    const code = nextAvailableCodeForClass(
+      endpoint.responses.map((response) => response.code),
+      '2xx',
+    );
+
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
-        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, '200')] } : e,
+        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, code)] } : e,
       ),
     }));
-    void get().applyResponseHeaderPolicy(id, responseId, 200);
+    void get().applyResponseHeaderPolicy(id, responseId, Number(code));
   },
   addResponseForClass: (id, cls) => {
+    const endpoint = get().endpoints.find((candidate) => candidate.id === id);
+    if (!endpoint) return;
+
     const responseId = makeId('res');
-    const code = DEFAULT_CODE_FOR_CLASS[cls];
+    const code = nextAvailableCodeForClass(
+      endpoint.responses.map((response) => response.code),
+      cls,
+    );
+
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
         e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, code)] } : e,
@@ -799,39 +814,6 @@ export const useSpecStore = create<SpecState>()(
     }
   },
   applyResponseHeaderPolicy: async (id, responseId, statusCode) => {
-    const currentResponse = get().endpoints
-      .find((endpoint) => endpoint.id === id)
-      ?.responses.find((response) => response.id === responseId);
-
-    // Mark the policy as in-flight before awaiting the network request. This
-    // prevents React effects and response-creation actions from issuing the
-    // same request concurrently. A prior error remains explicitly retryable.
-    if (
-      currentResponse?.headerPolicyStatusCode === statusCode &&
-      !currentResponse.headerPolicyError
-    ) {
-      return;
-    }
-
-    set((s) => ({
-      endpoints: s.endpoints.map((endpoint) =>
-        endpoint.id === id
-          ? {
-              ...endpoint,
-              responses: endpoint.responses.map((response) =>
-                response.id === responseId
-                  ? {
-                      ...response,
-                      headerPolicyStatusCode: statusCode,
-                      headerPolicyError: null,
-                    }
-                  : response,
-              ),
-            }
-          : endpoint,
-      ),
-    }));
-
     try {
       const response = await fetchResponseHeaderPolicy(statusCode);
       set((s) => ({
