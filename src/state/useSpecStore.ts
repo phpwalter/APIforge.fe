@@ -6,6 +6,7 @@ import type {
   HttpMethod,
   Param,
   ResponseEntry,
+  ResponseHeaderPolicyOption,
   Schema,
   SchemaFieldCustom,
   SchemaFieldType,
@@ -16,6 +17,7 @@ import { findPrimitive } from '../lib/primitives';
 import { fieldSubtreeEnd, fieldSiblingBounds } from '../lib/schemaTree';
 import type { SchemaCompileFormat } from '../lib/schemaCompile';
 import { isOutlineGroupDefaultExpanded } from '../lib/restProjectionOutline';
+import { fetchResponseHeaderPolicy, type ApiResponseHeaderPolicyItem } from '../lib/api/apiHeaders';
 
 const EP_PANEL_MIN_WIDTH = 220;
 const EP_PANEL_MAX_WIDTH = 480;
@@ -72,6 +74,100 @@ function makeParam(id: string, name: string, extra: Partial<Param> = {}): Param 
 
 function makeHeaderParam(id: string, name: string, extra: Partial<HeaderParam> = {}): HeaderParam {
   return { id, name, required: false, nullable: false, example: '', ...extra };
+}
+
+function normalizedHeaderName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function policyHeaderParam(policy: ApiResponseHeaderPolicyItem): HeaderParam {
+  return makeHeaderParam(makeId('hd'), policy.header_name, {
+    required: policy.policy_code === 'required',
+    mandated: policy.policy_code === 'required',
+    nullable: false,
+    example: policy.default_value_template ?? policy.example_value ?? '',
+    policyCode: policy.policy_code,
+    policyConditionCode: policy.condition_code,
+    policyRationale: policy.rationale,
+    catalogCode: policy.header_code,
+    policyAutoAdded: true,
+  });
+}
+
+function shouldAutoAddPolicy(response: ResponseEntry, policy: ApiResponseHeaderPolicyItem): boolean {
+  if (policy.policy_code === 'required') return true;
+  if (policy.policy_code !== 'conditional') return false;
+  if (policy.condition_code === 'when_representation_present') return Boolean(response.schema);
+  return policy.default_enabled;
+}
+
+function mergeResponseHeaderPolicy(
+  response: ResponseEntry,
+  statusCode: number,
+  policies: ApiResponseHeaderPolicyItem[],
+): ResponseEntry {
+  const byName = new Map(policies.map((policy) => [normalizedHeaderName(policy.header_name), policy]));
+  const forbidden = new Set(
+    policies.filter((policy) => policy.policy_code === 'forbidden').map((policy) => normalizedHeaderName(policy.header_name)),
+  );
+
+  const headers: HeaderParam[] = response.headers
+    .filter((header) => !forbidden.has(normalizedHeaderName(header.name)))
+    .filter((header) => {
+      const policy = byName.get(normalizedHeaderName(header.name));
+      return !(header.policyAutoAdded && policy && !shouldAutoAddPolicy(response, policy));
+    })
+    .map((header) => {
+      const policy = byName.get(normalizedHeaderName(header.name));
+      if (!policy) return { ...header, mandated: false, policyCode: undefined };
+      return {
+        ...header,
+        required: policy.policy_code === 'required' ? true : header.required,
+        mandated: policy.policy_code === 'required',
+        policyCode: policy.policy_code,
+        policyConditionCode: policy.condition_code,
+        policyRationale: policy.rationale,
+        catalogCode: policy.header_code,
+        policyAutoAdded: header.policyAutoAdded,
+      };
+    });
+
+  const present = new Set(headers.map((header) => normalizedHeaderName(header.name)));
+  policies
+    .filter(
+      (policy) =>
+        shouldAutoAddPolicy(response, policy),
+    )
+    .forEach((policy) => {
+      const key = normalizedHeaderName(policy.header_name);
+      if (!present.has(key)) {
+        headers.push(policyHeaderParam(policy));
+        present.add(key);
+      }
+    });
+
+  const headerPolicies: ResponseHeaderPolicyOption[] = policies.map((policy) => ({
+    headerCode: policy.header_code,
+    headerName: policy.header_name,
+    displayName: policy.display_name,
+    description: policy.description,
+    policyCode: policy.policy_code,
+    conditionCode: policy.condition_code,
+    conditionName: policy.condition_name,
+    rationale: policy.rationale,
+    defaultEnabled: policy.default_enabled,
+    exampleValue: policy.example_value,
+    defaultValueTemplate: policy.default_value_template,
+    displayOrder: policy.display_order,
+  }));
+
+  return {
+    ...response,
+    headers,
+    headerPolicyStatusCode: statusCode,
+    headerPolicyError: null,
+    headerPolicies,
+  };
 }
 
 function makeCustomField(
@@ -187,9 +283,11 @@ export interface SpecState {
   addResponse: (id: string) => void;
   addResponseForClass: (id: string, cls: ResponseClass) => void;
   setResponse: (id: string, responseId: string, patch: Partial<ResponseEntry>) => void;
+  setResponseCodeWithHeaderPolicy: (id: string, responseId: string, code: string) => Promise<void>;
+  applyResponseHeaderPolicy: (id: string, responseId: string, statusCode: number) => Promise<void>;
   removeResponse: (id: string, responseId: string) => void;
 
-  addResponseHeader: (id: string, responseId: string) => void;
+  addResponseHeader: (id: string, responseId: string, headerName?: string) => void;
   setResponseHeader: (id: string, responseId: string, headerId: string, patch: Partial<HeaderParam>) => void;
   removeResponseHeader: (id: string, responseId: string, headerId: string) => void;
   toggleResponseContentType: (id: string, responseId: string, contentType: string) => void;
@@ -639,36 +737,26 @@ export const useSpecStore = create<SpecState>()(
       endpoints: s.endpoints.map((e) => (e.id === id ? { ...e, requestBodyDescription } : e)),
     })),
 
-  addResponse: (id) =>
+  addResponse: (id) => {
+    const responseId = makeId('res');
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
-        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(makeId('res'), '200')] } : e,
+        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, '200')] } : e,
       ),
-    })),
-  addResponseForClass: (id, cls) =>
+    }));
+    void get().applyResponseHeaderPolicy(id, responseId, 200);
+  },
+  addResponseForClass: (id, cls) => {
+    const responseId = makeId('res');
+    const code = DEFAULT_CODE_FOR_CLASS[cls];
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
-        e.id === id
-          ? { ...e, responses: [...e.responses, makeResponseEntry(makeId('res'), DEFAULT_CODE_FOR_CLASS[cls])] }
-          : e,
+        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, code)] } : e,
       ),
-    })),
+    }));
+    void get().applyResponseHeaderPolicy(id, responseId, Number(code));
+  },
   setResponse: (id, responseId, patch) =>
-    set((s) => ({
-      endpoints: s.endpoints.map((e) =>
-        e.id === id
-          ? { ...e, responses: e.responses.map((r) => (r.id === responseId ? { ...r, ...patch } : r)) }
-          : e,
-      ),
-    })),
-  removeResponse: (id, responseId) =>
-    set((s) => ({
-      endpoints: s.endpoints.map((e) =>
-        e.id === id ? { ...e, responses: e.responses.filter((r) => r.id !== responseId) } : e,
-      ),
-    })),
-
-  addResponseHeader: (id, responseId) =>
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
         e.id === id
@@ -676,9 +764,139 @@ export const useSpecStore = create<SpecState>()(
               ...e,
               responses: e.responses.map((r) =>
                 r.id === responseId
-                  ? { ...r, headers: [...r.headers, makeHeaderParam(makeId('hd'), '')] }
+                  ? {
+                      ...r,
+                      ...patch,
+                      ...(('schema' in patch || 'schemaIsArray' in patch)
+                        ? { headerPolicyStatusCode: undefined, headerPolicyError: null }
+                        : {}),
+                    }
                   : r,
               ),
+            }
+          : e,
+      ),
+    })),
+  setResponseCodeWithHeaderPolicy: async (id, responseId, code) => {
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              responses: e.responses.map((r) =>
+                r.id === responseId
+                  ? { ...r, code, headerPolicyStatusCode: undefined, headerPolicyError: null, headerPolicies: undefined }
+                  : r,
+              ),
+            }
+          : e,
+      ),
+    }));
+
+    const statusCode = Number(code);
+    if (Number.isInteger(statusCode) && statusCode >= 100 && statusCode <= 599) {
+      await get().applyResponseHeaderPolicy(id, responseId, statusCode);
+    }
+  },
+  applyResponseHeaderPolicy: async (id, responseId, statusCode) => {
+    const currentResponse = get().endpoints
+      .find((endpoint) => endpoint.id === id)
+      ?.responses.find((response) => response.id === responseId);
+
+    // Mark the policy as in-flight before awaiting the network request. This
+    // prevents React effects and response-creation actions from issuing the
+    // same request concurrently. A prior error remains explicitly retryable.
+    if (
+      currentResponse?.headerPolicyStatusCode === statusCode &&
+      !currentResponse.headerPolicyError
+    ) {
+      return;
+    }
+
+    set((s) => ({
+      endpoints: s.endpoints.map((endpoint) =>
+        endpoint.id === id
+          ? {
+              ...endpoint,
+              responses: endpoint.responses.map((response) =>
+                response.id === responseId
+                  ? {
+                      ...response,
+                      headerPolicyStatusCode: statusCode,
+                      headerPolicyError: null,
+                    }
+                  : response,
+              ),
+            }
+          : endpoint,
+      ),
+    }));
+
+    try {
+      const response = await fetchResponseHeaderPolicy(statusCode);
+      set((s) => ({
+        endpoints: s.endpoints.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                responses: e.responses.map((r) =>
+                  r.id === responseId ? mergeResponseHeaderPolicy(r, statusCode, response.data) : r,
+                ),
+              }
+            : e,
+        ),
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      set((s) => ({
+        endpoints: s.endpoints.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                responses: e.responses.map((r) =>
+                  r.id === responseId ? { ...r, headerPolicyError: message } : r,
+                ),
+              }
+            : e,
+        ),
+      }));
+    }
+  },
+  removeResponse: (id, responseId) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id ? { ...e, responses: e.responses.filter((r) => r.id !== responseId) } : e,
+      ),
+    })),
+
+  addResponseHeader: (id, responseId, headerName = '') =>
+    set((s) => ({
+      endpoints: s.endpoints.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              responses: e.responses.map((r) => {
+                if (r.id !== responseId) return r;
+                if (headerName && r.headers.some((header) => normalizedHeaderName(header.name) === normalizedHeaderName(headerName))) {
+                  return r;
+                }
+                const policy = r.headerPolicies?.find(
+                  (item) => normalizedHeaderName(item.headerName) === normalizedHeaderName(headerName),
+                );
+                const header = policy
+                  ? makeHeaderParam(makeId('hd'), policy.headerName, {
+                      required: policy.policyCode === 'required',
+                      mandated: policy.policyCode === 'required',
+                      example: policy.defaultValueTemplate ?? policy.exampleValue ?? '',
+                      policyCode: policy.policyCode,
+                      policyConditionCode: policy.conditionCode,
+                      policyRationale: policy.rationale,
+                      catalogCode: policy.headerCode,
+                      policyAutoAdded: false,
+                    })
+                  : makeHeaderParam(makeId('hd'), headerName);
+                return { ...r, headers: [...r.headers, header] };
+              }),
             }
           : e,
       ),
@@ -691,7 +909,22 @@ export const useSpecStore = create<SpecState>()(
               ...e,
               responses: e.responses.map((r) =>
                 r.id === responseId
-                  ? { ...r, headers: r.headers.map((h) => (h.id === headerId ? { ...h, ...patch } : h)) }
+                  ? {
+                      ...r,
+                      headers: r.headers.map((h) =>
+                        h.id === headerId
+                          ? h.mandated
+                            ? { ...h, ...patch, name: h.name, required: true, mandated: true }
+                            : patch.name && r.headerPolicies?.some(
+                                  (policy) =>
+                                    policy.policyCode === 'forbidden' &&
+                                    normalizedHeaderName(policy.headerName) === normalizedHeaderName(patch.name ?? ''),
+                                )
+                              ? h
+                              : { ...h, ...patch, policyAutoAdded: false }
+                          : h,
+                      ),
+                    }
                   : r,
               ),
             }
@@ -705,7 +938,9 @@ export const useSpecStore = create<SpecState>()(
           ? {
               ...e,
               responses: e.responses.map((r) =>
-                r.id === responseId ? { ...r, headers: r.headers.filter((h) => h.id !== headerId) } : r,
+                r.id === responseId
+                  ? { ...r, headers: r.headers.filter((h) => h.id !== headerId || h.mandated) }
+                  : r,
               ),
             }
           : e,

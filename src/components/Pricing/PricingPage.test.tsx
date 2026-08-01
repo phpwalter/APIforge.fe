@@ -4,7 +4,7 @@ import { PricingPage } from './PricingPage';
 import { useAppStore } from '../../state/useAppStore';
 import type { PricingCatalogResponse } from '../../lib/api/pricing';
 
-const fetchPricingCatalog = vi.fn<() => Promise<PricingCatalogResponse>>();
+const fetchPricingCatalog = vi.fn<[], Promise<PricingCatalogResponse>>();
 
 vi.mock('../../lib/api/pricing', async () => {
   const actual = await vi.importActual<typeof import('../../lib/api/pricing')>('../../lib/api/pricing');

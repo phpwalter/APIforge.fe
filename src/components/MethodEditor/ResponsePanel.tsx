@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ArrowBigLeft, Plus, X } from 'lucide-react';
 import { useSpecStore } from '../../state/useSpecStore';
 import type { Endpoint } from '../../types/spec';
@@ -26,6 +27,8 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
   const addSchemaReturningName = useSpecStore((s) => s.addSchemaReturningName);
   const addResponseForClass = useSpecStore((s) => s.addResponseForClass);
   const setResponse = useSpecStore((s) => s.setResponse);
+  const setResponseCodeWithHeaderPolicy = useSpecStore((s) => s.setResponseCodeWithHeaderPolicy);
+  const applyResponseHeaderPolicy = useSpecStore((s) => s.applyResponseHeaderPolicy);
   const removeResponse = useSpecStore((s) => s.removeResponse);
   const addResponseHeader = useSpecStore((s) => s.addResponseHeader);
   const setResponseHeader = useSpecStore((s) => s.setResponseHeader);
@@ -35,6 +38,21 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
   const toggleResponseContentType = useSpecStore((s) => s.toggleResponseContentType);
   const responseActiveClass = useSpecStore((s) => s.responseActiveClass);
   const setResponseActiveClass = useSpecStore((s) => s.setResponseActiveClass);
+
+  useEffect(() => {
+    endpoint.responses.forEach((response) => {
+      const statusCode = Number(response.code);
+      if (
+        Number.isInteger(statusCode) &&
+        statusCode >= 100 &&
+        statusCode <= 599 &&
+        response.headerPolicyStatusCode !== statusCode &&
+        !response.headerPolicyError
+      ) {
+        void applyResponseHeaderPolicy(endpoint.id, response.id, statusCode);
+      }
+    });
+  }, [applyResponseHeaderPolicy, endpoint.id, endpoint.responses]);
 
   const presentClasses = new Set(endpoint.responses.map((r) => classOf(r.code)));
   const activeClass = responseActiveClass[endpoint.id] ?? defaultActiveClass(presentClasses);
@@ -100,9 +118,14 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
           {visible.map((r) => {
             const color = colorForCode(r.code);
             const codeOptions = Array.from(new Set([r.code, ...CODES_BY_CLASS[activeClass]])).sort();
-            const noBody = r.code === '204';
+            const bodyForbidden = r.code === '204';
             const schemaValue = r.schema ? `${r.schemaIsArray ? 'array' : 'schema'}:${r.schema}` : '';
             const availableContentTypes = CONTENT_TYPE_OPTIONS.filter((ct) => !r.contentTypes.includes(ct));
+            const presentHeaderNames = new Set(r.headers.map((header) => header.name.trim().toLowerCase()));
+            const availableHeaderPolicies = (r.headerPolicies ?? [])
+              .filter((policy) => policy.policyCode !== 'forbidden')
+              .filter((policy) => !presentHeaderNames.has(policy.headerName.trim().toLowerCase()))
+              .sort((a, b) => a.displayOrder - b.displayOrder);
 
             return (
               <div key={r.id} className={styles.responseCard}>
@@ -111,7 +134,7 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
                     className={styles.codeSelect}
                     style={{ background: color, borderColor: color }}
                     value={r.code}
-                    onChange={(e) => setResponse(endpoint.id, r.id, { code: e.target.value })}
+                    onChange={(e) => void setResponseCodeWithHeaderPolicy(endpoint.id, r.id, e.target.value)}
                   >
                     {codeOptions.map((code) => (
                       <option key={code} value={code}>
@@ -145,50 +168,61 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
                 <div className={`${styles.box} ${styles.responseSubBox}`}>
                   <div className={styles.boxHeader}>
                     <span className={styles.boxTitle}>Headers</span>
-                    <button
-                      type="button"
-                      className={styles.addBtn}
-                      title="Add"
-                      disabled={noBody}
-                      onClick={() => addResponseHeader(endpoint.id, r.id)}
+                    <select
+                      className={styles.ctAddSelect}
+                      value=""
+                      title="Add a response header allowed by the selected HTTP status"
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        if (value === '__custom__') addResponseHeader(endpoint.id, r.id);
+                        else if (value) addResponseHeader(endpoint.id, r.id, value);
+                      }}
                     >
-                      <Plus size={12} />
-                    </button>
-                  </div>
-                  {noBody ? (
-                    <div className={styles.bodyNone}>
-                      None required — 204 responses carry no message body or content headers
-                    </div>
-                  ) : (
-                    <div className={styles.rowsList}>
-                      {r.headers.map((h) => (
-                        <ParamFieldRow
-                          key={h.id}
-                          name={h.name}
-                          onNameChange={(v) => setResponseHeader(endpoint.id, r.id, h.id, { name: v })}
-                          namePlaceholder="Header-Name"
-                          required={h.required}
-                          onToggleRequired={() =>
-                            setResponseHeader(endpoint.id, r.id, h.id, { required: !h.required })
-                          }
-                          nullable={h.nullable}
-                          onToggleNullable={() =>
-                            setResponseHeader(endpoint.id, r.id, h.id, { nullable: !h.nullable })
-                          }
-                          example={h.example}
-                          onExampleChange={(v) => setResponseHeader(endpoint.id, r.id, h.id, { example: v })}
-                          expanded={expandedParamKey === h.id}
-                          onToggleExpand={() => toggleParamExpanded(h.id)}
-                          removeDisabled={h.required}
-                          removeTitle={
-                            h.required ? "Required headers can't be removed — toggle off Required first" : 'Remove header'
-                          }
-                          onRemove={() => removeResponseHeader(endpoint.id, r.id, h.id)}
-                        />
+                      <option value="">+ Add header</option>
+                      {availableHeaderPolicies.map((policy) => (
+                        <option key={policy.headerCode} value={policy.headerName}>
+                          {policy.displayName} ({policy.policyCode})
+                        </option>
                       ))}
-                      {r.headers.length === 0 && <div className={styles.bodyNone}>No headers</div>}
-                    </div>
-                  )}
+                      <option value="__custom__">Custom header</option>
+                    </select>
+                  </div>
+                  <div className={styles.rowsList}>
+                    {r.headerPolicyError && (
+                      <div className={styles.bodyNone}>Header policy could not be loaded: {r.headerPolicyError}</div>
+                    )}
+                    {r.headers.map((h) => (
+                      <ParamFieldRow
+                        key={h.id}
+                        name={h.name}
+                        nameDisabled={h.mandated}
+                        onNameChange={(v) => setResponseHeader(endpoint.id, r.id, h.id, { name: v })}
+                        namePlaceholder="Header-Name"
+                        required={h.required}
+                        requiredDisabled={h.mandated}
+                        requiredTitle={h.mandated ? h.policyRationale ?? 'Required by the HTTP status policy' : undefined}
+                        onToggleRequired={() =>
+                          setResponseHeader(endpoint.id, r.id, h.id, { required: !h.required })
+                        }
+                        nullable={h.nullable}
+                        onToggleNullable={() =>
+                          setResponseHeader(endpoint.id, r.id, h.id, { nullable: !h.nullable })
+                        }
+                        example={h.example}
+                        onExampleChange={(v) => setResponseHeader(endpoint.id, r.id, h.id, { example: v })}
+                        expanded={expandedParamKey === h.id}
+                        onToggleExpand={() => toggleParamExpanded(h.id)}
+                        removeDisabled={h.mandated}
+                        removeTitle={
+                          h.mandated ? h.policyRationale ?? 'Required by the HTTP status policy' : 'Remove header'
+                        }
+                        onRemove={() => removeResponseHeader(endpoint.id, r.id, h.id)}
+                      />
+                    ))}
+                    {r.headers.length === 0 && !r.headerPolicyError && (
+                      <div className={styles.bodyNone}>No required or default-enabled headers for this status.</div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Response body */}
@@ -196,7 +230,7 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
                   <div className={styles.boxHeader}>
                     <span className={styles.boxTitle}>Response body</span>
                   </div>
-                  {noBody ? (
+                  {bodyForbidden ? (
                     <div className={styles.bodyNone}>None required — 204 responses carry no message body</div>
                   ) : (
                     <div className={styles.bodyFieldsCol}>

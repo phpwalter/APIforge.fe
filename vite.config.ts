@@ -5,15 +5,10 @@ import path from 'node:path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiProxyTarget = env.API_PROXY_TARGET;
   const apiServer = env.VITE_API_SERVER;
 
-  if (mode === 'development' && !apiProxyTarget) {
-    throw new Error('API_PROXY_TARGET is required for the Vite development server.');
-  }
-
-  if (mode === 'production' && !apiServer) {
-    throw new Error('VITE_API_SERVER is required for production builds.');
+  if (!apiServer && mode !== 'test') {
+    throw new Error('VITE_API_SERVER is required. Copy .env.example to .env.local and configure it.');
   }
 
   return {
@@ -24,22 +19,6 @@ export default defineConfig(({ mode }) => {
         'vscode-languageserver-textdocument/lib/esm/main.js': 'vscode-languageserver-textdocument',
         buffer: path.resolve(__dirname, 'src/lib/monaco/buffer-shim.ts'),
       },
-    },
-    server: {
-      proxy: apiProxyTarget
-        ? {
-            '/auth': {
-              target: apiProxyTarget,
-              changeOrigin: true,
-              secure: false,
-            },
-            '/securityTypes': {
-              target: apiProxyTarget,
-              changeOrigin: true,
-              secure: false,
-            },
-          }
-        : undefined,
     },
     worker: { format: 'es' },
     optimizeDeps: { include: ['path-browserify'] },

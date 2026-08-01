@@ -41,19 +41,16 @@ export class ApiError extends Error {
 }
 
 function baseUrl(): string {
-  // Development requests remain same-origin so Vite can proxy them to the API
-  // server without triggering browser CORS enforcement.
-  if (import.meta.env.DEV) return '';
-
   const url = import.meta.env.VITE_API_SERVER;
   if (!url) {
-    throw new ApiError('VITE_API_SERVER is not configured for the production build.');
+    throw new ApiError(
+      'VITE_API_SERVER is not set — copy .env.example to .env.local and configure the API server URL.',
+    );
   }
-
   return url.replace(/\/+$/, '');
 }
 
-/** Return an API endpoint without adding an /api prefix. */
+/** Return an absolute API endpoint without adding an /api prefix. */
 export function apiUrl(path: string): string {
   const finalPath = path.startsWith('/') ? path : `/${path}`;
   return `${baseUrl()}${finalPath}`;

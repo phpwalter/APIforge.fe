@@ -58,12 +58,35 @@ export interface HeaderParam extends PreservedOpenApi {
   id: string;
   name: string;
   required: boolean;
-  /** True for policy-mandated headers (e.g. 401/403 on secured endpoints) — locked, can't be removed. */
+  /** True for database-policy-mandated headers — locked and cannot be removed or renamed. */
   mandated?: boolean;
+  /** Database policy classification for this response status. */
+  policyCode?: 'required' | 'conditional' | 'optional' | 'forbidden' | string;
+  policyConditionCode?: string | null;
+  policyRationale?: string | null;
+  catalogCode?: string;
+  /** True when the UI inserted this header from the database policy rather than by user action. */
+  policyAutoAdded?: boolean;
   nullable: boolean;
   /** Free-text example shown for this header. */
   example: string;
   schema?: ParameterSchemaShape;
+}
+
+
+export interface ResponseHeaderPolicyOption {
+  headerCode: string;
+  headerName: string;
+  displayName: string;
+  description: string;
+  policyCode: 'required' | 'conditional' | 'optional' | 'forbidden' | string;
+  conditionCode: string | null;
+  conditionName: string | null;
+  rationale: string;
+  defaultEnabled: boolean;
+  exampleValue: string | null;
+  defaultValueTemplate: string | null;
+  displayOrder: number;
 }
 
 export interface ResponseEntry extends PreservedOpenApi {
@@ -77,6 +100,10 @@ export interface ResponseEntry extends PreservedOpenApi {
   schema: string;
   /** Whether the body is an array of `schema` rather than a single instance. */
   schemaIsArray: boolean;
+  /** Status code whose database header policy has been applied to this response. */
+  headerPolicyStatusCode?: number;
+  headerPolicyError?: string | null;
+  headerPolicies?: ResponseHeaderPolicyOption[];
 }
 
 export interface Endpoint extends PreservedOpenApi {

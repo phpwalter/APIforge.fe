@@ -19,12 +19,11 @@ npm run dev
 Local configuration:
 
 ```env
-API_PROXY_TARGET=http://apiforge.api
-VITE_API_SERVER=http://apiforge.api
+VITE_API_SERVER=http://api.apiforge.local
 VITE_DEBUG=false
 ```
 
-`API_PROXY_TARGET` is used only by the local Vite development server. Browser requests use canonical same-origin paths such as `/auth/providers`; Vite forwards them to `http://apiforge.api/auth/providers`, avoiding browser CORS enforcement. `VITE_API_SERVER` is embedded in production builds and must never contain secrets.
+`VITE_*` variables are embedded in the browser bundle and must never contain secrets. The browser calls `VITE_API_SERVER` directly. Vite does not proxy API routes. For example, `/headers/policies/200` is requested from `http://api.apiforge.local/headers/policies/200`. The API server must allow the frontend origin through CORS.
 
 ## Commands
 
