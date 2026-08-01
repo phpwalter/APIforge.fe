@@ -84,13 +84,42 @@ describe('MoreMenu — project items', () => {
     expect(useAppStore.getState().moreMenuOpen).toBe(false);
   });
 
-  it('Project Settings opens its modal and closes the menu', async () => {
+  it('disables Project Settings and Share when no document is active', () => {
+    render(<MoreMenu onExport={noop} onShare={noop} />);
+
+    expect(screen.getByRole('button', { name: 'Project Settings' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Share' })).toBeDisabled();
+  });
+
+  it('places Share immediately after Project Settings', () => {
+    render(<MoreMenu onExport={noop} onShare={noop} />);
+
+    const projectSettings = screen.getByRole('button', { name: 'Project Settings' });
+    const share = screen.getByRole('button', { name: 'Share' });
+
+    expect(projectSettings.nextElementSibling).toBe(share);
+  });
+
+  it('Project Settings opens its modal and closes the menu when a document is active', async () => {
     const user = userEvent.setup();
+    useSpecStore.getState().loadSampleProject();
     render(<MoreMenu onExport={noop} onShare={noop} />);
 
     await user.click(screen.getByRole('button', { name: 'Project Settings' }));
 
     expect(useAppStore.getState().projectSettingsOpen).toBe(true);
+    expect(useAppStore.getState().moreMenuOpen).toBe(false);
+  });
+
+  it('Share runs and closes the menu when a document is active', async () => {
+    const user = userEvent.setup();
+    const onShare = vi.fn();
+    useSpecStore.getState().loadSampleProject();
+    render(<MoreMenu onExport={noop} onShare={onShare} />);
+
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+
+    expect(onShare).toHaveBeenCalledOnce();
     expect(useAppStore.getState().moreMenuOpen).toBe(false);
   });
 

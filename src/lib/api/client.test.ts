@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost, apiUrl, ApiError } from './client';
+import { apiGet, apiPatch, apiPost, apiUrl } from './client';
 import { clearAuthToken, setAuthToken } from './authToken';
 
 function mockFetchOnce(response: Partial<Response> & { ok: boolean }) {
@@ -15,7 +15,6 @@ function mockFetchOnce(response: Partial<Response> & { ok: boolean }) {
 }
 
 beforeEach(() => {
-  vi.stubEnv('VITE_API_SERVER', 'http://api.test');
   clearAuthToken();
 });
 
@@ -25,14 +24,9 @@ afterEach(() => {
 });
 
 describe('apiUrl', () => {
-  it('normalizes the configured server URL in tests', () => {
-    vi.stubEnv('VITE_API_SERVER', 'http://api.test/');
-    expect(apiUrl('things')).toBe('http://api.test/things');
-  });
-
-  it('fails closed when the server is not configured', () => {
-    vi.stubEnv('VITE_API_SERVER', '');
-    expect(() => apiUrl('/things')).toThrow(ApiError);
+  it('returns a same-origin path during development and tests', () => {
+    expect(apiUrl('things')).toBe('/things');
+    expect(apiUrl('/auth/providers')).toBe('/auth/providers');
   });
 });
 
@@ -41,7 +35,7 @@ describe('versioned requests', () => {
     const fetchMock = mockFetchOnce({ ok: true, json: () => Promise.resolve({ hello: 'world' }) });
     await expect(apiGet('/things', { apiVersion: 'v2' })).resolves.toEqual({ hello: 'world' });
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://api.test/things',
+      '/things',
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({ 'X-API-Version': 'v2', Accept: 'application/json' }),
@@ -56,7 +50,7 @@ describe('versioned requests', () => {
     const fetchMock = mockFetchOnce({ ok: true, json: () => Promise.resolve({}) });
     await apiGet('/auth/me', { apiVersion: 'v1' });
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://api.test/auth/me',
+      '/auth/me',
       expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer the-token' }) }),
     );
   });

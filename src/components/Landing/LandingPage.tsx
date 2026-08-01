@@ -6,7 +6,8 @@ import { APP_VERSION } from '../../lib/appInfo';
 import { LEGAL_DOCS } from '../../lib/legalDocs';
 import styles from './LandingPage.module.css';
 
-const FOOTER_LINKS = ['Terms', 'Privacy', 'Security', 'Status', 'Community', 'Docs', 'Contact', 'Cookies'];
+const HEADER_DIALOG_LINKS = ['About', 'Features', 'Business'] as const;
+const FOOTER_LINKS = ['Terms', 'Privacy', 'Security', 'Community', 'Contact', 'Cookies'];
 
 export function LandingPage() {
   const theme = useAppStore((s) => s.theme);
@@ -31,6 +32,47 @@ export function LandingPage() {
           </span>
           <span className={styles.brandName}>APIforge</span>
           <span className={styles.pill}>{APP_VERSION}</span>
+
+          <nav className={styles.headerNav} aria-label="Primary">
+            {HEADER_DIALOG_LINKS.slice(0, 2).map((label) => (
+              <button
+                key={label}
+                type="button"
+                className={styles.headerLink}
+                onClick={() => linkClick(label)}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={styles.headerLink}
+              onClick={() =>
+                window.open(
+                  '/docs/codex/index.html',
+                  'apiforge-codex',
+                  'noopener,noreferrer,width=1200,height=900,resizable=yes,scrollbars=yes',
+                )
+              }
+            >
+              Codex
+            </button>
+            <button
+              type="button"
+              className={styles.headerLink}
+              onClick={() => linkClick('Business')}
+            >
+              Business
+            </button>
+            <button
+              type="button"
+              className={styles.headerLink}
+              onClick={() => window.location.assign('/pricing')}
+            >
+              Pricing
+            </button>
+          </nav>
+
           <div className={styles.headerSpacer} />
           <button type="button" className={styles.signInBtn} onClick={openAuth}>
             Sign In

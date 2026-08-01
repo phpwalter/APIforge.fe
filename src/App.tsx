@@ -1,6 +1,7 @@
 import { useAppStore } from './state/useAppStore';
 import { AppShell } from './components/Shell/AppShell';
 import { LandingPage } from './components/Landing/LandingPage';
+import { PricingPage } from './components/Pricing/PricingPage';
 import { OAuthCallbackPage } from './components/Auth/OAuthCallbackPage';
 import { readOAuthCallbackFromLocation } from './lib/api/auth';
 
@@ -15,6 +16,10 @@ function App() {
   // to the configured frontend root with the one-time code in the query string.
   if (path === '/oauth/callback' || callback.code !== null) {
     return <OAuthCallbackPage />;
+  }
+
+  if (path === '/pricing' || path === '/plans') {
+    return <PricingPage />;
   }
 
   return signedIn ? <AppShell /> : <LandingPage />;

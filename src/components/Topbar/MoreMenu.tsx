@@ -175,11 +175,27 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
         </button>
 
         <div className={styles.menuDivider} />
-        <button type="button" className={styles.menuItem} onClick={run(openProjectSettings)}>
+        <button
+          type="button"
+          className={styles.menuItem}
+          disabled={!hasDocument}
+          onClick={run(openProjectSettings)}
+        >
           <span className={styles.menuItemIcon}>
             <SlidersHorizontal size={15} />
           </span>
           <span className={styles.menuItemTrailing}>Project Settings</span>
+        </button>
+        <button
+          type="button"
+          className={styles.menuItem}
+          disabled={!hasDocument}
+          onClick={run(onShare)}
+        >
+          <span className={styles.menuItemIcon}>
+            <Share2 size={15} />
+          </span>
+          <span className={styles.menuItemTrailing}>Share</span>
         </button>
 
         <div className={styles.menuDivider} />
@@ -188,14 +204,6 @@ export function MoreMenu({ onExport, onShare }: MoreMenuProps) {
             <Layers size={16} />
           </span>
           <span className={styles.menuItemTrailing}>Settings</span>
-        </button>
-
-        <div className={styles.menuDivider} />
-        <button type="button" className={styles.menuItem} onClick={run(onShare)}>
-          <span className={styles.menuItemIcon}>
-            <Share2 size={15} />
-          </span>
-          <span className={styles.menuItemTrailing}>Share</span>
         </button>
 
         <div className={styles.menuDivider} />

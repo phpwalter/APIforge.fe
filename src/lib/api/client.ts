@@ -40,14 +40,23 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Return an application-relative API endpoint.
- *
- * In development, Vite proxies /auth requests to the API server. In production,
- * the public web server must route the same /auth paths to the API service.
- */
+function baseUrl(): string {
+  // Development requests remain same-origin so Vite can proxy them to the API
+  // server without triggering browser CORS enforcement.
+  if (import.meta.env.DEV) return '';
+
+  const url = import.meta.env.VITE_API_SERVER;
+  if (!url) {
+    throw new ApiError('VITE_API_SERVER is not configured for the production build.');
+  }
+
+  return url.replace(/\/+$/, '');
+}
+
+/** Return an API endpoint without adding an /api prefix. */
 export function apiUrl(path: string): string {
-  return path.startsWith('/') ? path : `/${path}`;
+  const finalPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl()}${finalPath}`;
 }
 
 function requestHeaders(base: Record<string, string>, options: ApiRequestOptions): Record<string, string> {

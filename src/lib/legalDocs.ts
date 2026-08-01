@@ -4,6 +4,9 @@
  * with no entry here (e.g. "Status", "Docs") just stays an inert button.
  */
 export const LEGAL_DOCS: Record<string, { title: string; src: string }> = {
+  About: { title: 'About', src: '/docs/about.md' },
+  Features: { title: 'Features', src: '/docs/feature.md' },
+  Business: { title: 'Business', src: '/docs/business.md' },
   Terms: { title: 'Terms', src: '/docs/terms.md' },
   Privacy: { title: 'Privacy', src: '/docs/privacy.md' },
   Security: { title: 'Security', src: '/docs/security.md' },

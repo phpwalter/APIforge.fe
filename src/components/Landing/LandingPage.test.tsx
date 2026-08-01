@@ -13,7 +13,13 @@ beforeEach(() => {
   useAppStore.setState(initialState, true);
 });
 
-describe('LandingPage — footer doc links', () => {
+describe('LandingPage — navigation and footer links', () => {
+  it('does not render the Docs footer link', () => {
+    render(<LandingPage />);
+
+    expect(screen.queryByRole('button', { name: 'Docs' })).not.toBeInTheDocument();
+  });
+
   it('opens the doc dialog with the right title/src for a wired link', async () => {
     const user = userEvent.setup();
     render(<LandingPage />);
@@ -37,14 +43,49 @@ describe('LandingPage — footer doc links', () => {
     expect(useAppStore.getState().docDialogSrc).toBe('/docs/ppi.md');
   });
 
-  it('does nothing for a footer link with no associated doc (e.g. Status)', async () => {
+
+
+  it.each([
+    ['About', 'About', '/docs/about.md'],
+    ['Features', 'Features', '/docs/feature.md'],
+    ['Business', 'Business', '/docs/business.md'],
+  ])('opens the %s header document in the page dialog', async (label, title, src) => {
     const user = userEvent.setup();
     render(<LandingPage />);
 
-    await user.click(screen.getByRole('button', { name: 'Status' }));
+    await user.click(screen.getByRole('button', { name: label }));
 
-    expect(useAppStore.getState().docDialogOpen).toBe(false);
+    expect(useAppStore.getState().docDialogOpen).toBe(true);
+    expect(useAppStore.getState().docDialogTitle).toBe(title);
+    expect(useAppStore.getState().docDialogSrc).toBe(src);
   });
+
+  it('opens the Codex documentation route in a secondary window', async () => {
+    const user = userEvent.setup();
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(<LandingPage />);
+    await user.click(screen.getByRole('button', { name: 'Codex' }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      '/docs/codex/index.html',
+      'apiforge-codex',
+      'noopener,noreferrer,width=1200,height=900,resizable=yes,scrollbars=yes',
+    );
+    openSpy.mockRestore();
+  });
+
+  it('navigates to the Pricing page from the header action', async () => {
+    const user = userEvent.setup();
+    const assignSpy = vi.spyOn(window.location, 'assign').mockImplementation(() => undefined);
+
+    render(<LandingPage />);
+    await user.click(screen.getByRole('button', { name: 'Pricing' }));
+
+    expect(assignSpy).toHaveBeenCalledWith('/pricing');
+    assignSpy.mockRestore();
+  });
+
 
   it('opens the doc dialog with the cookies doc from the "Cookies" link', async () => {
     const user = userEvent.setup();

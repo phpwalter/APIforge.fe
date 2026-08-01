@@ -1,5 +1,6 @@
 import { Layers, Undo2, Redo2, Monitor, Moon, Sun, EllipsisVertical } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
+import { useSpecStore } from '../../state/useSpecStore';
 import { APP_VERSION } from '../../lib/appInfo';
 import { SaveBadge } from './SaveBadge';
 import { MoreMenu } from './MoreMenu';
@@ -16,6 +17,7 @@ export function Topbar() {
   // Matches AppShell's gate — a brand-new/imported project has real content the moment its
   // source action runs, but the title bar doesn't show anything for it until it's actually named.
   const currentProjectName = useAppStore((s) => s.currentProjectName);
+  const hasDocument = useSpecStore((s) => s.hasDocument);
   const apiVersion = useAppStore((s) => s.apiVersion);
   const apiOpenapiVersion = useAppStore((s) => s.apiOpenapiVersion);
   const themeMode = useAppStore((s) => s.themeMode);
@@ -57,26 +59,32 @@ export function Topbar() {
 
       <div className={styles.spacer} />
 
-      <SaveBadge />
+      {hasDocument && (
+        <>
+          <SaveBadge />
 
-      <button
-        type="button"
-        className={styles.iconBtn}
-        disabled={cannotUndo}
-        title="Undo (Ctrl/Cmd+Z)"
-        onClick={undo}
-      >
-        <Undo2 size={16} />
-      </button>
-      <button
-        type="button"
-        className={styles.iconBtn}
-        disabled={cannotRedo}
-        title="Redo (Ctrl/Cmd+Shift+Z)"
-        onClick={redo}
-      >
-        <Redo2 size={16} />
-      </button>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            disabled={cannotUndo}
+            title="Undo (Ctrl/Cmd+Z)"
+            onClick={undo}
+          >
+            <Undo2 size={16} />
+          </button>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            disabled={cannotRedo}
+            title="Redo (Ctrl/Cmd+Shift+Z)"
+            onClick={redo}
+          >
+            <Redo2 size={16} />
+          </button>
+        </>
+      )}
+
+      <div className={styles.divider} data-testid="theme-divider" aria-hidden="true" />
 
       <button
         type="button"
