@@ -20,16 +20,11 @@ import {
   type PlanFeatureDto,
   type PlanPriceDto,
   type PricingAudience,
+  type PricingAudienceDto,
   type PricingCatalogResponse,
 } from '../../lib/api/pricing';
 import { ApiError } from '../../lib/api/client';
 import styles from './PricingPage.module.css';
-
-const AUDIENCE_META: { id: PricingAudience; label: string }[] = [
-  { id: 'individual', label: 'Individual' },
-  { id: 'team_enterprise', label: 'Team & Enterprise' },
-  { id: 'api', label: 'API' },
-];
 
 const DEFAULT_PRICING_TITLE = 'Pricing';
 const DEFAULT_COMPARISON_TITLE = 'Compare features across plans';
@@ -49,7 +44,14 @@ interface ComparisonRow {
 }
 
 function getAudience(plan: PlanDto): PricingAudience {
-  return plan.audience ?? 'individual';
+  return plan.audience ?? 'personal';
+}
+
+function compareAudiences(a: PricingAudienceDto, b: PricingAudienceDto): number {
+  const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+  const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+  if (orderA !== orderB) return orderA - orderB;
+  return a.label.localeCompare(b.label);
 }
 
 function comparePlans(a: PlanDto, b: PlanDto): number {
@@ -160,6 +162,63 @@ function featureValueLabel(feature?: PlanFeatureDto): string | null {
   return null;
 }
 
+function cardFeatureLabel(feature: PlanFeatureDto): string {
+  const value = feature.displayValue?.trim();
+
+  if (!value || value.toLowerCase() === 'included') {
+    return feature.name;
+  }
+
+  return `${feature.name}: ${value}`;
+}
+
+function flattenIncludedFeatures(plan: PlanDto): PlanFeatureDto[] {
+  return plan.featureGroups.flatMap((group) => group.features.filter((feature) => feature.included));
+}
+
+function featureSignature(feature: PlanFeatureDto): string {
+  return JSON.stringify({
+    included: feature.included,
+    value: feature.value ?? null,
+    displayValue: feature.displayValue?.trim() ?? null,
+  });
+}
+
+/**
+ * Pricing cards are progressive summaries. The first plan in an audience shows its complete
+ * included set; every later plan shows only capabilities that are new or improved compared with
+ * the immediately preceding tier. The full matrix below the cards still shows every feature.
+ */
+function incrementalCardFeatures(plans: PlanDto[], planIndex: number): PlanFeatureDto[] {
+  const current = plans[planIndex];
+  if (!current) return [];
+
+  const currentFeatures = flattenIncludedFeatures(current);
+  const previous = plans[planIndex - 1];
+  if (!previous) return currentFeatures;
+
+  const previousByCode = new Map(
+    previous.featureGroups
+      .flatMap((group) => group.features)
+      .map((feature) => [feature.code, feature] as const),
+  );
+
+  return currentFeatures.filter((feature) => {
+    const previousFeature = previousByCode.get(feature.code);
+    if (!previousFeature || !previousFeature.included) return true;
+    return featureSignature(previousFeature) !== featureSignature(feature);
+  });
+}
+
+function orderCardFeatures(plan: PlanDto, features: PlanFeatureDto[]): PlanFeatureDto[] {
+  if (plan.code.toLowerCase() !== 'free') return features;
+
+  const regular = features.filter((feature) => !feature.name.toLowerCase().startsWith('support level'));
+  const support = features.filter((feature) => feature.name.toLowerCase().startsWith('support level'));
+
+  return [...regular, ...support];
+}
+
 function ctaLabelForPlan(plan: PlanDto): string {
   return plan.ctaLabel ?? (plan.requiresSalesContact ? 'Contact sales' : 'Get started');
 }
@@ -184,7 +243,7 @@ export function PricingPage() {
   const [catalog, setCatalog] = useState<PricingCatalogResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeAudience, setActiveAudience] = useState<PricingAudience>('individual');
+  const [activeAudience, setActiveAudience] = useState<PricingAudience>('personal');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -198,8 +257,12 @@ export function PricingPage() {
         if (cancelled) return;
         setCatalog(response);
 
-        const availableAudience = AUDIENCE_META.find(({ id }) => response.data.some((plan) => getAudience(plan) === id));
-        if (availableAudience) setActiveAudience(availableAudience.id);
+        const publishedAudience = [...(response.audiences ?? [])]
+          .sort(compareAudiences)
+          .find(({ id }) => response.data.some((plan) => getAudience(plan) === id));
+        const fallbackAudience = response.data.map(getAudience)[0];
+        if (publishedAudience) setActiveAudience(publishedAudience.id);
+        else if (fallbackAudience) setActiveAudience(fallbackAudience);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -217,7 +280,7 @@ export function PricingPage() {
 
   const plansByAudience = useMemo(() => {
     const grouped = new Map<PricingAudience, PlanDto[]>();
-    AUDIENCE_META.forEach(({ id }) => grouped.set(id, []));
+    (catalog?.audiences ?? []).forEach(({ id }) => grouped.set(id, []));
 
     (catalog?.data ?? []).forEach((plan) => {
       const audience = getAudience(plan);
@@ -230,10 +293,17 @@ export function PricingPage() {
     return grouped;
   }, [catalog]);
 
-  const availableAudiences = useMemo(
-    () => AUDIENCE_META.filter(({ id }) => (plansByAudience.get(id)?.length ?? 0) > 0),
-    [plansByAudience],
-  );
+  const availableAudiences = useMemo(() => {
+    const configured = [...(catalog?.audiences ?? [])].sort(compareAudiences);
+    if (configured.length > 0) {
+      return configured.filter(({ id }) => (plansByAudience.get(id)?.length ?? 0) > 0);
+    }
+
+    return [...plansByAudience.keys()].map((id) => ({
+      id,
+      label: id.charAt(0).toUpperCase() + id.slice(1).replaceAll('_', ' '),
+    }));
+  }, [catalog, plansByAudience]);
 
   const activePlans = plansByAudience.get(activeAudience) ?? [];
   const comparisonRows = useMemo(() => buildComparisonRows(activePlans), [activePlans]);
@@ -321,7 +391,7 @@ export function PricingPage() {
               </div>
 
               <section className={styles.cardsGrid} aria-label={`${activeAudience} pricing plans`}>
-                {activePlans.map((plan) => {
+                {activePlans.map((plan, planIndex) => {
                   const Icon = iconForPlan(plan.code, getAudience(plan));
                   const price = priceDisplay(plan);
                   const secondaryCta = secondaryCtaLabelForPlan(plan);
@@ -376,16 +446,12 @@ export function PricingPage() {
 
                       {plan.featureIntro && <p className={styles.featureIntro}>{plan.featureIntro}</p>}
                       <ul className={styles.featureList}>
-                        {plan.featureGroups.flatMap((group) =>
-                          group.features
-                            .filter((feature) => feature.included)
-                            .map((feature) => (
-                              <li key={`${group.name}-${feature.code}`} className={styles.featureItem}>
-                                <Check size={15} />
-                                <span>{feature.displayValue ?? feature.name}</span>
-                              </li>
-                            )),
-                        )}
+                        {orderCardFeatures(plan, incrementalCardFeatures(activePlans, planIndex)).map((feature) => (
+                          <li key={feature.code} className={styles.featureItem}>
+                            <Check size={15} />
+                            <span>{cardFeatureLabel(feature)}</span>
+                          </li>
+                        ))}
                       </ul>
                     </article>
                   );

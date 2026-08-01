@@ -1,6 +1,13 @@
-import { apiGet } from './client';
+import { ApiError } from './client';
 
-export type PricingAudience = 'individual' | 'team_enterprise' | 'api';
+export type PricingAudience = string;
+
+export interface PricingAudienceDto {
+  id: string;
+  label: string;
+  description?: string;
+  order?: number;
+}
 
 export interface PlanPriceDto {
   billingInterval?: 'free' | 'monthly' | 'annual' | 'custom' | string;
@@ -47,6 +54,7 @@ export interface PlanDto {
 
 export interface PricingCatalogResponse {
   data: PlanDto[];
+  audiences?: PricingAudienceDto[];
   comparisonTitle?: string;
   comparisonSearchPlaceholder?: string;
   pricingTitle?: string;
@@ -60,6 +68,40 @@ export interface PricingCatalogResponse {
  * React. The backend contract is intentionally frontend-ready, but the endpoint may not exist
  * until the billing domain lands on the API server.
  */
-export function fetchPricingCatalog(): Promise<PricingCatalogResponse> {
-  return apiGet<PricingCatalogResponse>('/plans', { apiVersion: 'v1', authenticated: false });
+function pricingApiUrl(): string {
+  const configured = import.meta.env.VITE_API_SERVER?.trim();
+  const apiOrigin = configured || 'http://localhost:8080';
+  return `${apiOrigin.replace(/\/+$/, '')}/plans`;
+}
+
+export async function fetchPricingCatalog(): Promise<PricingCatalogResponse> {
+  const url = pricingApiUrl();
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'X-API-Version': 'v1',
+      },
+    });
+  } catch (error) {
+    throw new ApiError(
+      `Could not reach ${url}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  if (!response.ok) {
+    throw new ApiError(`${url} responded ${response.status} ${response.statusText}`, response.status);
+  }
+
+  try {
+    return (await response.json()) as PricingCatalogResponse;
+  } catch (error) {
+    throw new ApiError(
+      `${url} returned invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      response.status,
+    );
+  }
 }

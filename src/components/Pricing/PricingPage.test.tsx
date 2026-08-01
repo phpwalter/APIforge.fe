@@ -30,12 +30,16 @@ const catalog: PricingCatalogResponse = {
   comparisonTitle: 'Compare features across plans',
   comparisonSearchPlaceholder: 'Search',
   disclaimer: 'Usage limits apply. Prices shown do not include applicable tax.',
+  audiences: [
+    { id: 'personal', label: 'Personal', order: 10 },
+    { id: 'business', label: 'Business', order: 20 },
+  ],
   data: [
     {
       id: 'free',
       code: 'free',
       name: 'Free',
-      audience: 'individual',
+      audience: 'personal',
       subtitle: 'Try APIforge',
       ctaLabel: 'Try APIforge',
       prices: [{ billingInterval: 'free', currencyCode: 'USD', amountMinor: 0 }],
@@ -53,7 +57,7 @@ const catalog: PricingCatalogResponse = {
       id: 'pro',
       code: 'pro',
       name: 'Pro',
-      audience: 'individual',
+      audience: 'personal',
       subtitle: 'For everyday productivity',
       ctaLabel: 'Try APIforge',
       featureIntro: 'Everything in Free, plus:',
@@ -72,7 +76,7 @@ const catalog: PricingCatalogResponse = {
       id: 'team',
       code: 'team',
       name: 'Team',
-      audience: 'team_enterprise',
+      audience: 'business',
       subtitle: 'For teams of 2 to 150',
       ctaLabel: 'Get Team plan',
       prices: [{ displayPrice: '$20', displayNote: 'Per seat / month if billed annually.' }],
@@ -95,7 +99,7 @@ describe('PricingPage', () => {
     expect(screen.getByText('Loading pricing…')).toBeInTheDocument();
 
     expect(await screen.findByRole('heading', { name: 'Pricing' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Individual' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Personal' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument();
     expect(screen.getByText('Everything in Free, plus:')).toBeInTheDocument();
@@ -115,7 +119,7 @@ describe('PricingPage', () => {
     expect(screen.getByText('Git sync')).toBeInTheDocument();
     expect(screen.queryByText('Chat on web')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Team & Enterprise' }));
+    await user.click(screen.getByRole('tab', { name: 'Business' }));
 
     expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Free' })).not.toBeInTheDocument();

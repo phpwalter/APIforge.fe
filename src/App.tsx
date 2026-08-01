@@ -18,7 +18,7 @@ function App() {
     return <OAuthCallbackPage />;
   }
 
-  if (path === '/pricing' || path === '/plans') {
+  if (path === '/pricing') {
     return <PricingPage />;
   }
 
