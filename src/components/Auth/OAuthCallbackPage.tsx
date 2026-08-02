@@ -24,6 +24,7 @@ function profileFrom(me: {
   use_gravatar?: boolean;
   gravatar_email?: string;
   record_version?: number;
+  roles?: string[];
 }): UserProfile {
   return {
     name: me.name ?? me.display_name ?? me.username ?? me.email ?? 'Signed in user',
@@ -35,6 +36,7 @@ function profileFrom(me: {
     useGravatar: me.use_gravatar ?? false,
     gravatarEmail: me.gravatar_email || undefined,
     recordVersion: me.record_version,
+    roles: Array.isArray(me.roles) ? me.roles.filter((role): role is string => typeof role === 'string') : [],
   };
 }
 

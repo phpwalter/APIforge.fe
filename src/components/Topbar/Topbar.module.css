@@ -514,6 +514,27 @@
   margin-top: 1px;
 }
 
+
+.avatarRoleLine {
+  margin-top: 5px;
+}
+
+.administratorBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 7px;
+  border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .signInBtn {
   width: 32px;
   height: 32px;

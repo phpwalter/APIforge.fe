@@ -16,6 +16,7 @@ export interface MeResponse {
   use_gravatar?: boolean;
   gravatar_email?: string;
   record_version?: number;
+  roles?: string[];
   [key: string]: unknown;
 }
 

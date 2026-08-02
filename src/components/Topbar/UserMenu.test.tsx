@@ -96,6 +96,47 @@ describe('UserMenu — provider line under the email', () => {
   });
 });
 
+
+describe('UserMenu — administrator badge', () => {
+  it('shows Administrator on a separate line for the active administrator role', () => {
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: true,
+      userProfile: {
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        roles: ['user', 'administrator'],
+      },
+      authProvider: 'github',
+    });
+    render(<UserMenu />);
+
+    expect(screen.getByText('Administrator')).toBeInTheDocument();
+  });
+
+  it('does not show the badge for other roles', () => {
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: true,
+      userProfile: { name: 'Ada Lovelace', email: 'ada@example.com', roles: ['user', 'support'] },
+    });
+    render(<UserMenu />);
+
+    expect(screen.queryByText('Administrator')).not.toBeInTheDocument();
+  });
+
+  it('does not expose the badge while the user menu is collapsed', () => {
+    useAppStore.setState({
+      signedIn: true,
+      userMenuOpen: false,
+      userProfile: { name: 'Ada Lovelace', email: 'ada@example.com', roles: ['administrator'] },
+    });
+    render(<UserMenu />);
+
+    expect(screen.queryByText('Administrator')).not.toBeInTheDocument();
+  });
+});
+
 describe('UserMenu — My Profile', () => {
   it('opens the My Profile dialog and closes the user menu', async () => {
     const user = userEvent.setup();

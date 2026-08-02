@@ -33,6 +33,7 @@ export function UserMenu() {
   const signOut = useAppStore((s) => s.signOut);
   const openProfile = useAppStore((s) => s.openProfile);
 
+  const isAdministrator = userProfile.roles?.includes('administrator') ?? false;
   const accountClick = () => (signedIn ? toggleUserMenu() : signIn());
 
   return (
@@ -49,6 +50,11 @@ export function UserMenu() {
                 <div className={styles.avatarName}>{userProfile.name}</div>
                 <div className={styles.avatarEmail}>{userProfile.email}</div>
                 {authProvider && <div className={styles.avatarProvider}>[{providerLabel(authProvider)}]</div>}
+                {isAdministrator && (
+                  <div className={styles.avatarRoleLine}>
+                    <span className={styles.administratorBadge}>Administrator</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className={styles.userMenuHeaderDivider} />

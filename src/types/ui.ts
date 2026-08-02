@@ -31,6 +31,8 @@ export interface UserProfile {
   gravatarEmail?: string;
   /** Optimistic-concurrency version returned by POST/PATCH /auth/me. */
   recordVersion?: number;
+  /** Active, non-revoked platform role codes returned by the authenticated-user API. */
+  roles?: string[];
 }
 
 /**
