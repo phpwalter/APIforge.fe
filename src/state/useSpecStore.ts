@@ -12,12 +12,17 @@ import type {
   SchemaFieldType,
 } from '../types/spec';
 import { METHOD_PRIORITY } from '../lib/methodStyle';
-import { nextAvailableCodeForClass, type ResponseClass } from '../lib/responseClass';
+import { DEFAULT_CODE_FOR_CLASS, type ResponseClass } from '../lib/responseClass';
 import { findPrimitive } from '../lib/primitives';
 import { fieldSubtreeEnd, fieldSiblingBounds } from '../lib/schemaTree';
 import type { SchemaCompileFormat } from '../lib/schemaCompile';
 import { isOutlineGroupDefaultExpanded } from '../lib/restProjectionOutline';
-import { fetchResponseHeaderPolicy, type ApiResponseHeaderPolicyItem } from '../lib/api/apiHeaders';
+import {
+  fetchRequestHeaderPolicy,
+  fetchResponseHeaderPolicy,
+  type ApiRequestHeaderPolicyItem,
+  type ApiResponseHeaderPolicyItem,
+} from '../lib/api/apiHeaders';
 
 const EP_PANEL_MIN_WIDTH = 220;
 const EP_PANEL_MAX_WIDTH = 480;
@@ -170,6 +175,50 @@ function mergeResponseHeaderPolicy(
   };
 }
 
+
+function mergeRequestHeaderPolicy(endpoint: Endpoint, policies: ApiRequestHeaderPolicyItem[]): Endpoint {
+  const byName = new Map(policies.map((policy) => [normalizedHeaderName(policy.header_name), policy]));
+  const forbidden = new Set(
+    policies.filter((policy) => policy.policy_code === 'forbidden').map((policy) => normalizedHeaderName(policy.header_name)),
+  );
+  const headers = endpoint.headers
+    .filter((header) => !forbidden.has(normalizedHeaderName(header.name)))
+    .filter((header) => !(header.policyAutoAdded && !byName.has(normalizedHeaderName(header.name))))
+    .map((header) => {
+      const policy = byName.get(normalizedHeaderName(header.name));
+      if (!policy) return header;
+      return {
+        ...header,
+        required: policy.policy_code === 'required' ? true : header.required,
+        mandated: policy.policy_code === 'required',
+        policyCode: policy.policy_code,
+        policyConditionCode: policy.condition_code,
+        policyRationale: policy.rationale,
+        catalogCode: policy.header_code,
+      };
+    });
+  const present = new Set(headers.map((header) => normalizedHeaderName(header.name)));
+  policies
+    .filter((policy) => policy.policy_code === 'required' || (policy.policy_code === 'conditional' && policy.default_enabled))
+    .forEach((policy) => {
+      const key = normalizedHeaderName(policy.header_name);
+      if (present.has(key)) return;
+      headers.push(makeHeaderParam(makeId('hd'), policy.header_name, {
+        required: policy.policy_code === 'required',
+        mandated: policy.policy_code === 'required',
+        nullable: false,
+        example: policy.default_value_template ?? policy.example_value ?? '',
+        policyCode: policy.policy_code,
+        policyConditionCode: policy.condition_code,
+        policyRationale: policy.rationale,
+        catalogCode: policy.header_code,
+        policyAutoAdded: true,
+      }));
+      present.add(key);
+    });
+  return { ...endpoint, headers };
+}
+
 function makeCustomField(
   id: string,
   name: string,
@@ -285,6 +334,7 @@ export interface SpecState {
   setResponse: (id: string, responseId: string, patch: Partial<ResponseEntry>) => void;
   setResponseCodeWithHeaderPolicy: (id: string, responseId: string, code: string) => Promise<void>;
   applyResponseHeaderPolicy: (id: string, responseId: string, statusCode: number) => Promise<void>;
+  applyRequestHeaderPolicy: (id: string, method: HttpMethod) => Promise<void>;
   removeResponse: (id: string, responseId: string) => void;
 
   addResponseHeader: (id: string, responseId: string, headerName?: string) => void;
@@ -632,6 +682,7 @@ export const useSpecStore = create<SpecState>()(
     );
     const newEndpoint = newEndpointDefaults(path, 'GET');
     set({ endpoints: [...endpoints, newEndpoint], selectedEndpointId: newEndpoint.id });
+    void get().applyRequestHeaderPolicy(newEndpoint.id, newEndpoint.method);
   },
 
   toggleEndpointTag: (endpointId, tag) =>
@@ -652,6 +703,7 @@ export const useSpecStore = create<SpecState>()(
     }
     const newEndpoint = newEndpointDefaults(path, method);
     set({ endpoints: [...endpoints, newEndpoint], selectedEndpointId: newEndpoint.id });
+    void get().applyRequestHeaderPolicy(newEndpoint.id, newEndpoint.method);
   },
 
   renamePath: (oldPath, newPath) => {
@@ -705,6 +757,24 @@ export const useSpecStore = create<SpecState>()(
       ),
     })),
 
+  applyRequestHeaderPolicy: async (id, method) => {
+    try {
+      const policy = await fetchRequestHeaderPolicy(method);
+      set((s) => ({
+        endpoints: s.endpoints.map((endpoint) =>
+          endpoint.id === id && endpoint.method === method
+            ? mergeRequestHeaderPolicy(endpoint, policy.data)
+            : endpoint,
+        ),
+      }));
+    } catch (error) {
+      set({ importStatus: {
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Unable to load request-header policy.',
+      } });
+    }
+  },
+
   addHeader: (id) =>
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
@@ -738,32 +808,17 @@ export const useSpecStore = create<SpecState>()(
     })),
 
   addResponse: (id) => {
-    const endpoint = get().endpoints.find((candidate) => candidate.id === id);
-    if (!endpoint) return;
-
     const responseId = makeId('res');
-    const code = nextAvailableCodeForClass(
-      endpoint.responses.map((response) => response.code),
-      '2xx',
-    );
-
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
-        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, code)] } : e,
+        e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, '200')] } : e,
       ),
     }));
-    void get().applyResponseHeaderPolicy(id, responseId, Number(code));
+    void get().applyResponseHeaderPolicy(id, responseId, 200);
   },
   addResponseForClass: (id, cls) => {
-    const endpoint = get().endpoints.find((candidate) => candidate.id === id);
-    if (!endpoint) return;
-
     const responseId = makeId('res');
-    const code = nextAvailableCodeForClass(
-      endpoint.responses.map((response) => response.code),
-      cls,
-    );
-
+    const code = DEFAULT_CODE_FOR_CLASS[cls];
     set((s) => ({
       endpoints: s.endpoints.map((e) =>
         e.id === id ? { ...e, responses: [...e.responses, makeResponseEntry(responseId, code)] } : e,

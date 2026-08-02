@@ -51,6 +51,29 @@ export interface ApiHeaderCatalogResponse {
   };
 }
 
+export interface ApiRequestHeaderPolicyItem {
+  http_method: string;
+  header_code: string;
+  header_name: string;
+  display_name: string;
+  description: string;
+  policy_code: ApiHeaderPolicyCode;
+  policy_name: string;
+  condition_code: string | null;
+  condition_name: string | null;
+  rationale: string;
+  default_enabled: boolean;
+  value_schema: Record<string, unknown>;
+  example_value: string | null;
+  default_value_template: string | null;
+  display_order: number;
+}
+
+export interface ApiRequestHeaderPolicyResponse {
+  data: ApiRequestHeaderPolicyItem[];
+  meta: { count: number; http_method: string };
+}
+
 export interface ApiResponseHeaderPolicyResponse {
   data: ApiResponseHeaderPolicyItem[];
   meta: {
@@ -85,4 +108,13 @@ export function fetchResponseHeaderPolicy(statusCode: number): Promise<ApiRespon
   return apiGet<ApiResponseHeaderPolicyResponse>(`/headers/policies/${statusCode}`, {
     apiVersion: 'v1',
   });
+}
+
+
+export function fetchRequestHeaderPolicy(httpMethod: string): Promise<ApiRequestHeaderPolicyResponse> {
+  const normalized = httpMethod.trim().toUpperCase();
+  if (!/^(GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS|TRACE)$/.test(normalized)) {
+    return Promise.reject(new RangeError('httpMethod must be a supported HTTP method.'));
+  }
+  return apiGet<ApiRequestHeaderPolicyResponse>(`/headers/request-policies/${normalized}`, { apiVersion: 'v1' });
 }
