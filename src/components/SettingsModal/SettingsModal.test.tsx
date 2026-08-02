@@ -136,3 +136,51 @@ describe('SettingsModal — nested nav', () => {
     expect(screen.queryByRole('button', { name: 'Other Settings' })).not.toBeInTheDocument();
   });
 });
+
+
+describe('SettingsModal — HEADER Config administrator access', () => {
+  it('places HEADER Config immediately after Advanced Settings and disables it by default', () => {
+    render(<SettingsModal />);
+
+    const advanced = screen.getByRole('button', { name: 'Advanced Settings' });
+    const headerConfig = screen.getByRole('button', { name: 'HEADER Config' });
+
+    expect(headerConfig).toBeDisabled();
+    expect(headerConfig).toHaveAttribute('title', 'Administrator access required');
+    expect(advanced.compareDocumentPosition(headerConfig) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('enables HEADER Config only for the canonical administrator role', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({
+      userProfile: {
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        roles: ['administrator'],
+      },
+    });
+
+    render(<SettingsModal />);
+
+    const headerConfig = screen.getByRole('button', { name: 'HEADER Config' });
+    expect(headerConfig).toBeEnabled();
+
+    await user.click(headerConfig);
+    expect(headerConfig).toHaveAttribute('data-active', 'true');
+    expect(screen.getByText("HEADER Config settings aren't built yet.")).toBeInTheDocument();
+  });
+
+  it('does not enable HEADER Config for other roles', () => {
+    useAppStore.setState({
+      userProfile: {
+        name: 'Grace Hopper',
+        email: 'grace@example.com',
+        roles: ['owner', 'member'],
+      },
+    });
+
+    render(<SettingsModal />);
+
+    expect(screen.getByRole('button', { name: 'HEADER Config' })).toBeDisabled();
+  });
+});

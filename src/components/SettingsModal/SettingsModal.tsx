@@ -12,6 +12,7 @@ import { FormattingSettingsPanel } from './FormattingSettingsPanel';
 import { ColorSchemeSettingsPanel } from './ColorSchemeSettingsPanel';
 import { ColorStyleSettingsPanel } from './ColorStyleSettingsPanel';
 import { PluginsSettingsPanel } from './PluginsSettingsPanel';
+import { HeaderConfigSettingsPanel } from './HeaderConfigSettingsPanel';
 import styles from './SettingsModal.module.css';
 
 const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
@@ -25,6 +26,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   fileEncoding: FileEncodingSettingsPanel,
   formatting: FormattingSettingsPanel,
   plugins: PluginsSettingsPanel,
+  headerConfig: HeaderConfigSettingsPanel,
 };
 
 /** A category row plus the parent it belongs to (undefined for top-level rows) — used for search + lookup. */
@@ -49,6 +51,7 @@ function findActive(categories: SettingsCategory[], key: string): FlatRow | unde
 
 export function SettingsModal() {
   const closeSettings = useAppStore((s) => s.closeSettings);
+  const isAdministrator = useAppStore((s) => s.userProfile.roles?.includes('administrator') ?? false);
   const [search, setSearch] = useState('');
   const [activeKey, setActiveKey] = useState(SETTINGS_CATEGORIES[0].key);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
@@ -76,6 +79,7 @@ export function SettingsModal() {
   const active = activeRow.category;
 
   const selectCategory = (category: SettingsCategory, hasChildren: boolean) => {
+    if (category.administratorOnly && !isAdministrator) return;
     setActiveKey(category.key);
     if (hasChildren) toggleExpanded(category.key);
   };
@@ -104,6 +108,7 @@ export function SettingsModal() {
               {visible.map(({ cat, children }) => {
                 const Icon = cat.icon;
                 const hasChildren = cat.children != null && cat.children.length > 0;
+                const disabled = cat.administratorOnly === true && !isAdministrator;
                 const expanded = hasChildren && (expandedKeys.has(cat.key) || (q !== '' && children.length > 0));
                 return (
                   <div key={cat.key}>
@@ -111,6 +116,9 @@ export function SettingsModal() {
                       type="button"
                       className={styles.navRow}
                       data-active={cat.key === active.key}
+                      disabled={disabled}
+                      aria-disabled={disabled}
+                      title={disabled ? 'Administrator access required' : undefined}
                       onClick={() => selectCategory(cat, hasChildren)}
                     >
                       {hasChildren && (

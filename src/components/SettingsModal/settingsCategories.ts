@@ -28,6 +28,8 @@ export interface SettingsCategory {
   icon: ComponentType<{ size?: number | string }>;
   /** One level of nested items shown/expanded under this category in the settings rail. */
   children?: SettingsCategory[];
+  /** Restricts the category to users with the canonical administrator platform role. */
+  administratorOnly?: boolean;
 }
 
 /**
@@ -83,6 +85,13 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'export', label: 'Export Defaults', keywords: 'export clean full filename yaml download', icon: Download },
   { key: 'notes', label: 'Notes', keywords: 'notes todo internal decisions x-apiforge', icon: Pencil },
   { key: 'other', label: 'Advanced Settings', keywords: 'misc other advanced', icon: Settings },
+  {
+    key: 'headerConfig',
+    label: 'HEADER Config',
+    keywords: 'header config request response policy administrator admin',
+    icon: Settings,
+    administratorOnly: true,
+  },
   {
     key: 'system',
     label: 'System Settings',
