@@ -117,7 +117,19 @@ export function ResponsePanel({ endpoint }: ResponsePanelProps) {
           )}
           {visible.map((r) => {
             const color = colorForCode(r.code);
-            const codeOptions = Array.from(new Set([r.code, ...CODES_BY_CLASS[activeClass]])).sort();
+            const codesUsedByOtherResponses = new Set(
+              endpoint.responses
+                .filter((response) => response.id !== r.id)
+                .map((response) => response.code),
+            );
+            const codeOptions = Array.from(
+              new Set([
+                r.code,
+                ...CODES_BY_CLASS[activeClass].filter(
+                  (code) => !codesUsedByOtherResponses.has(code),
+                ),
+              ]),
+            ).sort((left, right) => Number(left) - Number(right));
             const bodyForbidden = r.code === '204';
             const schemaValue = r.schema ? `${r.schemaIsArray ? 'array' : 'schema'}:${r.schema}` : '';
             const availableContentTypes = CONTENT_TYPE_OPTIONS.filter((ct) => !r.contentTypes.includes(ct));

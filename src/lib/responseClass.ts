@@ -29,10 +29,9 @@ export const CODES_BY_CLASS: Record<ResponseClass, string[]> = {
 
 
 /**
- * Returns the first unused response code in the selected status class.
- * Standard codes are preferred in the order defined by CODES_BY_CLASS.
- * If every listed standard code is already present, the first unused numeric
- * code in the class is returned as a deterministic fallback.
+ * Returns the next unused response code after the highest code already defined
+ * in the selected status class. This preserves sequence progression instead of
+ * backfilling lower gaps. For example, 200 and 204 produce 205, not 201.
  */
 export function nextAvailableCodeForClass(
   existingCodes: Iterable<string>,
@@ -44,11 +43,16 @@ export function nextAvailableCodeForClass(
       .filter((code) => classOf(code) === cls),
   );
 
-  const standardCode = CODES_BY_CLASS[cls].find((code) => !used.has(code));
-  if (standardCode) return standardCode;
+  if (used.size === 0) return DEFAULT_CODE_FOR_CLASS[cls];
 
-  const classStart = Number.parseInt(cls[0], 10) * 100;
-  for (let code = classStart; code < classStart + 100; code += 1) {
+  const highestUsedCode = Math.max(...Array.from(used, Number));
+  const nextStandardCode = CODES_BY_CLASS[cls].find(
+    (code) => Number(code) > highestUsedCode && !used.has(code),
+  );
+  if (nextStandardCode) return nextStandardCode;
+
+  const classEnd = Number.parseInt(cls[0], 10) * 100 + 99;
+  for (let code = highestUsedCode + 1; code <= classEnd; code += 1) {
     const candidate = String(code);
     if (!used.has(candidate)) return candidate;
   }
