@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type {
   Endpoint,
+  EndpointPathDraft,
   HeaderParam,
   HttpMethod,
   Param,
@@ -17,12 +18,8 @@ import { findPrimitive } from '../lib/primitives';
 import { fieldSubtreeEnd, fieldSiblingBounds } from '../lib/schemaTree';
 import type { SchemaCompileFormat } from '../lib/schemaCompile';
 import { isOutlineGroupDefaultExpanded } from '../lib/restProjectionOutline';
-import {
-  fetchRequestHeaderPolicy,
-  fetchResponseHeaderPolicy,
-  type ApiRequestHeaderPolicyItem,
-  type ApiResponseHeaderPolicyItem,
-} from '../lib/api/apiHeaders';
+import { fetchResponseHeaderPolicy, type ApiResponseHeaderPolicyItem } from '../lib/api/apiHeaders';
+import { fetchResolvedMethodPolicy, type ResolvedMethodPolicyItem } from '../lib/api/methodPolicies';
 
 const EP_PANEL_MIN_WIDTH = 220;
 const EP_PANEL_MAX_WIDTH = 480;
@@ -175,50 +172,6 @@ function mergeResponseHeaderPolicy(
   };
 }
 
-
-function mergeRequestHeaderPolicy(endpoint: Endpoint, policies: ApiRequestHeaderPolicyItem[]): Endpoint {
-  const byName = new Map(policies.map((policy) => [normalizedHeaderName(policy.header_name), policy]));
-  const forbidden = new Set(
-    policies.filter((policy) => policy.policy_code === 'forbidden').map((policy) => normalizedHeaderName(policy.header_name)),
-  );
-  const headers = endpoint.headers
-    .filter((header) => !forbidden.has(normalizedHeaderName(header.name)))
-    .filter((header) => !(header.policyAutoAdded && !byName.has(normalizedHeaderName(header.name))))
-    .map((header) => {
-      const policy = byName.get(normalizedHeaderName(header.name));
-      if (!policy) return header;
-      return {
-        ...header,
-        required: policy.policy_code === 'required' ? true : header.required,
-        mandated: policy.policy_code === 'required',
-        policyCode: policy.policy_code,
-        policyConditionCode: policy.condition_code,
-        policyRationale: policy.rationale,
-        catalogCode: policy.header_code,
-      };
-    });
-  const present = new Set(headers.map((header) => normalizedHeaderName(header.name)));
-  policies
-    .filter((policy) => policy.policy_code === 'required' || (policy.policy_code === 'conditional' && policy.default_enabled))
-    .forEach((policy) => {
-      const key = normalizedHeaderName(policy.header_name);
-      if (present.has(key)) return;
-      headers.push(makeHeaderParam(makeId('hd'), policy.header_name, {
-        required: policy.policy_code === 'required',
-        mandated: policy.policy_code === 'required',
-        nullable: false,
-        example: policy.default_value_template ?? policy.example_value ?? '',
-        policyCode: policy.policy_code,
-        policyConditionCode: policy.condition_code,
-        policyRationale: policy.rationale,
-        catalogCode: policy.header_code,
-        policyAutoAdded: true,
-      }));
-      present.add(key);
-    });
-  return { ...endpoint, headers };
-}
-
 function makeCustomField(
   id: string,
   name: string,
@@ -262,11 +215,28 @@ const DEFAULT_CUSTOM_FIELD_DRAFT: CustomFieldDraft = {
   nullable: false,
 };
 
+const FALLBACK_METHOD_RESPONSES: Record<HttpMethod, Array<[string, string]>> = {
+  GET: [['200', 'OK'], ['400', 'Bad Request'], ['404', 'Not Found'], ['500', 'Internal Server Error']],
+  POST: [['201', 'Created'], ['400', 'Bad Request'], ['409', 'Conflict'], ['422', 'Unprocessable Content'], ['500', 'Internal Server Error']],
+  PUT: [['200', 'OK'], ['400', 'Bad Request'], ['404', 'Not Found'], ['409', 'Conflict'], ['422', 'Unprocessable Content'], ['500', 'Internal Server Error']],
+  PATCH: [['200', 'OK'], ['400', 'Bad Request'], ['404', 'Not Found'], ['409', 'Conflict'], ['422', 'Unprocessable Content'], ['500', 'Internal Server Error']],
+  DELETE: [['204', 'No Content'], ['404', 'Not Found'], ['409', 'Conflict'], ['500', 'Internal Server Error']],
+  HEAD: [['200', 'OK'], ['404', 'Not Found'], ['500', 'Internal Server Error']],
+  OPTIONS: [['200', 'OK'], ['500', 'Internal Server Error']],
+  TRACE: [['200', 'OK'], ['405', 'Method Not Allowed'], ['500', 'Internal Server Error']],
+};
+
 function defaultResponsesFor(method: HttpMethod): ResponseEntry[] {
-  return [makeResponseEntry(makeId('res'), method === 'POST' ? '201' : '200', method === 'POST' ? 'Created' : 'OK')];
+  return FALLBACK_METHOD_RESPONSES[method].map(([code, title]) => makeResponseEntry(makeId('res'), code, title));
 }
 
-function newEndpointDefaults(path: string, method: HttpMethod, summary = ''): Endpoint {
+function responsesFromPolicy(method: HttpMethod, policy: ResolvedMethodPolicyItem[]): ResponseEntry[] {
+  const enabled = policy.filter((item) => item.is_enabled).sort((a, b) => a.display_order - b.display_order);
+  if (!enabled.length) return defaultResponsesFor(method);
+  return enabled.map((item) => makeResponseEntry(makeId('res'), String(item.status_code), item.title));
+}
+
+function newEndpointDefaults(path: string, method: HttpMethod, summary = '', responses = defaultResponsesFor(method)): Endpoint {
   return {
     id: makeId('ep'),
     path,
@@ -279,7 +249,7 @@ function newEndpointDefaults(path: string, method: HttpMethod, summary = ''): En
     headers: [],
     requestBodyEnabled: false,
     requestBodyDescription: '',
-    responses: defaultResponsesFor(method),
+    responses,
   };
 }
 
@@ -303,14 +273,17 @@ export interface SpecState {
   setImportStatus: (status: { type: 'success' | 'error'; message: string } | null) => void;
 
   endpoints: Endpoint[];
+  endpointDrafts: EndpointPathDraft[];
   /** Design Canvas's last-selected endpoint — kept separate from selectedSchemaId so each tab remembers its own selection. */
   selectedEndpointId: string | null;
+  selectedEndpointDraftId: string | null;
   selectEndpoint: (id: string) => void;
+  selectEndpointDraft: (id: string) => void;
   addEndpoint: () => void;
   toggleEndpointTag: (endpointId: string, tag: string) => void;
 
   // Method editor mutations
-  pickMethod: (path: string, method: HttpMethod) => void;
+  pickMethod: (path: string, method: HttpMethod, context?: { companyId?: string | null; projectId?: string | null; planCode?: string | null }) => Promise<void>;
   /** Renames a path across every method that shares it, plus any descendant path nested beneath it. */
   renamePath: (oldPath: string, newPath: string) => void;
   deleteMethod: (id: string) => void;
@@ -334,7 +307,6 @@ export interface SpecState {
   setResponse: (id: string, responseId: string, patch: Partial<ResponseEntry>) => void;
   setResponseCodeWithHeaderPolicy: (id: string, responseId: string, code: string) => Promise<void>;
   applyResponseHeaderPolicy: (id: string, responseId: string, statusCode: number) => Promise<void>;
-  applyRequestHeaderPolicy: (id: string, method: HttpMethod) => Promise<void>;
   removeResponse: (id: string, responseId: string) => void;
 
   addResponseHeader: (id: string, responseId: string, headerName?: string) => void;
@@ -629,9 +601,11 @@ export const useSpecStore = create<SpecState>()(
   importSpec: ({ endpoints, schemas }) =>
     set({
       endpoints,
+      endpointDrafts: [],
       schemas,
       hasDocument: true,
       selectedEndpointId: endpoints[0]?.id ?? null,
+      selectedEndpointDraftId: null,
       selectedSchemaId: schemas[0]?.id ?? null,
       // Reset panel/editor UI state left over from any previous document.
       panelSearch: '',
@@ -645,18 +619,22 @@ export const useSpecStore = create<SpecState>()(
   loadSampleProject: () =>
     set({
       endpoints: sampleEndpoints,
+      endpointDrafts: [],
       schemas: sampleSchemas,
       hasDocument: true,
       selectedEndpointId: sampleEndpoints[0].id,
+      selectedEndpointDraftId: null,
       selectedSchemaId: sampleSchemas[0]?.id ?? null,
       enabledSecuritySchemes: ['bearerAuth'],
     }),
   closeDocument: () =>
     set({
       endpoints: [],
+      endpointDrafts: [],
       schemas: [],
       hasDocument: false,
       selectedEndpointId: null,
+      selectedEndpointDraftId: null,
       selectedSchemaId: null,
       panelSearch: '',
       schemaPanelSearch: '',
@@ -671,18 +649,20 @@ export const useSpecStore = create<SpecState>()(
   setImportStatus: (importStatus) => set({ importStatus }),
 
   endpoints: [],
+  endpointDrafts: [],
   selectedEndpointId: null,
-  selectEndpoint: (id) => set({ selectedEndpointId: id }),
+  selectedEndpointDraftId: null,
+  selectEndpoint: (id) => set({ selectedEndpointId: id, selectedEndpointDraftId: null }),
+  selectEndpointDraft: (id) => set({ selectedEndpointId: null, selectedEndpointDraftId: id }),
 
   addEndpoint: () => {
-    const { endpoints } = get();
+    const { endpoints, endpointDrafts } = get();
     const path = uniquePath(
-      endpoints.map((e) => e.path),
+      [...endpoints.map((e) => e.path), ...endpointDrafts.map((draft) => draft.path)],
       '/new-endpoint',
     );
-    const newEndpoint = newEndpointDefaults(path, 'GET');
-    set({ endpoints: [...endpoints, newEndpoint], selectedEndpointId: newEndpoint.id });
-    void get().applyRequestHeaderPolicy(newEndpoint.id, newEndpoint.method);
+    const draft = { id: makeId('path'), path };
+    set({ endpointDrafts: [...endpointDrafts, draft], selectedEndpointId: null, selectedEndpointDraftId: draft.id });
   },
 
   toggleEndpointTag: (endpointId, tag) =>
@@ -694,16 +674,43 @@ export const useSpecStore = create<SpecState>()(
       ),
     })),
 
-  pickMethod: (path, method) => {
-    const { endpoints } = get();
+  pickMethod: async (path, method, context = {}) => {
+    const { endpoints, endpointDrafts } = get();
     const existing = endpoints.find((e) => e.path === path && e.method === method);
     if (existing) {
-      set({ selectedEndpointId: existing.id });
+      set({ selectedEndpointId: existing.id, selectedEndpointDraftId: null });
       return;
     }
-    const newEndpoint = newEndpointDefaults(path, method);
-    set({ endpoints: [...endpoints, newEndpoint], selectedEndpointId: newEndpoint.id });
-    void get().applyRequestHeaderPolicy(newEndpoint.id, newEndpoint.method);
+
+    let responses = defaultResponsesFor(method);
+    let source: 'system' | 'company' | 'project' = 'system';
+    try {
+      const resolved = await fetchResolvedMethodPolicy(method, context);
+      responses = responsesFromPolicy(method, resolved.data);
+      source = resolved.data.find((item) => item.effective_source === 'project')
+        ? 'project'
+        : resolved.data.find((item) => item.effective_source === 'company')
+          ? 'company'
+          : 'system';
+    } catch (error) {
+      set({
+        importStatus: {
+          type: 'error',
+          message: `Method policy could not be loaded; APIForge used its built-in ${method} fallback set. ${error instanceof Error ? error.message : ''}`.trim(),
+        },
+      });
+    }
+
+    const newEndpoint = {
+      ...newEndpointDefaults(path, method, '', responses),
+      methodPolicy: { scope: source, appliedAt: new Date().toISOString() },
+    };
+    set({
+      endpoints: [...endpoints, newEndpoint],
+      endpointDrafts: endpointDrafts.filter((draft) => draft.path !== path),
+      selectedEndpointId: newEndpoint.id,
+      selectedEndpointDraftId: null,
+    });
   },
 
   renamePath: (oldPath, newPath) => {
@@ -714,16 +721,24 @@ export const useSpecStore = create<SpecState>()(
         if (e.path.startsWith(`${oldPath}/`)) return { ...e, path: newPath + e.path.slice(oldPath.length) };
         return e;
       }),
+      endpointDrafts: s.endpointDrafts.map((draft) =>
+        draft.path === oldPath ? { ...draft, path: newPath } : draft,
+      ),
     }));
   },
 
   deleteMethod: (id) =>
     set((s) => {
+      const deleted = s.endpoints.find((endpoint) => endpoint.id === id);
       const remaining = s.endpoints.filter((e) => e.id !== id);
       const wasSelected = s.selectedEndpointId === id;
+      const pathStillHasMethod = deleted ? remaining.some((endpoint) => endpoint.path === deleted.path) : true;
+      const draft = deleted && !pathStillHasMethod ? { id: makeId('path'), path: deleted.path } : null;
       return {
         endpoints: remaining,
+        endpointDrafts: draft ? [...s.endpointDrafts, draft] : s.endpointDrafts,
         selectedEndpointId: wasSelected ? (remaining[0]?.id ?? null) : s.selectedEndpointId,
+        selectedEndpointDraftId: wasSelected && draft ? draft.id : s.selectedEndpointDraftId,
       };
     }),
 
@@ -756,24 +771,6 @@ export const useSpecStore = create<SpecState>()(
         e.id === id ? { ...e, params: e.params.filter((p) => p.id !== paramId) } : e,
       ),
     })),
-
-  applyRequestHeaderPolicy: async (id, method) => {
-    try {
-      const policy = await fetchRequestHeaderPolicy(method);
-      set((s) => ({
-        endpoints: s.endpoints.map((endpoint) =>
-          endpoint.id === id && endpoint.method === method
-            ? mergeRequestHeaderPolicy(endpoint, policy.data)
-            : endpoint,
-        ),
-      }));
-    } catch (error) {
-      set({ importStatus: {
-        type: 'error',
-        message: error instanceof Error ? error.message : 'Unable to load request-header policy.',
-      } });
-    }
-  },
 
   addHeader: (id) =>
     set((s) => ({

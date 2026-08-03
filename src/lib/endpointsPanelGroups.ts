@@ -1,4 +1,4 @@
-import type { Endpoint } from '../types/spec';
+import type { Endpoint, EndpointPathDraft } from '../types/spec';
 import { buildPathTree } from './pathTree';
 import { METHOD_PRIORITY } from './methodStyle';
 
@@ -12,6 +12,7 @@ export interface EndpointsPanelRow {
   path: string;
   depth: number;
   methods: EndpointsPanelMethodChip[];
+  draftId?: string;
 }
 
 export interface EndpointsPanelGroup {
@@ -56,7 +57,11 @@ function rowsForGroup(
  * first, then one group per tag (alphabetical), each filtered to rows
  * that actually have matching endpoints and dropped entirely if empty.
  */
-export function buildEndpointsPanelGroups(endpoints: Endpoint[], searchQuery: string): EndpointsPanelGroup[] {
+export function buildEndpointsPanelGroups(
+  endpoints: Endpoint[],
+  searchQuery: string,
+  drafts: EndpointPathDraft[] = [],
+): EndpointsPanelGroup[] {
   const allTags = [...new Set(endpoints.flatMap((e) => e.tags))].sort((a, b) => a.localeCompare(b));
 
   const groups: EndpointsPanelGroup[] = [
@@ -64,10 +69,19 @@ export function buildEndpointsPanelGroups(endpoints: Endpoint[], searchQuery: st
     ...allTags.map((tag) => ({ key: tag, label: tag, matcher: (e: Endpoint) => e.tags.includes(tag) })),
   ].map(({ key, label, matcher }) => {
     const rows = rowsForGroup(endpoints, searchQuery, matcher);
+    if (key === DEFAULT_GROUP_KEY) {
+      const q = searchQuery.trim().toLowerCase();
+      const draftRows = drafts
+        .filter((draft) => !q || draft.path.toLowerCase().includes(q))
+        .map((draft) => ({ id: draft.id, draftId: draft.id, path: draft.path, depth: 0, methods: [] }));
+      rows.push(...draftRows);
+      rows.sort((a, b) => a.path.localeCompare(b.path));
+    }
     return { key, label, count: rows.length, rows };
   });
 
   return groups.filter((g) => g.rows.length > 0);
 }
+
 
 export { DEFAULT_GROUP_KEY };

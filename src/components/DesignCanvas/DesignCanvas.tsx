@@ -9,7 +9,10 @@ import styles from './DesignCanvas.module.css';
 export function DesignCanvas() {
   const endpoints = useSpecStore((s) => s.endpoints);
   const selectedEndpointId = useSpecStore((s) => s.selectedEndpointId);
+  const endpointDrafts = useSpecStore((s) => s.endpointDrafts);
+  const selectedEndpointDraftId = useSpecStore((s) => s.selectedEndpointDraftId);
   const selected = endpoints.find((e) => e.id === selectedEndpointId);
+  const selectedDraft = endpointDrafts.find((draft) => draft.id === selectedEndpointDraftId);
 
   return (
     <div className={styles.wrap}>
@@ -21,6 +24,15 @@ export function DesignCanvas() {
               <EndpointPathEditor path={selected.path} />
               <MethodPills path={selected.path} activeMethod={selected.method} />
               <MethodEditor endpoint={selected} />
+            </>
+          ) : selectedDraft ? (
+            <>
+              <EndpointPathEditor path={selectedDraft.path} />
+              <MethodPills path={selectedDraft.path} />
+              <div className={methodEditorStyles.emptySelection}>
+                <div className={methodEditorStyles.emptyTitle}>No HTTP method added</div>
+                <div className={methodEditorStyles.emptyHint}>Choose a method above. APIForge will create the configured response-code set for that method.</div>
+              </div>
             </>
           ) : (
             <div className={methodEditorStyles.emptySelection}>

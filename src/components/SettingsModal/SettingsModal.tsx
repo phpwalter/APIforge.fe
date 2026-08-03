@@ -12,6 +12,7 @@ import { FormattingSettingsPanel } from './FormattingSettingsPanel';
 import { ColorSchemeSettingsPanel } from './ColorSchemeSettingsPanel';
 import { ColorStyleSettingsPanel } from './ColorStyleSettingsPanel';
 import { PluginsSettingsPanel } from './PluginsSettingsPanel';
+import { MethodSettingsPanel } from './MethodSettingsPanel';
 import { HeaderConfigSettingsPanel } from './HeaderConfigSettingsPanel';
 import styles from './SettingsModal.module.css';
 
@@ -26,6 +27,7 @@ const SETTINGS_PANELS: Partial<Record<string, ComponentType>> = {
   fileEncoding: FileEncodingSettingsPanel,
   formatting: FormattingSettingsPanel,
   plugins: PluginsSettingsPanel,
+  methodSettings: MethodSettingsPanel,
   headerConfig: HeaderConfigSettingsPanel,
 };
 
@@ -51,7 +53,9 @@ function findActive(categories: SettingsCategory[], key: string): FlatRow | unde
 
 export function SettingsModal() {
   const closeSettings = useAppStore((s) => s.closeSettings);
-  const isAdministrator = useAppStore((s) => s.userProfile.roles?.includes('administrator') ?? false);
+  const isAdministrator = useAppStore((s) =>
+    (s.userProfile.roles ?? []).some((role) => role === 'administrator' || role === 'super_administrator'),
+  );
   const [search, setSearch] = useState('');
   const [activeKey, setActiveKey] = useState(SETTINGS_CATEGORIES[0].key);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());

@@ -10,6 +10,7 @@ interface EndpointRowProps {
 
 export function EndpointRow({ row, selected }: EndpointRowProps) {
   const selectEndpoint = useSpecStore((s) => s.selectEndpoint);
+  const selectEndpointDraft = useSpecStore((s) => s.selectEndpointDraft);
   const startDragMethod = useSpecStore((s) => s.startDragMethod);
   const endDragMethod = useSpecStore((s) => s.endDragMethod);
 
@@ -18,10 +19,11 @@ export function EndpointRow({ row, selected }: EndpointRowProps) {
       className={styles.row}
       data-selected={selected}
       style={{ marginLeft: row.depth * 14 }}
-      onClick={() => selectEndpoint(row.id)}
+      onClick={() => row.draftId ? selectEndpointDraft(row.draftId) : selectEndpoint(row.id)}
     >
       <div className={styles.rowPath}>{row.path}</div>
       <div className={styles.rowMethods}>
+        {row.methods.length === 0 && <span className={styles.methodChip} title="No methods have been added">NO METHOD</span>}
         {row.methods.map((m) => (
           <button
             key={m.id}

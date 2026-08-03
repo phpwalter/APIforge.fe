@@ -1,16 +1,20 @@
 import type { HttpMethod } from '../../types/spec';
 import { useSpecStore } from '../../state/useSpecStore';
+import { useAppStore } from '../../state/useAppStore';
 import { METHOD_PRIORITY, methodColor, methodIcon } from '../../lib/methodStyle';
 import styles from './MethodEditor.module.css';
 
 interface MethodPillsProps {
   path: string;
-  activeMethod: HttpMethod;
+  activeMethod?: HttpMethod;
 }
 
 export function MethodPills({ path, activeMethod }: MethodPillsProps) {
   const endpoints = useSpecStore((s) => s.endpoints);
   const pickMethod = useSpecStore((s) => s.pickMethod);
+  const companyId = useAppStore((s) => s.userProfile.companyId);
+  const planCode = useAppStore((s) => s.userProfile.planCode);
+  const projectId = useAppStore((s) => s.currentProjectId);
 
   const existing = new Set(endpoints.filter((e) => e.path === path).map((e) => e.method));
 
@@ -27,7 +31,7 @@ export function MethodPills({ path, activeMethod }: MethodPillsProps) {
             data-active={isExisting && method === activeMethod}
             style={isExisting ? { background: methodColor(method) } : undefined}
             title={isExisting ? `${method} (currently editing)` : `${method} — click to add`}
-            onClick={() => pickMethod(path, method)}
+            onClick={() => void pickMethod(path, method, { companyId, projectId, planCode })}
           >
             <Icon size={13} />
             {method}

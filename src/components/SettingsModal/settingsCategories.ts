@@ -19,6 +19,8 @@ import {
   Languages,
   RefreshCw,
   Wifi,
+  ListChecks,
+  Rows3,
 } from 'lucide-react';
 
 export interface SettingsCategory {
@@ -28,7 +30,6 @@ export interface SettingsCategory {
   icon: ComponentType<{ size?: number | string }>;
   /** One level of nested items shown/expanded under this category in the settings rail. */
   children?: SettingsCategory[];
-  /** Restricts the category to users with the canonical administrator platform role. */
   administratorOnly?: boolean;
 }
 
@@ -85,13 +86,8 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'export', label: 'Export Defaults', keywords: 'export clean full filename yaml download', icon: Download },
   { key: 'notes', label: 'Notes', keywords: 'notes todo internal decisions x-apiforge', icon: Pencil },
   { key: 'other', label: 'Advanced Settings', keywords: 'misc other advanced', icon: Settings },
-  {
-    key: 'headerConfig',
-    label: 'HEADER Config',
-    keywords: 'header config request response policy administrator admin',
-    icon: Settings,
-    administratorOnly: true,
-  },
+  { key: 'methodSettings', label: 'Method Settings', keywords: 'method response policy status defaults system company project', icon: ListChecks },
+  { key: 'headerConfig', label: 'HEADER Config', keywords: 'header configuration request response policy', icon: Rows3, administratorOnly: true },
   {
     key: 'system',
     label: 'System Settings',

@@ -9,6 +9,8 @@ import styles from './EndpointsPanel.module.css';
 export function EndpointsPanel() {
   const endpoints = useSpecStore((s) => s.endpoints);
   const selectedEndpointId = useSpecStore((s) => s.selectedEndpointId);
+  const endpointDrafts = useSpecStore((s) => s.endpointDrafts);
+  const selectedEndpointDraftId = useSpecStore((s) => s.selectedEndpointDraftId);
   const addEndpoint = useSpecStore((s) => s.addEndpoint);
 
   const panelSearch = useSpecStore((s) => s.panelSearch);
@@ -25,9 +27,10 @@ export function EndpointsPanel() {
 
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const groups = useMemo(() => buildEndpointsPanelGroups(endpoints, panelSearch), [endpoints, panelSearch]);
+  const groups = useMemo(() => buildEndpointsPanelGroups(endpoints, panelSearch, endpointDrafts), [endpoints, endpointDrafts, panelSearch]);
   const isEmpty = groups.length === 0;
-  const selectedPath = endpoints.find((e) => e.id === selectedEndpointId)?.path;
+  const selectedPath = endpoints.find((e) => e.id === selectedEndpointId)?.path
+    ?? endpointDrafts.find((draft) => draft.id === selectedEndpointDraftId)?.path;
 
   usePanelResize(panelRef, resizingPanel, setPanelWidth, setResizingPanel);
 

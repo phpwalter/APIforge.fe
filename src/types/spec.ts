@@ -106,6 +106,12 @@ export interface ResponseEntry extends PreservedOpenApi {
   headerPolicies?: ResponseHeaderPolicyOption[];
 }
 
+
+export interface EndpointPathDraft {
+  id: string;
+  path: string;
+}
+
 export interface Endpoint extends PreservedOpenApi {
   id: string;
   path: string;
@@ -124,6 +130,8 @@ export interface Endpoint extends PreservedOpenApi {
   requestBodySchemaIsArray?: boolean;
   requestBodyRaw?: Record<string, unknown>;
   responses: ResponseEntry[];
+  /** Policy snapshot applied when the method was created. */
+  methodPolicy?: { scope: 'system' | 'company' | 'project'; appliedAt: string };
 }
 
 export type SchemaFieldKind = 'ref' | 'primitive' | 'custom';

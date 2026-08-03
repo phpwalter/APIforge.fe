@@ -12,13 +12,14 @@ export function computeHasSavableContent(
   projectName: string | null,
   endpointCount: number,
   schemaCount: number,
+  endpointDraftCount = 0,
 ): boolean {
   const hasRealName = !!projectName && !projectName.startsWith('Untitled');
-  return hasRealName && (endpointCount > 0 || schemaCount > 0);
+  return hasRealName && (endpointCount > 0 || endpointDraftCount > 0 || schemaCount > 0);
 }
 
 export function hasSavableContent(): boolean {
   const { currentProjectName } = useAppStore.getState();
-  const { endpoints, schemas } = useSpecStore.getState();
-  return computeHasSavableContent(currentProjectName, endpoints.length, schemas.length);
+  const { endpoints, endpointDrafts, schemas } = useSpecStore.getState();
+  return computeHasSavableContent(currentProjectName, endpoints.length, schemas.length, endpointDrafts.length);
 }

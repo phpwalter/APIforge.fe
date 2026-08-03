@@ -31,8 +31,10 @@ export interface UserProfile {
   gravatarEmail?: string;
   /** Optimistic-concurrency version returned by POST/PATCH /auth/me. */
   recordVersion?: number;
-  /** Active, non-revoked platform role codes returned by the authenticated-user API. */
+  /** Effective platform roles returned by the authenticated profile endpoint. */
   roles?: string[];
+  companyId?: string;
+  planCode?: string;
 }
 
 /**

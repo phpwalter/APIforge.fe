@@ -20,6 +20,7 @@ function isValidRootSegment(s: string): boolean {
 
 export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
   const endpoints = useSpecStore((s) => s.endpoints);
+  const endpointDrafts = useSpecStore((s) => s.endpointDrafts);
   const renamePath = useSpecStore((s) => s.renamePath);
   const [draft, setDraft] = useState<string | null>(null);
   const escapingRef = useRef(false);
@@ -27,7 +28,7 @@ export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
   // If another endpoint's path is a strict ancestor of this one, its root is locked — only the
   // suffix beneath it can be edited here; renaming the root itself happens on that other endpoint.
   // Otherwise the leading "/" itself is locked — every path has one, so it's never user-editable.
-  const allPaths = [...new Set(endpoints.map((e) => e.path))];
+  const allPaths = [...new Set([...endpoints.map((e) => e.path), ...endpointDrafts.map((draft) => draft.path)])];
   const ancestors = allPaths.filter((p) => p !== path && path.startsWith(`${p}/`));
   const parentRoot = ancestors.sort((a, b) => b.length - a.length)[0] ?? null;
   const lockedPrefix = parentRoot ?? '/';
@@ -38,7 +39,7 @@ export function EndpointPathEditor({ path }: EndpointPathEditorProps) {
   const fullValue = lockedPrefix + segment;
 
   const invalidFormat = !isValidSegment(segment);
-  const collides = !invalidFormat && fullValue !== path && endpoints.some((e) => e.path === fullValue);
+  const collides = !invalidFormat && fullValue !== path && allPaths.includes(fullValue);
   const invalid = invalidFormat || collides;
 
   const commit = () => {
