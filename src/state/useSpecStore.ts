@@ -62,6 +62,26 @@ function makeId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+
+function cloneWithFreshIds<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneWithFreshIds(item)) as T;
+  }
+
+  if (value !== null && typeof value === 'object') {
+    const source = value as Record<string, unknown>;
+    const clone: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(source)) {
+      clone[key] = key === 'id' && typeof item === 'string'
+        ? makeId(item.split('_', 1)[0] || 'id')
+        : cloneWithFreshIds(item);
+    }
+    return clone as T;
+  }
+
+  return value;
+}
+
 function clamp(min: number, max: number, value: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -280,6 +300,10 @@ export interface SpecState {
   selectEndpoint: (id: string) => void;
   selectEndpointDraft: (id: string) => void;
   addEndpoint: () => void;
+  renameEndpointPath: (oldPath: string, newPath: string) => void;
+  duplicateEndpointPath: (path: string) => string | null;
+  moveEndpointPathToTag: (path: string, tag: string | null) => void;
+  deleteEndpointPath: (path: string) => void;
   toggleEndpointTag: (endpointId: string, tag: string) => void;
 
   // Method editor mutations
@@ -664,6 +688,71 @@ export const useSpecStore = create<SpecState>()(
     const draft = { id: makeId('path'), path };
     set({ endpointDrafts: [...endpointDrafts, draft], selectedEndpointId: null, selectedEndpointDraftId: draft.id });
   },
+
+  renameEndpointPath: (oldPath, newPath) => {
+    const trimmed = newPath.trim();
+    if (trimmed === '' || trimmed === oldPath) return;
+    get().renamePath(oldPath, trimmed.startsWith('/') ? trimmed : `/${trimmed}`);
+  },
+
+  duplicateEndpointPath: (path) => {
+    const { endpoints, endpointDrafts } = get();
+    const sourceMethods = endpoints.filter((endpoint) => endpoint.path === path);
+    const sourceDraft = endpointDrafts.find((draft) => draft.path === path);
+    if (sourceMethods.length === 0 && !sourceDraft) return null;
+
+    const duplicatePath = uniquePath(
+      [...endpoints.map((endpoint) => endpoint.path), ...endpointDrafts.map((draft) => draft.path)],
+      `${path}-copy`,
+    );
+
+    if (sourceMethods.length > 0) {
+      const duplicates = sourceMethods.map((endpoint) => ({
+        ...cloneWithFreshIds(endpoint),
+        path: duplicatePath,
+        operationId: endpoint.operationId ? `${endpoint.operationId}Copy` : '',
+      }));
+      set({
+        endpoints: [...endpoints, ...duplicates],
+        selectedEndpointId: duplicates[0]?.id ?? null,
+        selectedEndpointDraftId: null,
+      });
+    } else {
+      const draft = { id: makeId('path'), path: duplicatePath };
+      set({
+        endpointDrafts: [...endpointDrafts, draft],
+        selectedEndpointId: null,
+        selectedEndpointDraftId: draft.id,
+      });
+    }
+
+    return duplicatePath;
+  },
+
+  moveEndpointPathToTag: (path, tag) =>
+    set((s) => ({
+      endpoints: s.endpoints.map((endpoint) =>
+        endpoint.path === path
+          ? { ...endpoint, tags: tag && tag.trim() !== '' ? [tag.trim()] : [] }
+          : endpoint,
+      ),
+    })),
+
+  deleteEndpointPath: (path) =>
+    set((s) => {
+      const removedIds = new Set(s.endpoints.filter((endpoint) => endpoint.path === path).map((endpoint) => endpoint.id));
+      const endpoints = s.endpoints.filter((endpoint) => endpoint.path !== path);
+      const endpointDrafts = s.endpointDrafts.filter((draft) => draft.path !== path);
+      const selectedEndpointWasRemoved = s.selectedEndpointId !== null && removedIds.has(s.selectedEndpointId);
+      const selectedDraftWasRemoved = s.selectedEndpointDraftId !== null
+        && s.endpointDrafts.some((draft) => draft.id === s.selectedEndpointDraftId && draft.path === path);
+      return {
+        endpoints,
+        endpointDrafts,
+        selectedEndpointId: selectedEndpointWasRemoved ? (endpoints[0]?.id ?? null) : s.selectedEndpointId,
+        selectedEndpointDraftId: selectedDraftWasRemoved ? null : s.selectedEndpointDraftId,
+      };
+    }),
 
   toggleEndpointTag: (endpointId, tag) =>
     set((s) => ({
