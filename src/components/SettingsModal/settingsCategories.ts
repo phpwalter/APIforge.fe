@@ -85,9 +85,28 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'tools', label: 'Tools', keywords: 'tools external integrations', icon: Wrench },
   { key: 'export', label: 'Export Defaults', keywords: 'export clean full filename yaml download', icon: Download },
   { key: 'notes', label: 'Notes', keywords: 'notes todo internal decisions x-apiforge', icon: Pencil },
-  { key: 'other', label: 'Advanced Settings', keywords: 'misc other advanced', icon: Settings },
-  { key: 'methodSettings', label: 'Method Settings', keywords: 'method response policy status defaults system company project', icon: ListChecks },
-  { key: 'headerConfig', label: 'HEADER Config', keywords: 'header configuration request response policy', icon: Rows3, administratorOnly: true },
+  {
+    key: 'other',
+    label: 'Advanced Settings',
+    keywords: 'misc other advanced methods headers policy configuration',
+    icon: Settings,
+    children: [
+      {
+        key: 'methodSettings',
+        label: 'Methods',
+        keywords: 'method methods response policy status defaults system company project',
+        icon: ListChecks,
+        administratorOnly: true,
+      },
+      {
+        key: 'headerConfig',
+        label: 'Headers',
+        keywords: 'header headers configuration request response policy',
+        icon: Rows3,
+        administratorOnly: true,
+      },
+    ],
+  },
   {
     key: 'system',
     label: 'System Settings',

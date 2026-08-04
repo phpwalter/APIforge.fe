@@ -54,7 +54,10 @@ function findActive(categories: SettingsCategory[], key: string): FlatRow | unde
 export function SettingsModal() {
   const closeSettings = useAppStore((s) => s.closeSettings);
   const isAdministrator = useAppStore((s) =>
-    (s.userProfile.roles ?? []).some((role) => role === 'administrator' || role === 'super_administrator'),
+    (s.userProfile.roles ?? []).some((role) => {
+      const normalizedRole = role.trim().toLowerCase();
+      return normalizedRole === 'administrator' || normalizedRole === 'super_administrator';
+    }),
   );
   const [search, setSearch] = useState('');
   const [activeKey, setActiveKey] = useState(SETTINGS_CATEGORIES[0].key);
@@ -139,12 +142,16 @@ export function SettingsModal() {
                       <div className={styles.navChildren}>
                         {children.map((child) => {
                           const ChildIcon = child.icon;
+                          const childDisabled = child.administratorOnly === true && !isAdministrator;
                           return (
                             <button
                               key={child.key}
                               type="button"
                               className={styles.navChildRow}
                               data-active={child.key === active.key}
+                              disabled={childDisabled}
+                              aria-disabled={childDisabled}
+                              title={childDisabled ? 'Administrator access required' : undefined}
                               onClick={() => selectCategory(child, false)}
                             >
                               <span className={styles.navRowIcon}>

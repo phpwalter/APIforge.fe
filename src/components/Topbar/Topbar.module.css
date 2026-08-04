@@ -206,7 +206,7 @@
 
 .userMenu {
   composes: menu;
-  width: 250px;
+  width: 286px;
 }
 
 .menuItem {
@@ -505,7 +505,7 @@
   text-overflow: ellipsis;
 }
 
-.avatarProvider {
+.avatarCompany {
   font-size: 10.5px;
   color: var(--text-faint);
   white-space: nowrap;
@@ -519,7 +519,7 @@
   margin-top: 5px;
 }
 
-.administratorBadge {
+.userRoleBadge {
   display: inline-flex;
   align-items: center;
   min-height: 18px;

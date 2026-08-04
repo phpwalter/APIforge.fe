@@ -310,6 +310,7 @@ const RESPONSE_RULES: HeaderRule[] = [
 ];
 
 const RESPONSE_STATUS_CODES = ['200', '201', '204', '304', '400', '401', '403', '404', '405', '409', '422', '429', '500', '503'] as const;
+const PAGE_SIZE = 6;
 
 const POLICY_LABELS: Record<HeaderPolicyType, string> = {
   required: 'Required',
@@ -359,6 +360,7 @@ export function HeaderConfigSettingsPanel() {
   const actionMenuRef = useRef<HTMLDivElement>(null);
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const rules = activeTab === 'request' ? requestRules : responseRules;
   const selectedRuleId = activeTab === 'request' ? selectedRequestRuleId : selectedResponseRuleId;
@@ -400,6 +402,21 @@ export function HeaderConfigSettingsPanel() {
       return sortDirection === 'asc' ? comparison : -comparison;
     });
   }, [activeTab, method, policyFilter, query, rules, selectedCategories, sortDirection, sortKey, statusCode]);
+
+  const pageCount = Math.max(1, Math.ceil(visibleRules.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, pageCount);
+  const pageStartIndex = (safeCurrentPage - 1) * PAGE_SIZE;
+  const pagedRules = visibleRules.slice(pageStartIndex, pageStartIndex + PAGE_SIZE);
+  const rangeStart = visibleRules.length === 0 ? 0 : pageStartIndex + 1;
+  const rangeEnd = Math.min(pageStartIndex + PAGE_SIZE, visibleRules.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, method, policyFilter, query, selectedCategories, statusCode]);
+
+  useEffect(() => {
+    if (currentPage > pageCount) setCurrentPage(pageCount);
+  }, [currentPage, pageCount]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -621,7 +638,7 @@ export function HeaderConfigSettingsPanel() {
             <th aria-label="More actions" />
           </tr></thead>
           <tbody>
-            {visibleRules.map((rule) => (
+            {pagedRules.map((rule) => (
               <tr
                 key={rule.id}
                 data-selected={rule.id === selectedRuleId}
@@ -657,8 +674,14 @@ export function HeaderConfigSettingsPanel() {
           </table>
         </div>
         <div className={styles.pagination}>
-          <span>1–{visibleRules.length} of {rules.length}</span>
-          <div><button type="button" disabled><ChevronLeft size={14} /></button><button type="button" data-active="true">1</button><button type="button">2</button><button type="button"><ChevronRight size={14} /></button><select defaultValue="20"><option value="20">20 / page</option></select></div>
+          <span>{rangeStart}–{rangeEnd} of {visibleRules.length}</span>
+          <div>
+            <button type="button" aria-label="Previous page" disabled={safeCurrentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}><ChevronLeft size={14} /></button>
+            {Array.from({ length: pageCount }, (_, index) => index + 1).map((page) => (
+              <button key={page} type="button" data-active={page === safeCurrentPage} aria-label={`Page ${page}`} onClick={() => setCurrentPage(page)}>{page}</button>
+            ))}
+            <button type="button" aria-label="Next page" disabled={safeCurrentPage === pageCount} onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}><ChevronRight size={14} /></button>
+          </div>
         </div>
       </div>
 

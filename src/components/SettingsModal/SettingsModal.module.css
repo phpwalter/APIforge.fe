@@ -167,6 +167,19 @@
   color: var(--accent);
 }
 
+.navRow:disabled,
+.navChildRow:disabled {
+  cursor: not-allowed;
+  color: var(--text-faint);
+  opacity: 0.45;
+}
+
+.navRow:disabled:hover,
+.navChildRow:disabled:hover {
+  background: transparent;
+  color: var(--text-faint);
+}
+
 .navEmpty {
   padding: 16px 10px;
   font-size: 12px;

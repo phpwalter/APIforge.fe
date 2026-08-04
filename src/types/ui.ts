@@ -34,6 +34,8 @@ export interface UserProfile {
   /** Effective platform roles returned by the authenticated profile endpoint. */
   roles?: string[];
   companyId?: string;
+  companyName?: string;
+  companySlug?: string;
   planCode?: string;
 }
 

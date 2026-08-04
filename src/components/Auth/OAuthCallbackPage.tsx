@@ -25,6 +25,10 @@ function profileFrom(me: {
   gravatar_email?: string;
   record_version?: number;
   roles?: string[];
+  company_id?: string | null;
+  company_name?: string | null;
+  company_slug?: string | null;
+  plan_code?: string | null;
 }): UserProfile {
   return {
     name: me.name ?? me.display_name ?? me.username ?? me.email ?? 'Signed in user',
@@ -37,6 +41,10 @@ function profileFrom(me: {
     gravatarEmail: me.gravatar_email || undefined,
     recordVersion: me.record_version,
     roles: Array.isArray(me.roles) ? me.roles.filter((role): role is string => typeof role === 'string') : [],
+    companyId: me.company_id || undefined,
+    companyName: me.company_name || undefined,
+    companySlug: me.company_slug || undefined,
+    planCode: me.plan_code || undefined,
   };
 }
 

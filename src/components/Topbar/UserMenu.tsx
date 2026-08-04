@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { User, UserPlus, LogOut, User as UserBig } from 'lucide-react';
 import { initialsOf, useAppStore } from '../../state/useAppStore';
-import { providerLabel } from '../Auth/providers';
 import type { UserProfile } from '../../types/ui';
 import styles from './Topbar.module.css';
 
@@ -22,18 +21,42 @@ export function AvatarContent({ profile }: { profile: UserProfile }) {
   return <>{initialsOf(profile.name)}</>;
 }
 
+
+function primaryRole(roles?: string[]): string {
+  const normalized = (roles ?? [])
+    .map((role) => role.trim().toLowerCase())
+    .filter(Boolean);
+
+  const priority = [
+    'super_administrator',
+    'owner',
+    'administrator',
+    'manager',
+    'editor',
+    'reviewer',
+    'viewer',
+    'member',
+  ];
+
+  const selected = priority.find((role) => normalized.includes(role)) ?? normalized[0] ?? 'member';
+
+  return selected
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export function UserMenu() {
   const signedIn = useAppStore((s) => s.signedIn);
   const userMenuOpen = useAppStore((s) => s.userMenuOpen);
   const userProfile = useAppStore((s) => s.userProfile);
-  const authProvider = useAppStore((s) => s.authProvider);
   const toggleUserMenu = useAppStore((s) => s.toggleUserMenu);
   const closeUserMenu = useAppStore((s) => s.closeUserMenu);
   const signIn = useAppStore((s) => s.openAuth);
   const signOut = useAppStore((s) => s.signOut);
   const openProfile = useAppStore((s) => s.openProfile);
 
-  const isAdministrator = userProfile.roles?.includes('administrator') ?? false;
+  const role = primaryRole(userProfile.roles);
   const accountClick = () => (signedIn ? toggleUserMenu() : signIn());
 
   return (
@@ -49,12 +72,12 @@ export function UserMenu() {
               <div className={styles.avatarText}>
                 <div className={styles.avatarName}>{userProfile.name}</div>
                 <div className={styles.avatarEmail}>{userProfile.email}</div>
-                {authProvider && <div className={styles.avatarProvider}>[{providerLabel(authProvider)}]</div>}
-                {isAdministrator && (
-                  <div className={styles.avatarRoleLine}>
-                    <span className={styles.administratorBadge}>Administrator</span>
-                  </div>
-                )}
+                <div className={styles.avatarCompany}>
+                  {userProfile.companyName ?? 'No company assigned'}
+                </div>
+                <div className={styles.avatarRoleLine}>
+                  <span className={styles.userRoleBadge}>{role}</span>
+                </div>
               </div>
             </div>
             <div className={styles.userMenuHeaderDivider} />

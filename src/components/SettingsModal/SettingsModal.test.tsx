@@ -138,19 +138,28 @@ describe('SettingsModal — nested nav', () => {
 });
 
 
-describe('SettingsModal — HEADER Config administrator access', () => {
-  it('places HEADER Config immediately after Advanced Settings and disables it by default', () => {
+describe('SettingsModal — Advanced Settings administrator access', () => {
+  it('nests Methods and Headers beneath Advanced Settings and disables both for standard users', async () => {
+    const user = userEvent.setup();
     render(<SettingsModal />);
 
-    const advanced = screen.getByRole('button', { name: 'Advanced Settings' });
-    const headerConfig = screen.getByRole('button', { name: 'HEADER Config' });
+    expect(screen.queryByRole('button', { name: 'Methods' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Headers' })).not.toBeInTheDocument();
 
-    expect(headerConfig).toBeDisabled();
-    expect(headerConfig).toHaveAttribute('title', 'Administrator access required');
-    expect(advanced.compareDocumentPosition(headerConfig) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /Advanced Settings/ }));
+
+    const methods = screen.getByRole('button', { name: 'Methods' });
+    const headers = screen.getByRole('button', { name: 'Headers' });
+
+    expect(methods).toBeDisabled();
+    expect(headers).toBeDisabled();
+    expect(methods).toHaveAttribute('title', 'Administrator access required');
+    expect(headers).toHaveAttribute('title', 'Administrator access required');
+    expect(screen.queryByRole('button', { name: 'Method Settings' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'HEADER Config' })).not.toBeInTheDocument();
   });
 
-  it('enables HEADER Config only for the canonical administrator role', async () => {
+  it('enables Methods and Headers for the canonical company administrator role', async () => {
     const user = userEvent.setup();
     useAppStore.setState({
       userProfile: {
@@ -162,15 +171,41 @@ describe('SettingsModal — HEADER Config administrator access', () => {
 
     render(<SettingsModal />);
 
-    const headerConfig = screen.getByRole('button', { name: 'HEADER Config' });
-    expect(headerConfig).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: /Advanced Settings/ }));
 
-    await user.click(headerConfig);
-    expect(headerConfig).toHaveAttribute('data-active', 'true');
-    expect(screen.getByText("HEADER Config settings aren't built yet.")).toBeInTheDocument();
+    const methods = screen.getByRole('button', { name: 'Methods' });
+    const headers = screen.getByRole('button', { name: 'Headers' });
+
+    expect(methods).toBeEnabled();
+    expect(headers).toBeEnabled();
+
+    await user.click(methods);
+    expect(methods).toHaveAttribute('data-active', 'true');
+    expect(screen.getByText('Method Response Policies')).toBeInTheDocument();
+
+    await user.click(headers);
+    expect(headers).toHaveAttribute('data-active', 'true');
   });
 
-  it('does not enable HEADER Config for other roles', () => {
+  it('enables Methods and Headers when the API returns the administrator role in uppercase', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({
+      userProfile: {
+        name: 'Walter Torres',
+        email: 'walter@example.com',
+        roles: ['ADMINISTRATOR'],
+      },
+    });
+
+    render(<SettingsModal />);
+    await user.click(screen.getByRole('button', { name: /Advanced Settings/ }));
+
+    expect(screen.getByRole('button', { name: 'Methods' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Headers' })).toBeEnabled();
+  });
+
+  it('keeps Methods and Headers disabled for non-administrator roles', async () => {
+    const user = userEvent.setup();
     useAppStore.setState({
       userProfile: {
         name: 'Grace Hopper',
@@ -180,7 +215,9 @@ describe('SettingsModal — HEADER Config administrator access', () => {
     });
 
     render(<SettingsModal />);
+    await user.click(screen.getByRole('button', { name: /Advanced Settings/ }));
 
-    expect(screen.getByRole('button', { name: 'HEADER Config' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Methods' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Headers' })).toBeDisabled();
   });
 });

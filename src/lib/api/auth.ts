@@ -17,6 +17,10 @@ export interface MeResponse {
   gravatar_email?: string;
   record_version?: number;
   roles?: string[];
+  company_id?: string | null;
+  company_name?: string | null;
+  company_slug?: string | null;
+  plan_code?: string | null;
   [key: string]: unknown;
 }
 

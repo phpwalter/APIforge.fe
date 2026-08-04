@@ -1,243 +1,150 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { X, LoaderCircle, Check } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Building2, Check, LoaderCircle, UserPlus, X } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
-import { providerLabel } from '../Auth/providers';
-import { ProviderIcon } from '../Auth/ProviderIcon';
-import { AvatarContent } from '../Topbar/UserMenu';
 import { updateMe } from '../../lib/api/auth';
 import { getAuthToken } from '../../lib/api/authToken';
-import { GITHUB_PLUGIN } from '../../lib/plugins/github';
-import { GITLAB_PLUGIN } from '../../lib/plugins/gitlab';
-import { BITBUCKET_PLUGIN } from '../../lib/plugins/bitbucket';
-import { gravatarUrl } from '../../lib/gravatar';
+import { assignCompanyMember, createCompany } from '../../lib/api/companies';
+import { AvatarContent } from '../Topbar/UserMenu';
 import styles from './ProfileModal.module.css';
 
-// Reuses each plugin's own lazy loader (see types.ts for why settingsPanel is a loader, not a
-// direct component reference) so these stay in their own small chunks instead of being pulled
-// into the main bundle — lazy() must be called once at module scope, not per render.
-const GitHubSettingsPanel = lazy(GITHUB_PLUGIN.settingsPanel!);
-const GitLabSettingsPanel = lazy(GITLAB_PLUGIN.settingsPanel!);
-const BitbucketSettingsPanel = lazy(BITBUCKET_PLUGIN.settingsPanel!);
+type Tab = 'personal' | 'account' | 'organization' | 'preferences';
 
-/** Providers with their own dedicated plugin row below (GitHub/GitLab/Bitbucket) — a primary
- * sign-in through one of these already shows a "Primary" badge on that row, so the generic
- * fallback row just above it only needs to cover everything else (e.g. Google). */
-const HAS_OWN_LINKED_ROW = new Set(['github', 'gitlab', 'bitbucket']);
-
-function formatDate(raw?: string): string | null {
-  if (!raw) return null;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+function normalizeRoles(roles?: string[]): string[] {
+  return (roles ?? []).map((role) => role.trim().toLowerCase()).filter(Boolean);
 }
 
 export function ProfileModal() {
   const userProfile = useAppStore((s) => s.userProfile);
-  const authProvider = useAppStore((s) => s.authProvider);
   const updateUserProfile = useAppStore((s) => s.updateUserProfile);
   const closeProfile = useAppStore((s) => s.closeProfile);
-
+  const [tab, setTab] = useState<Tab>(userProfile.companyId ? 'personal' : 'organization');
   const [name, setName] = useState(userProfile.name);
   const [bio, setBio] = useState(userProfile.bio ?? '');
-  const [useGravatar, setUseGravatar] = useState(userProfile.useGravatar ?? false);
-  const [gravatarEmail, setGravatarEmail] = useState(userProfile.gravatarEmail ?? '');
-  const [avatarUrl, setAvatarUrl] = useState(userProfile.avatarUrl);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState('');
+  const [companySlug, setCompanySlug] = useState('');
+  const [companyWebsite, setCompanyWebsite] = useState('');
+  const [companyCountry, setCompanyCountry] = useState('');
+  const [companyTimezone, setCompanyTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  const [memberEmail, setMemberEmail] = useState('');
+  const [memberRole, setMemberRole] = useState('member');
 
-  const memberSince = formatDate(userProfile.memberSince);
-  const primaryProvider = authProvider && !HAS_OWN_LINKED_ROW.has(authProvider) ? authProvider : undefined;
+  const roles = useMemo(() => normalizeRoles(userProfile.roles), [userProfile.roles]);
+  const canAdministerCompany = roles.some((role) => ['owner', 'administrator', 'admin', 'super_administrator'].includes(role));
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeProfile();
-    };
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') closeProfile(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [closeProfile]);
 
-  const handleGravatarActivate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const isChecked = e.target.checked;
-    setUseGravatar(isChecked);
-    if (isChecked) {
-      const email = userProfile.email;
-      setGravatarEmail(email);
-      setAvatarUrl(gravatarUrl(email));
-    } else {
-      setAvatarUrl(undefined);
-    }
-  };
-
-  const handleGravatarEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      updateUserProfile({ gravatarEmail: gravatarEmail });
-      setAvatarUrl(gravatarUrl(gravatarEmail));
-    }
-  };
-
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    const trimmedName = name.trim() || userProfile.name;
-    const trimmedBio = bio.trim() || undefined;
-    const trimmedGravatarEmail = gravatarEmail.trim() || undefined;
-
-    // No real session (demo sign-in has no bearer token) — nothing to persist server-side, just
-    // keep the edit local, same as everything else in demo mode.
-    if (!getAuthToken()) {
-      updateUserProfile({
-        name: trimmedName,
-        bio: trimmedBio,
-        useGravatar,
-        gravatarEmail: trimmedGravatarEmail,
-        avatarUrl: useGravatar ? gravatarUrl(trimmedGravatarEmail || userProfile.email) : undefined,
-      });
-      setSaving(false);
-      closeProfile();
-      return;
-    }
-
+  const savePersonal = async () => {
+    setSaving(true); setError(null); setNotice(null);
     try {
-      if (!Number.isInteger(userProfile.recordVersion) || (userProfile.recordVersion ?? 0) < 1) {
-        throw new Error('Your profile version is unavailable. Sign in again before saving.');
+      const trimmedName = name.trim() || userProfile.name;
+      const trimmedBio = bio.trim() || undefined;
+      if (!getAuthToken()) {
+        updateUserProfile({ name: trimmedName, bio: trimmedBio });
+      } else {
+        if (!userProfile.recordVersion) throw new Error('Your profile version is unavailable. Sign in again.');
+        const me = await updateMe({ record_version: userProfile.recordVersion, display_name: trimmedName, bio: trimmedBio });
+        updateUserProfile({ name: me.display_name ?? trimmedName, bio: me.bio ?? trimmedBio, recordVersion: me.record_version });
       }
+      setNotice('Profile saved.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Profile could not be saved.');
+    } finally { setSaving(false); }
+  };
 
-      const me = await updateMe({
-        record_version: userProfile.recordVersion!,
-        display_name: trimmedName,
-        bio: trimmedBio,
-        use_gravatar: useGravatar,
-        gravatar_email: trimmedGravatarEmail,
+  const createOrganization = async () => {
+    setSaving(true); setError(null); setNotice(null);
+    try {
+      const company = await createCompany({
+        name: companyName.trim(), slug: companySlug.trim() || undefined,
+        website_url: companyWebsite.trim() || undefined,
+        country: companyCountry.trim() || undefined, timezone: companyTimezone.trim() || undefined,
+        contact_email: userProfile.email,
       });
-      updateUserProfile({
-        name: me.display_name ?? trimmedName,
-        bio: me.bio ?? trimmedBio,
-        useGravatar: me.use_gravatar,
-        gravatarEmail: me.gravatar_email,
-        avatarUrl: me.avatar_url,
-        recordVersion: me.record_version,
-      });
-      closeProfile();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save to your account — try again.');
-    } finally {
-      setSaving(false);
-    }
+      updateUserProfile({ companyId: company.id, companyName: company.name, companySlug: company.slug, roles: Array.from(new Set([...(userProfile.roles ?? []), 'owner'])) });
+      setNotice(`${company.name} was created and assigned to your account.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Company could not be created.');
+    } finally { setSaving(false); }
+  };
+
+  const assignMember = async () => {
+    if (!userProfile.companyId) return;
+    setSaving(true); setError(null); setNotice(null);
+    try {
+      await assignCompanyMember(userProfile.companyId, memberEmail.trim(), memberRole);
+      setMemberEmail('');
+      setNotice('The user was assigned to the company.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The user could not be assigned.');
+    } finally { setSaving(false); }
   };
 
   return (
     <div className={styles.scrim} onClick={closeProfile}>
-      <div className={styles.dialog} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <div className={styles.header}>
-          <div className={styles.title}>My Profile</div>
-          <button type="button" className={styles.closeBtn} title="Close" onClick={closeProfile}>
-            <X size={15} />
-          </button>
-        </div>
+      <section className={styles.dialog} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="My Profile">
+        <header className={styles.header}>
+          <div><div className={styles.title}>My Profile</div><div className={styles.subtitle}>Manage your identity, account, organization, and preferences.</div></div>
+          <button type="button" className={styles.iconButton} onClick={closeProfile} aria-label="Close"><X size={18} /></button>
+        </header>
 
-        <div className={styles.body}>
-          <div className={styles.identityRow}>
-            <span className={styles.avatarLg}>
-              <AvatarContent profile={{ ...userProfile, avatarUrl }} />
-            </span>
-            <div className={styles.identityText}>
-              <div className={styles.email}>{userProfile.email}</div>
-              {authProvider && (
-                <div className={styles.metaLine}>Signed in with {providerLabel(authProvider)}</div>
-              )}
-              {memberSince && <div className={styles.metaLine}>Member since {memberSince}</div>}
+        <div className={styles.shell}>
+          <aside className={styles.sidebar}>
+            <div className={styles.identityCard}>
+              <span className={styles.avatar}><AvatarContent profile={userProfile} /></span>
+              <strong>{userProfile.name}</strong><span>{userProfile.email}</span>
             </div>
-          </div>
+            {(['personal','account','organization','preferences'] as Tab[]).map((item) => (
+              <button key={item} type="button" className={tab === item ? styles.navActive : styles.navButton} onClick={() => setTab(item)}>
+                {item[0].toUpperCase() + item.slice(1)}
+              </button>
+            ))}
+          </aside>
 
-          <div className={styles.field}>
-            <div className={styles.fieldLabel}>Display Name</div>
-            <input
-              className={styles.textInput}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-            />
-          </div>
+          <main className={styles.content}>
+            {tab === 'personal' && <>
+              <h2>Personal information</h2><p className={styles.lead}>Information shown across APIForge.</p>
+              <label className={styles.field}><span>Display name</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
+              <label className={styles.field}><span>Bio</span><textarea rows={5} value={bio} onChange={(e) => setBio(e.target.value)} /></label>
+              <button type="button" className={styles.primaryButton} disabled={saving} onClick={savePersonal}>{saving && <LoaderCircle size={14} className={styles.spin} />}Save profile</button>
+            </>}
 
-          <div className={styles.field}>
-            <div className={styles.fieldLabel}>Bio</div>
-            <textarea
-              className={styles.textarea}
-              rows={3}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="A little about you…"
-            />
-          </div>
+            {tab === 'account' && <>
+              <h2>Account</h2><p className={styles.lead}>Authentication and account status.</p>
+              <div className={styles.detailGrid}><span>Email</span><strong>{userProfile.email}</strong><span>Status</span><strong><Check size={14} /> Active</strong><span>Roles</span><strong>{roles.join(', ') || 'member'}</strong></div>
+            </>}
 
-          <div className={styles.separator} />
+            {tab === 'organization' && <>
+              <h2>Organization</h2><p className={styles.lead}>Create a company or manage its membership.</p>
+              {!userProfile.companyId ? <div className={styles.emptyState}>
+                <Building2 size={32} /><h3>No company assigned</h3><p>Create a company to unlock company-level Methods and Headers settings.</p>
+                <div className={styles.formGrid}>
+                  <label className={styles.field}><span>Company name</span><input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></label>
+                  <label className={styles.field}><span>Slug (optional)</span><input value={companySlug} onChange={(e) => setCompanySlug(e.target.value)} placeholder="generated-from-name" /></label>
+                  <label className={styles.field}><span>Website (optional)</span><input value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} /></label>
+                  <label className={styles.field}><span>Country (optional)</span><input value={companyCountry} onChange={(e) => setCompanyCountry(e.target.value)} /></label>
+                  <label className={styles.field}><span>Time zone</span><input value={companyTimezone} onChange={(e) => setCompanyTimezone(e.target.value)} /></label>
+                </div>
+                <button type="button" className={styles.primaryButton} disabled={saving || !companyName.trim()} onClick={createOrganization}>{saving && <LoaderCircle size={14} className={styles.spin} />}Create company</button>
+              </div> : <>
+                <div className={styles.companyCard}><Building2 size={22} /><div><span>Current company</span><strong>{userProfile.companyName ?? 'Company name unavailable'}</strong></div></div>
+                {canAdministerCompany && <div className={styles.memberPanel}><h3><UserPlus size={18} /> Assign user</h3><p>The user must already have signed in to APIForge.</p><div className={styles.inlineForm}><input type="email" placeholder="user@example.com" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} /><select value={memberRole} onChange={(e) => setMemberRole(e.target.value)}><option value="administrator">Administrator</option><option value="manager">Manager</option><option value="member">Member</option><option value="viewer">Viewer</option></select><button type="button" className={styles.primaryButton} disabled={saving || !memberEmail.trim()} onClick={assignMember}>Assign</button></div></div>}
+              </>}
+            </>}
 
-          <div className={styles.field}>
-            <div className={styles.fieldLabel}>Use Gravatar</div>
-            <div className={styles.gravatarRow}>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={useGravatar}
-                onChange={handleGravatarActivate}
-              />
-              <input
-                className={styles.textInput}
-                value={gravatarEmail}
-                onChange={(e) => setGravatarEmail(e.target.value)}
-                onKeyDown={handleGravatarEmailKeyDown}
-                placeholder="Gravatar email address"
-                disabled={!useGravatar}
-              />
-            </div>
-          </div>
+            {tab === 'preferences' && <><h2>Preferences</h2><p className={styles.lead}>Personal display and notification preferences will be managed here.</p><div className={styles.placeholder}>Preference controls remain unchanged and can be migrated into this section incrementally.</div></>}
 
-          {error && <div className={styles.errorMsg}>{error}</div>}
-
-          <div className={styles.linkedSection}>
-            <div className={styles.sectionLabel}>Linked Profiles</div>
-
-            {primaryProvider && (
-              <div className={styles.primaryRow}>
-                <ProviderIcon id={primaryProvider} className={styles.primaryIcon} />
-                <span className={styles.primaryLabel}>{providerLabel(primaryProvider)}</span>
-                <span className={styles.primaryBadge}>
-                  <Check size={11} />
-                  Primary
-                </span>
-              </div>
-            )}
-            {!authProvider && (
-              <div className={styles.demoNote}>
-                You&apos;re using a demo sign-in — there&apos;s no primary account. Connecting a provider below still
-                works and is saved to this browser.
-              </div>
-            )}
-
-            <Suspense fallback={<div className={styles.linkedLoading}>Loading…</div>}>
-              <div className={styles.linkedPanel}>
-                <GitHubSettingsPanel />
-              </div>
-              <div className={styles.linkedPanel}>
-                <GitLabSettingsPanel />
-              </div>
-              <div className={styles.linkedPanel}>
-                <BitbucketSettingsPanel />
-              </div>
-            </Suspense>
-          </div>
+            {error && <div className={styles.error}>{error}</div>}
+            {notice && <div className={styles.success}>{notice}</div>}
+          </main>
         </div>
-
-        <div className={styles.footer}>
-          <button type="button" className={styles.btnCancel} onClick={closeProfile} disabled={saving}>
-            Cancel
-          </button>
-          <button type="button" className={styles.btnSave} onClick={save} disabled={saving}>
-            {saving && <LoaderCircle size={13} className={styles.spin} />}
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
