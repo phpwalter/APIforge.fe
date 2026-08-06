@@ -27,23 +27,15 @@ const CATEGORIES: ProjectCategory[] = [
   { key: 'security', label: 'Security Schemes', icon: Shield, panel: SecuritySettingsPanel },
 ];
 
-/**
- * Per-project settings (General / Servers & External Docs / Security Schemes) — split out from
- * the app-level Settings modal since these describe the document you're editing, not the app.
- * Opened from Topbar :: More actions :: Project Settings.
- *
- * Edits across all three tabs are held as a local draft, not written live — OK and Apply commit
- * the draft to the real stores. Apply stays disabled until the draft actually differs from the
- * baseline it was opened/last-applied with, since there'd be nothing new to save; OK instead
- * stays enabled for the rest of this open once any edit has been made, even right after an Apply,
- * since it always has a dialog to dismiss. Cancel just closes, discarding the draft untouched.
- */
 export function ProjectSettingsModal() {
   const closeProjectSettings = useAppStore((s) => s.closeProjectSettings);
+  const isNewProject = useAppStore((s) => s.isNewProject);
   const [activeKey, setActiveKey] = useState(CATEGORIES[0].key);
   const [draft, setDraft] = useState<ProjectSettingsDraft>(snapshotFromStore);
   const [baseline, setBaseline] = useState<ProjectSettingsDraft>(snapshotFromStore);
   const [everEdited, setEverEdited] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const active = CATEGORIES.find((c) => c.key === activeKey) ?? CATEGORIES[0];
   const Panel = active.panel;
@@ -51,10 +43,11 @@ export function ProjectSettingsModal() {
 
   const handleChange = (patch: Partial<ProjectSettingsDraft>) => {
     setEverEdited(true);
-    setDraft((d) => ({ ...d, ...patch }));
+    setSaveError(null);
+    setDraft((current) => ({ ...current, ...patch }));
   };
 
-  const commit = () => {
+  const applyDraft = () => {
     useAppStore.getState().applyProjectSettingsDraft({
       currentProjectName: draft.currentProjectName,
       apiOpenapiVersion: draft.apiOpenapiVersion,
@@ -70,42 +63,54 @@ export function ProjectSettingsModal() {
     useSpecStore
       .getState()
       .applySecurityDraft(draft.enabledSecuritySchemes, draft.securityScopes, draft.removedLegacySchemes);
-    saveNow();
   };
 
-  const handleOk = () => {
-    commit();
-    closeProjectSettings();
+  const persist = async (closeAfterSave: boolean) => {
+    if (saving) return;
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      applyDraft();
+      await saveNow({ persistNewProject: true });
+      setBaseline(snapshotFromStore());
+      setEverEdited(false);
+      if (closeAfterSave) closeProjectSettings();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'The project could not be saved.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleApply = () => {
-    commit();
-    setBaseline(draft);
-  };
+  const primaryLabel = saving ? 'SAVING…' : isNewProject ? 'SAVE' : 'OK';
+  const primaryDisabled = saving || (!isNewProject && !everEdited);
+  const applyDisabled = saving || (!isNewProject && !isDirty);
 
   return (
-    <div className={styles.scrim} onClick={closeProjectSettings}>
-      <div className={styles.dialog} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+    <div className={styles.scrim} onClick={saving ? undefined : closeProjectSettings}>
+      <div className={styles.dialog} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
         <div className={styles.split}>
           <div className={styles.rail}>
             <div className={styles.railHead}>
               <div className={styles.railTitle}>Project Settings</div>
             </div>
             <div className={styles.navList}>
-              {CATEGORIES.map((cat) => {
-                const Icon = cat.icon;
+              {CATEGORIES.map((category) => {
+                const Icon = category.icon;
                 return (
                   <button
-                    key={cat.key}
+                    key={category.key}
                     type="button"
                     className={styles.navRow}
-                    data-active={cat.key === active.key}
-                    onClick={() => setActiveKey(cat.key)}
+                    data-active={category.key === active.key}
+                    onClick={() => setActiveKey(category.key)}
+                    disabled={saving}
                   >
                     <span className={styles.navRowIcon}>
                       <Icon size={15} />
                     </span>
-                    {cat.label}
+                    {category.label}
                   </button>
                 );
               })}
@@ -118,32 +123,53 @@ export function ProjectSettingsModal() {
                 <active.icon size={16} />
               </span>
               <div className={styles.paneTitle}>{active.label}</div>
-              <button type="button" className={styles.closeBtn} title="Close" onClick={closeProjectSettings}>
+              <button
+                type="button"
+                className={styles.closeBtn}
+                title="Close"
+                onClick={closeProjectSettings}
+                disabled={saving}
+              >
                 <X size={16} />
               </button>
             </div>
             <div className={styles.paneBody}>
               <Panel draft={draft} onChange={handleChange} />
+              {saveError && (
+                <div role="alert" aria-live="polite">
+                  {saveError}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className={styles.footer}>
           <span className={styles.footerSpacer} />
-          <button type="button" className={`${styles.btn} ${styles.btnOk}`} disabled={!everEdited} onClick={handleOk}>
-            OK
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnOk}`}
+            disabled={primaryDisabled}
+            onClick={() => void persist(true)}
+          >
+            {primaryLabel}
           </button>
-          <button type="button" className={`${styles.btn} ${styles.btnCancel}`} onClick={closeProjectSettings}>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnCancel}`}
+            onClick={closeProjectSettings}
+            disabled={saving}
+          >
             Cancel
           </button>
           <button
             type="button"
             className={`${styles.btn} ${styles.btnApply}`}
-            disabled={!isDirty}
-            title="Save this project locally right now, without closing"
-            onClick={handleApply}
+            disabled={applyDisabled}
+            title={isNewProject ? 'Create this project on the server without closing' : 'Save this project without closing'}
+            onClick={() => void persist(false)}
           >
-            Apply
+            {saving ? 'Saving…' : isNewProject ? 'Save' : 'Apply'}
           </button>
         </div>
       </div>
