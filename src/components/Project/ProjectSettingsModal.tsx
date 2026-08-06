@@ -37,7 +37,7 @@ export function ProjectSettingsModal() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const active = CATEGORIES.find((c) => c.key === activeKey) ?? CATEGORIES[0];
+  const active = CATEGORIES.find((category) => category.key === activeKey) ?? CATEGORIES[0];
   const Panel = active.panel;
   const isDirty = JSON.stringify(draft) !== JSON.stringify(baseline);
 
@@ -74,7 +74,7 @@ export function ProjectSettingsModal() {
       applyDraft();
       await saveNow({ persistNewProject: true });
       setBaseline(snapshotFromStore());
-      setEverEdited(false);
+      setEverEdited(!closeAfterSave);
       if (closeAfterSave) closeProjectSettings();
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'The project could not be saved.');
@@ -85,7 +85,7 @@ export function ProjectSettingsModal() {
 
   const primaryLabel = saving ? 'SAVING…' : isNewProject ? 'SAVE' : 'OK';
   const primaryDisabled = saving || (!isNewProject && !everEdited);
-  const applyDisabled = saving || (!isNewProject && !isDirty);
+  const applyDisabled = saving || !isDirty;
 
   return (
     <div className={styles.scrim} onClick={saving ? undefined : closeProjectSettings}>
@@ -166,10 +166,10 @@ export function ProjectSettingsModal() {
             type="button"
             className={`${styles.btn} ${styles.btnApply}`}
             disabled={applyDisabled}
-            title={isNewProject ? 'Create this project on the server without closing' : 'Save this project without closing'}
+            title="Save project changes without closing"
             onClick={() => void persist(false)}
           >
-            {saving ? 'Saving…' : isNewProject ? 'Save' : 'Apply'}
+            {saving ? 'Saving…' : 'Apply'}
           </button>
         </div>
       </div>
