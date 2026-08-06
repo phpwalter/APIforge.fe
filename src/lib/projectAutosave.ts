@@ -7,6 +7,14 @@ import { saveServerDocument } from './project-server/projectServer';
 
 const DEBOUNCE_MS = 800;
 
+export interface SaveNowOptions {
+  /**
+   * New projects created from disk, version control, samples, or the New Project flow remain
+   * local until the user explicitly saves them. Existing server projects may autosave normally.
+   */
+  persistNewProject?: boolean;
+}
+
 function accountContext(): { accountKey: string; accountId: string } | null {
   const profile = useAppStore.getState().userProfile;
   const accountId = profile.companyId;
@@ -42,10 +50,11 @@ function buildDocument(): Record<string, unknown> | null {
 }
 
 /**
- * Saves one user-facing project and its one canonical working ApiDocument.
- * The document name always follows the project name; no separate document naming UI is needed.
+ * Saves the current document locally. Existing server projects are also persisted remotely.
+ * A newly imported or created project is sent to POST /projects only when persistNewProject is
+ * explicitly true, preventing file selection from silently creating a permanent server record.
  */
-export async function saveNow(): Promise<void> {
+export async function saveNow(options: SaveNowOptions = {}): Promise<void> {
   const app = useAppStore.getState();
   const document = buildDocument();
   if (!document || !app.currentProjectId || !app.currentProjectName) return;
@@ -57,6 +66,11 @@ export async function saveNow(): Promise<void> {
     savedAt,
     specJson: documentToJson(document),
   });
+
+  if (app.isNewProject && options.persistNewProject !== true) {
+    useAppStore.setState({ saveState: 'unsaved', lastSavedAt: null });
+    return;
+  }
 
   const context = accountContext();
   if (!context) {
@@ -73,15 +87,15 @@ export async function saveNow(): Promise<void> {
       document,
     );
 
-    // ensureServerProject may replace a temporary local project id with the server id.
     const current = useAppStore.getState();
     if (current.currentProjectName !== saved.name) {
       useAppStore.setState({ currentProjectName: saved.name });
     }
     useAppStore.setState({ saveState: 'saved', lastSavedAt: Date.now() });
   } catch (error) {
-    console.error('APIForge server autosave failed.', error);
+    console.error('APIForge server save failed.', error);
     useAppStore.setState({ saveState: 'unsaved' });
+    throw error;
   }
 }
 
@@ -93,7 +107,7 @@ export function scheduleSave(): void {
   if (saveState !== 'saving') useAppStore.setState({ saveState: 'unsaved' });
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    void saveNow();
+    void saveNow().catch(() => undefined);
   }, DEBOUNCE_MS);
 }
 
@@ -132,7 +146,7 @@ export function initProjectAutosave(): void {
   useAppStore.subscribe(
     (state) => state.currentProjectName,
     (name, previousName) => {
-      if (name && name !== previousName) void saveNow();
+      if (name && name !== previousName) void saveNow().catch(() => undefined);
     },
   );
 }
