@@ -3,20 +3,24 @@ import { useAppStore } from '../state/useAppStore';
 import { useSpecStore } from '../state/useSpecStore';
 import { buildOpenApiDocument, documentToJson } from './openapiExport';
 import { saveProject } from './projects';
+import { saveServerDocument } from './project-server/projectServer';
 
 const DEBOUNCE_MS = 800;
 
-/**
- * Snapshots the current document into the active project's localStorage entry — reuses the same
- * buildOpenApiDocument()/documentToJson() pipeline REST Projection's export already uses, so a
- * saved project is just a real OpenAPI document, not a bespoke format.
- */
-export function saveNow(): void {
+function accountContext(): { accountKey: string; accountId: string } | null {
+  const profile = useAppStore.getState().userProfile;
+  const accountId = profile.companyId;
+  const email = profile.email.trim().toLowerCase();
+  if (!accountId || !email) return null;
+  return { accountKey: `${accountId}:${email}`, accountId };
+}
+
+function buildDocument(): Record<string, unknown> | null {
   const app = useAppStore.getState();
   const spec = useSpecStore.getState();
-  if (!app.currentProjectId || !app.currentProjectName || !spec.hasDocument) return;
+  if (!app.currentProjectId || !app.currentProjectName || !spec.hasDocument) return null;
 
-  const doc = buildOpenApiDocument({
+  return buildOpenApiDocument({
     info: {
       title: app.apiTitle,
       version: app.apiVersion,
@@ -34,15 +38,51 @@ export function saveNow(): void {
     securityScopes: spec.securityScopes,
     securityTypes: [],
     variant: 'full',
-  });
+  }) as Record<string, unknown>;
+}
 
+/**
+ * Saves one user-facing project and its one canonical working ApiDocument.
+ * The document name always follows the project name; no separate document naming UI is needed.
+ */
+export async function saveNow(): Promise<void> {
+  const app = useAppStore.getState();
+  const document = buildDocument();
+  if (!document || !app.currentProjectId || !app.currentProjectName) return;
+
+  const savedAt = Date.now();
   saveProject({
     id: app.currentProjectId,
     name: app.currentProjectName,
-    savedAt: Date.now(),
-    specJson: documentToJson(doc),
+    savedAt,
+    specJson: documentToJson(document),
   });
-  useAppStore.setState({ saveState: 'saved', lastSavedAt: Date.now() });
+
+  const context = accountContext();
+  if (!context) {
+    useAppStore.setState({ saveState: 'saved', lastSavedAt: savedAt });
+    return;
+  }
+
+  useAppStore.setState({ saveState: 'saving' });
+  try {
+    const saved = await saveServerDocument(
+      context.accountKey,
+      context.accountId,
+      app.currentProjectName,
+      document,
+    );
+
+    // ensureServerProject may replace a temporary local project id with the server id.
+    const current = useAppStore.getState();
+    if (current.currentProjectName !== saved.name) {
+      useAppStore.setState({ currentProjectName: saved.name });
+    }
+    useAppStore.setState({ saveState: 'saved', lastSavedAt: Date.now() });
+  } catch (error) {
+    console.error('APIForge server autosave failed.', error);
+    useAppStore.setState({ saveState: 'unsaved' });
+  }
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -52,48 +92,47 @@ export function scheduleSave(): void {
   if (!currentProjectId || !currentProjectName) return;
   if (saveState !== 'saving') useAppStore.setState({ saveState: 'unsaved' });
   if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(saveNow, DEBOUNCE_MS);
+  debounceTimer = setTimeout(() => {
+    void saveNow();
+  }, DEBOUNCE_MS);
 }
 
 let started = false;
 
-/**
- * Starts watching document-relevant state for changes to autosave — call once (AppShell mounts
- * it). No-ops on later calls, so it's safe to call from a component that can remount.
- */
 export function initProjectAutosave(): void {
   if (started) return;
   started = true;
 
   useSpecStore.subscribe(
-    (s) => [s.endpoints, s.schemas, s.enabledSecuritySchemes, s.securityScopes] as const,
+    (state) => [
+      state.endpoints,
+      state.schemas,
+      state.enabledSecuritySchemes,
+      state.securityScopes,
+    ] as const,
     scheduleSave,
     { equalityFn: shallow },
   );
   useAppStore.subscribe(
-    (s) => [
-      s.apiTitle,
-      s.apiVersion,
-      s.apiOpenapiVersion,
-      s.apiDescription,
-      s.apiTermsOfService,
-      s.apiContact,
-      s.apiLicense,
-      s.apiServers,
-      s.apiExternalDocs,
-      // Project Settings :: General's "Project name" field — renaming an already-named
-      // project needs to autosave too, not just the initial name (handled separately below).
-      s.currentProjectName,
-    ],
+    (state) => [
+      state.apiTitle,
+      state.apiVersion,
+      state.apiOpenapiVersion,
+      state.apiDescription,
+      state.apiTermsOfService,
+      state.apiContact,
+      state.apiLicense,
+      state.apiServers,
+      state.apiExternalDocs,
+      state.currentProjectName,
+    ] as const,
     scheduleSave,
     { equalityFn: shallow },
   );
-  // The very first save happens immediately once a project is named, rather than waiting for
-  // the next edit + debounce — confirming a name is itself the natural first save point.
   useAppStore.subscribe(
-    (s) => s.currentProjectName,
-    (name, prevName) => {
-      if (name && !prevName) saveNow();
+    (state) => state.currentProjectName,
+    (name, previousName) => {
+      if (name && name !== previousName) void saveNow();
     },
   );
 }

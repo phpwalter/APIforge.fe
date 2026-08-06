@@ -20,10 +20,7 @@ import { EmptyProjectState } from '../EmptyProjectState/EmptyProjectState';
 import { ImportStatusToast } from '../ImportStatusToast/ImportStatusToast';
 import shellStyles from './AppShell.module.css';
 
-const TAB_LABELS: Record<string, string> = {
-  swagger: 'Swagger',
-  diagnostics: 'Diagnostics',
-};
+const TAB_LABELS: Record<string, string> = { swagger: 'Swagger', diagnostics: 'Diagnostics' };
 
 export function AppShell() {
   const theme = useAppStore((s) => s.theme);
@@ -39,22 +36,18 @@ export function AppShell() {
   const loadProjectOpen = useAppStore((s) => s.loadProjectOpen);
   const currentProjectName = useAppStore((s) => s.currentProjectName);
   const hasDocument = useSpecStore((s) => s.hasDocument);
-  // A brand-new/imported project already has real content (spec store, id) the moment its
-  // source action runs, but isn't shown here until it's actually named — see
-  // src/components/Project/ProjectNameModal.tsx. Until then this stays on the empty state, with
-  // the naming prompt as the only thing visible on top of it.
   const hasNamedProject = hasDocument && currentProjectName !== null;
 
-  useEffect(() => {
-    initProjectAutosave();
-  }, []);
+  useEffect(() => { initProjectAutosave(); }, []);
 
   return (
     <div className={`app ${shellStyles.app}`} data-theme={theme}>
       <Topbar />
       <div className={shellStyles.body}>
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
-          {hasNamedProject ? (
+          {loadProjectOpen ? (
+            <LoadProjectDialog />
+          ) : hasNamedProject ? (
             <>
               <CanvasHeader />
               {canvasTab === 'design' && <DesignCanvas />}
@@ -64,9 +57,7 @@ export function AppShell() {
                 <div className={shellStyles.placeholder}>{TAB_LABELS[canvasTab]} panel comes next.</div>
               )}
             </>
-          ) : (
-            <EmptyProjectState />
-          )}
+          ) : <EmptyProjectState />}
         </main>
       </div>
       <ImportStatusToast />
@@ -78,7 +69,6 @@ export function AppShell() {
       {projectSettingsOpen && <ProjectSettingsModal />}
       {projectFromVersionControlOpen && <ProjectFromVersionControlModal />}
       {unsavedChangesPromptOpen && <UnsavedChangesModal />}
-      {loadProjectOpen && <LoadProjectDialog />}
     </div>
   );
 }

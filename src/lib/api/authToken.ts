@@ -1,51 +1,97 @@
-/**
- * Bearer credentials are deliberately kept in module memory only. They are never written to
- * localStorage, sessionStorage, IndexedDB, cookies, or the URL. A full page reload therefore
- * ends the frontend session until the backend supplies a secure refresh mechanism.
- */
-let authToken: string | null = null;
-let authProvider: string | null = null;
+const AUTH_TOKEN_KEY = 'apiforge.auth.token';
+const AUTH_PROVIDER_KEY = 'apiforge.auth.provider';
+const PENDING_AUTH_PROVIDER_KEY = 'apiforge.auth.pending-provider';
+const PENDING_LINK_PROVIDER_KEY = 'apiforge.auth.pending-link-provider';
 
-const PENDING_PROVIDER_KEY = 'apiforge_pending_auth_provider';
-const PENDING_LINK_PROVIDER_KEY = 'apiforge_pending_link_provider';
+let memoryToken: string | null = null;
+let memoryProvider: string | null = null;
+
+function storage(): Storage | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function read(key: string): string | null {
+  const value = storage()?.getItem(key) ?? null;
+  return value && value.trim() !== '' ? value : null;
+}
+
+function write(key: string, value: string | null): void {
+  const target = storage();
+  if (!target) {
+    return;
+  }
+
+  if (value === null || value.trim() === '') {
+    target.removeItem(key);
+    return;
+  }
+
+  target.setItem(key, value);
+}
 
 export function getAuthToken(): string | null {
-  return authToken;
+  if (memoryToken !== null) {
+    return memoryToken;
+  }
+
+  memoryToken = read(AUTH_TOKEN_KEY);
+  return memoryToken;
 }
 
 export function setAuthToken(token: string): void {
-  authToken = token;
+  const normalized = token.trim();
+  memoryToken = normalized === '' ? null : normalized;
+  write(AUTH_TOKEN_KEY, memoryToken);
 }
 
 export function getAuthProvider(): string | null {
-  return authProvider;
+  if (memoryProvider !== null) {
+    return memoryProvider;
+  }
+
+  memoryProvider = read(AUTH_PROVIDER_KEY);
+  return memoryProvider;
 }
 
 export function setAuthProvider(provider: string): void {
-  authProvider = provider;
+  const normalized = provider.trim().toLowerCase();
+  memoryProvider = normalized === '' ? null : normalized;
+  write(AUTH_PROVIDER_KEY, memoryProvider);
 }
 
 export function clearAuthToken(): void {
-  authToken = null;
-  authProvider = null;
+  memoryToken = null;
+  memoryProvider = null;
+  write(AUTH_TOKEN_KEY, null);
+  write(AUTH_PROVIDER_KEY, null);
 }
 
 export function setPendingAuthProvider(provider: string): void {
-  sessionStorage.setItem(PENDING_PROVIDER_KEY, provider);
+  write(PENDING_AUTH_PROVIDER_KEY, provider.trim().toLowerCase());
 }
 
 export function takePendingAuthProvider(): string | null {
-  const provider = sessionStorage.getItem(PENDING_PROVIDER_KEY);
-  sessionStorage.removeItem(PENDING_PROVIDER_KEY);
-  return provider;
+  return take(PENDING_AUTH_PROVIDER_KEY);
 }
 
 export function setPendingLinkProvider(provider: string): void {
-  sessionStorage.setItem(PENDING_LINK_PROVIDER_KEY, provider);
+  write(PENDING_LINK_PROVIDER_KEY, provider.trim().toLowerCase());
 }
 
 export function takePendingLinkProvider(): string | null {
-  const provider = sessionStorage.getItem(PENDING_LINK_PROVIDER_KEY);
-  sessionStorage.removeItem(PENDING_LINK_PROVIDER_KEY);
-  return provider;
+  return take(PENDING_LINK_PROVIDER_KEY);
+}
+
+function take(key: string): string | null {
+  const value = read(key);
+  write(key, null);
+  return value;
 }
