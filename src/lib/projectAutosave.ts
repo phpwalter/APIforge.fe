@@ -8,11 +8,8 @@ import { saveServerDocument } from './project-server/projectServer';
 const DEBOUNCE_MS = 800;
 
 export interface SaveNowOptions {
-  /**
-   * New projects created from disk, version control, samples, or the New Project flow remain
-   * local until the user explicitly saves them. Existing server projects may autosave normally.
-   */
   persistNewProject?: boolean;
+  requireServer?: boolean;
 }
 
 function accountContext(): { accountKey: string; accountId: string } | null {
@@ -49,11 +46,6 @@ function buildDocument(): Record<string, unknown> | null {
   }) as Record<string, unknown>;
 }
 
-/**
- * Saves the current document locally. Existing server projects are also persisted remotely.
- * A newly imported or created project is sent to POST /projects only when persistNewProject is
- * explicitly true, preventing file selection from silently creating a permanent server record.
- */
 export async function saveNow(options: SaveNowOptions = {}): Promise<void> {
   const app = useAppStore.getState();
   const document = buildDocument();
@@ -74,6 +66,10 @@ export async function saveNow(options: SaveNowOptions = {}): Promise<void> {
 
   const context = accountContext();
   if (!context) {
+    if (options.requireServer) {
+      useAppStore.setState({ saveState: 'unsaved' });
+      throw new Error('Sign in to an account with a company before saving this project to the server.');
+    }
     useAppStore.setState({ saveState: 'saved', lastSavedAt: savedAt });
     return;
   }
@@ -118,12 +114,7 @@ export function initProjectAutosave(): void {
   started = true;
 
   useSpecStore.subscribe(
-    (state) => [
-      state.endpoints,
-      state.schemas,
-      state.enabledSecuritySchemes,
-      state.securityScopes,
-    ] as const,
+    (state) => [state.endpoints, state.schemas, state.enabledSecuritySchemes, state.securityScopes] as const,
     scheduleSave,
     { equalityFn: shallow },
   );
