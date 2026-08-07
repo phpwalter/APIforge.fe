@@ -2,6 +2,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GeneralSettingsPanel } from './GeneralSettingsPanel';
 import type { ProjectSettingsDraft } from '../Project/projectSettingsDraft';
+import { listLicenses } from '../../lib/api/licenses';
+
+vi.mock('../../lib/api/licenses', () => ({
+  listLicenses: vi.fn(),
+}));
+
+const mockedListLicenses = vi.mocked(listLicenses);
 
 function makeDraft(overrides: Partial<ProjectSettingsDraft> = {}): ProjectSettingsDraft {
   return {
@@ -12,7 +19,7 @@ function makeDraft(overrides: Partial<ProjectSettingsDraft> = {}): ProjectSettin
     apiDescription: '',
     apiTermsOfService: '',
     apiContact: { name: '', email: '', url: '' },
-    apiLicense: { name: '', url: '' },
+    apiLicense: { id: '', name: 'Proprietary', spdxId: '', url: '' },
     apiServers: [],
     apiExternalDocs: { description: '', url: '' },
     enabledSecuritySchemes: [],
@@ -21,6 +28,23 @@ function makeDraft(overrides: Partial<ProjectSettingsDraft> = {}): ProjectSettin
     ...overrides,
   };
 }
+
+beforeEach(() => {
+  mockedListLicenses.mockResolvedValue([
+    {
+      id: 'apache-id',
+      name: 'Apache License 2.0',
+      spdx_id: 'Apache-2.0',
+      url: 'https://spdx.org/licenses/Apache-2.0.html',
+    },
+    {
+      id: 'mit-id',
+      name: 'MIT License',
+      spdx_id: 'MIT',
+      url: 'https://spdx.org/licenses/MIT.html',
+    },
+  ]);
+});
 
 describe('GeneralSettingsPanel — Project Name', () => {
   it('is the first field, showing the current project name', () => {
@@ -64,7 +88,6 @@ describe('GeneralSettingsPanel — Project Name', () => {
 
     await user.type(screen.getByDisplayValue('My API'), '!');
 
-    // The draft object passed in is untouched — GeneralSettingsPanel never mutates it directly.
     expect(draft.currentProjectName).toBe('My API');
   });
 });
@@ -96,5 +119,58 @@ describe('GeneralSettingsPanel — existing fields', () => {
     await user.type(screen.getByPlaceholderText('Name'), 'J');
 
     expect(onChange).toHaveBeenLastCalledWith({ apiContact: { name: 'J', email: 'a@b.com', url: 'https://x' } });
+  });
+});
+
+describe('GeneralSettingsPanel — governed license catalog', () => {
+  it('loads the public catalog and keeps Proprietary as the first option', async () => {
+    render(<GeneralSettingsPanel draft={makeDraft()} onChange={vi.fn()} />);
+
+    const select = await screen.findByRole('combobox', { name: 'License' });
+    const options = Array.from((select as HTMLSelectElement).options).map((option) => option.text);
+
+    expect(options).toEqual(['Proprietary', 'Apache License 2.0', 'MIT License']);
+    expect(mockedListLicenses).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores all catalog values when a license is selected', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<GeneralSettingsPanel draft={makeDraft()} onChange={onChange} />);
+
+    const select = await screen.findByRole('combobox', { name: 'License' });
+    await user.selectOptions(select, 'apache-id');
+
+    expect(onChange).toHaveBeenLastCalledWith({
+      apiLicense: {
+        id: 'apache-id',
+        name: 'Apache License 2.0',
+        spdxId: 'Apache-2.0',
+        url: 'https://spdx.org/licenses/Apache-2.0.html',
+      },
+    });
+  });
+
+  it('shows the selected license URL as an external link and hides it for Proprietary', () => {
+    const { rerender } = render(
+      <GeneralSettingsPanel
+        draft={makeDraft({
+          apiLicense: {
+            id: 'apache-id',
+            name: 'Apache License 2.0',
+            spdxId: 'Apache-2.0',
+            url: 'https://spdx.org/licenses/Apache-2.0.html',
+          },
+        })}
+        onChange={vi.fn()}
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: /spdx.org\/licenses\/Apache-2.0.html/ });
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+
+    rerender(<GeneralSettingsPanel draft={makeDraft()} onChange={vi.fn()} />);
+    expect(screen.queryByText('License URL')).not.toBeInTheDocument();
   });
 });
