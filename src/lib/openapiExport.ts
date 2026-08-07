@@ -230,7 +230,7 @@ export function buildOpenApiDocument(params: BuildExportDocumentParams): Record<
   const servers = info.servers.filter(Boolean);
   if (servers.length) doc.servers = servers.map((url) => ({ url }));
 
-  if (info.externalDocs.url) infoObj.externalDocs = Object.fromEntries(Object.entries(info.externalDocs).filter(([, v]) => v));
+  if (info.externalDocs.url) doc.externalDocs = Object.fromEntries(Object.entries(info.externalDocs).filter(([, v]) => v));
 
   const paths: Record<string, Record<string, unknown>> = {};
   const schemaNames = new Set(schemas.map((s) => s.name));
