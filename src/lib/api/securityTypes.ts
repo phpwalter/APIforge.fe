@@ -1,6 +1,6 @@
 import { apiGet } from './client';
 
-/** Raw row shape returned by GET /securityTypes — matches the DB table as-is. */
+/** Raw row shape returned by GET /securityschemes — matches the DB table as-is. */
 export interface SecurityTypeDto {
   id: string;
   security_scheme_type_id: string;
@@ -30,7 +30,7 @@ export interface SecurityTypesResponse {
 }
 
 export async function fetchSecurityTypes(): Promise<SecurityTypeDto[]> {
-  const res = await apiGet<SecurityTypesResponse>('/securityTypes', { apiVersion: 'v1' });
+  const res = await apiGet<SecurityTypesResponse>('/securityschemes', { apiVersion: 'v1' });
   return res.data;
 }
 
