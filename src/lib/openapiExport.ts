@@ -38,6 +38,20 @@ function schemaObjWithVariant(schema: Schema, variant: ExportVariant): Record<st
   return obj;
 }
 
+function openApiLicenseObject(license: ApiLicense, openapiVersion: string): Record<string, string> | null {
+  const name = license.name.trim();
+  if (!name) return null;
+
+  const value: Record<string, string> = { name };
+  if (openapiVersion.startsWith('3.1') && license.spdxId?.trim()) {
+    value.identifier = license.spdxId.trim();
+  } else if (license.url.trim()) {
+    value.url = license.url.trim();
+  }
+
+  return value;
+}
+
 /** Maps a fetched security-type catalog row to its OpenAPI `type` discriminant. */
 function securitySchemeKind(dto: SecurityTypeDto): 'apiKey' | 'http' | 'oauth2' | 'openIdConnect' | 'mutualTLS' {
   if (dto.flows) return 'oauth2';
@@ -205,8 +219,8 @@ export function buildOpenApiDocument(params: BuildExportDocumentParams): Record<
   if (info.termsOfService) infoObj.termsOfService = info.termsOfService;
   const contact = Object.fromEntries(Object.entries(info.contact).filter(([, v]) => v));
   if (Object.keys(contact).length) infoObj.contact = contact;
-  const license = Object.fromEntries(Object.entries(info.license).filter(([, v]) => v));
-  if (Object.keys(license).length) infoObj.license = license;
+  const license = openApiLicenseObject(info.license, info.openapiVersion);
+  if (license) infoObj.license = license;
 
   const doc: Record<string, unknown> = {
     openapi: info.openapiVersion || '3.1.0',
@@ -216,7 +230,7 @@ export function buildOpenApiDocument(params: BuildExportDocumentParams): Record<
   const servers = info.servers.filter(Boolean);
   if (servers.length) doc.servers = servers.map((url) => ({ url }));
 
-  if (info.externalDocs.url) doc.externalDocs = Object.fromEntries(Object.entries(info.externalDocs).filter(([, v]) => v));
+  if (info.externalDocs.url) infoObj.externalDocs = Object.fromEntries(Object.entries(info.externalDocs).filter(([, v]) => v));
 
   const paths: Record<string, Record<string, unknown>> = {};
   const schemaNames = new Set(schemas.map((s) => s.name));
