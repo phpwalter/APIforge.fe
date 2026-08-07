@@ -1,0 +1,132 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dialog {
+  width: min(560px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.header {
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.header p {
+  margin: 5px 0 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.body {
+  display: grid;
+  gap: 12px;
+  padding: 20px 22px;
+}
+
+.prompt {
+  margin: 0 0 2px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 11px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--inset);
+  cursor: pointer;
+}
+
+.option[data-selected='true'] {
+  border-color: var(--accent);
+}
+
+.option input {
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.option span {
+  display: grid;
+  gap: 4px;
+}
+
+.option strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.option small {
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.note {
+  margin: 2px 0 0;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.cancel,
+.importButton {
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.importButton {
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+}
+
+.cancel:disabled,
+.importButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
