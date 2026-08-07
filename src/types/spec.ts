@@ -7,9 +7,15 @@ export interface ApiContact {
   url: string;
 }
 
-/** OpenAPI `info.license` object. */
+/**
+ * APIForge license selection state. `id` and `spdxId` identify a governed catalog
+ * entry inside APIForge; OpenAPI export emits only fields supported by the target
+ * OpenAPI version.
+ */
 export interface ApiLicense {
+  id?: string;
   name: string;
+  spdxId?: string;
   url: string;
 }
 
