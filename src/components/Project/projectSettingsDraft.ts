@@ -26,6 +26,8 @@ export type ProjectSettingsDraft = Pick<
     removedLegacySchemes: string[];
   };
 
+const PROPRIETARY_LICENSE = { id: '', name: 'Proprietary', spdxId: '', url: '' } as const;
+
 export function snapshotFromStore(): ProjectSettingsDraft {
   const app = useAppStore.getState();
   const spec = useSpecStore.getState();
@@ -37,7 +39,7 @@ export function snapshotFromStore(): ProjectSettingsDraft {
     apiDescription: app.apiDescription,
     apiTermsOfService: app.apiTermsOfService,
     apiContact: app.apiContact,
-    apiLicense: app.apiLicense,
+    apiLicense: app.apiLicense.name ? app.apiLicense : { ...PROPRIETARY_LICENSE },
     apiServers: app.apiServers,
     apiExternalDocs: app.apiExternalDocs,
     enabledSecuritySchemes: spec.enabledSecuritySchemes,
