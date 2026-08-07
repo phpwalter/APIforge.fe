@@ -1,15 +1,18 @@
 import { apiGet, apiPatch, apiPost, apiUrl, ApiError } from './client';
-import { clearAuthToken, setAuthToken } from './authToken';
+import { clearAuthToken, getAuthToken, setAuthToken } from './authToken';
 
-function mockFetchOnce(response: Partial<Response> & { ok: boolean }) {
-  const fullResponse = {
+function response(overrides: Partial<Response> & { ok: boolean }): Response {
+  return {
     status: 200,
     statusText: 'OK',
     text: () => Promise.resolve(''),
     json: () => Promise.resolve({}),
-    ...response,
-  };
-  const fetchMock = vi.fn().mockResolvedValue(fullResponse as Response);
+    ...overrides,
+  } as Response;
+}
+
+function mockFetchOnce(value: Partial<Response> & { ok: boolean }) {
+  const fetchMock = vi.fn().mockResolvedValue(response(value));
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
@@ -44,6 +47,7 @@ describe('versioned requests', () => {
       'http://api.test/things',
       expect.objectContaining({
         method: 'GET',
+        credentials: 'include',
         headers: expect.objectContaining({ 'X-API-Version': 'v2', Accept: 'application/json' }),
       }),
     );
@@ -77,6 +81,40 @@ describe('versioned requests', () => {
     const patchFetch = mockFetchOnce({ ok: true, text: () => Promise.resolve('{"ok":true}') });
     await apiPatch('/things/1', { apiVersion: 'v3' }, { name: 'y' });
     expect(patchFetch.mock.calls[0]?.[1]).toMatchObject({ method: 'PATCH', body: JSON.stringify({ name: 'y' }) });
+  });
+
+  it('silently refreshes and retries once when a bearer token receives 401', async () => {
+    setAuthToken('expired-token');
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(response({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        text: () => Promise.resolve(JSON.stringify({ title: 'Invalid Access Token' })),
+      }))
+      .mockResolvedValueOnce(response({
+        ok: true,
+        json: () => Promise.resolve({
+          data: { token: { access_token: 'renewed-token', expires_in: 900 } },
+        }),
+      }))
+      .mockResolvedValueOnce(response({
+        ok: true,
+        json: () => Promise.resolve({ value: 'saved' }),
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(apiGet('/projects', { apiVersion: 'v1' })).resolves.toEqual({ value: 'saved' });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://api.test/auth/session/refresh',
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    );
+    expect(getAuthToken()).toBe('renewed-token');
+    const retryHeaders = fetchMock.mock.calls[2]?.[1]?.headers as Record<string, string>;
+    expect(retryHeaders.Authorization).toBe('Bearer renewed-token');
   });
 
   it('normalizes RFC 7807 errors without exposing arbitrary response bodies', async () => {
