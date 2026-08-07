@@ -33,15 +33,18 @@ function readString(record: ProjectRecord, ...keys: string[]): string | undefine
   return undefined;
 }
 
-function readBoolean(record: ProjectRecord, ...keys: string[]): boolean | undefined {
+function readStringArray(record: ProjectRecord, ...keys: string[]): string[] {
   for (const key of keys) {
     const value = record[key];
-    if (typeof value === 'boolean') return value;
-    if (value === 1 || value === '1' || value === 'true') return true;
-    if (value === 0 || value === '0' || value === 'false') return false;
+    if (!Array.isArray(value)) continue;
+
+    return value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
 
-  return undefined;
+  return [];
 }
 
 function normalizeProject(value: unknown): ServerProjectSummary | null {
@@ -82,17 +85,6 @@ function unwrapData(response: unknown): unknown {
   return isRecord(response) && 'data' in response ? response.data : response;
 }
 
-function documentArrayFromResponse(response: unknown): unknown[] {
-  const value = unwrapData(response);
-  if (Array.isArray(value)) return value;
-  if (!isRecord(value)) return [];
-
-  if (Array.isArray(value.documents)) return value.documents;
-  if (Array.isArray(value.items)) return value.items;
-
-  return [];
-}
-
 function serializeDocument(value: unknown): string | undefined {
   if (typeof value === 'string' && value.trim() !== '') return value;
   if (isRecord(value) || Array.isArray(value)) return JSON.stringify(value);
@@ -108,46 +100,6 @@ function readDocumentPayload(record: ProjectRecord): string | undefined {
   }
 
   return undefined;
-}
-
-function selectCurrentDocument(records: unknown[]): ProjectRecord | null {
-  const documents = records.filter(isRecord);
-  if (documents.length === 0) return null;
-
-  return documents.find((record) => readBoolean(record, 'is_current', 'isCurrent') === true) ?? documents[0];
-}
-
-async function getProjectSpecJson(projectId: string): Promise<string> {
-  const documentsResponse = await apiGet<unknown>(
-    `/projects/${encodeURIComponent(projectId)}/documents`,
-    { apiVersion: 'v1' },
-  );
-  const current = selectCurrentDocument(documentArrayFromResponse(documentsResponse));
-
-  if (!current) {
-    throw new ApiError('This project does not have a saved API document.');
-  }
-
-  const embeddedDocument = readDocumentPayload(current);
-  if (embeddedDocument !== undefined) return embeddedDocument;
-
-  const documentId = readString(current, 'id', 'documentId', 'document_id');
-  if (!documentId) {
-    throw new ApiError('The project document list did not include a document identifier.');
-  }
-
-  const documentResponse = await apiGet<unknown>(`/documents/${encodeURIComponent(documentId)}`, { apiVersion: 'v1' });
-  const documentValue = unwrapData(documentResponse);
-  if (!isRecord(documentValue)) {
-    throw new ApiError('The document endpoint returned an unsupported document format.');
-  }
-
-  const specJson = readDocumentPayload(documentValue);
-  if (specJson === undefined) {
-    throw new ApiError('The document endpoint returned an incomplete API document.');
-  }
-
-  return specJson;
 }
 
 export async function listServerProjects(): Promise<ServerProjectSummary[]> {
@@ -175,6 +127,25 @@ export async function getServerProject(id: string): Promise<ServerProjectDocumen
     throw new ApiError('The project endpoint returned incomplete project metadata.');
   }
 
-  const specJson = await getProjectSpecJson(summary.id);
+  const documentIds = readStringArray(value, 'document_id', 'documentIds', 'document_ids');
+  if (documentIds.length === 0) {
+    throw new ApiError('This project does not have a saved API document.');
+  }
+
+  const documentResponse = await apiGet<unknown>(
+    `/documents/${encodeURIComponent(documentIds[0])}`,
+    { apiVersion: 'v1' },
+  );
+  const documentValue = unwrapData(documentResponse);
+
+  if (!isRecord(documentValue)) {
+    throw new ApiError('The document endpoint returned an unsupported document format.');
+  }
+
+  const specJson = readDocumentPayload(documentValue);
+  if (specJson === undefined) {
+    throw new ApiError('The document endpoint returned an incomplete API document.');
+  }
+
   return { ...summary, specJson };
 }
