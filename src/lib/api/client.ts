@@ -46,6 +46,7 @@ export class ApiError extends Error {
 }
 
 const REFRESH_WINDOW_MS = 60_000;
+const REFRESH_LOCK_NAME = 'apiforge-auth-refresh';
 let refreshPromise: Promise<boolean> | null = null;
 
 function baseUrl(): string {
@@ -110,44 +111,60 @@ function accessTokenNeedsRefresh(): boolean {
   return expiresAt !== null && expiresAt - Date.now() <= REFRESH_WINDOW_MS;
 }
 
+async function performRefresh(): Promise<boolean> {
+  let response: Response;
+  try {
+    response = await fetch(apiUrl('/auth/session/refresh'), {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'X-API-Version': 'v1',
+      },
+    });
+  } catch {
+    return false;
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) clearAccessToken();
+    return false;
+  }
+
+  try {
+    const payload = (await response.json()) as {
+      data?: { token?: { access_token?: string; expires_in?: number } };
+    };
+    const accessToken = payload.data?.token?.access_token?.trim();
+    if (!accessToken) return false;
+    setAuthToken(accessToken, payload.data?.token?.expires_in);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function performRefreshWithBrowserLock(): Promise<boolean> {
+  const lockManager = typeof navigator !== 'undefined'
+    ? (navigator as Navigator & {
+        locks?: { request<T>(name: string, callback: () => Promise<T>): Promise<T> };
+      }).locks
+    : undefined;
+
+  // The HttpOnly refresh cookie is shared by tabs. Serializing rotation across
+  // same-origin tabs prevents two requests from trying to consume the same
+  // single-use refresh credential at the same time.
+  return lockManager
+    ? lockManager.request(REFRESH_LOCK_NAME, performRefresh)
+    : performRefresh();
+}
+
 export async function refreshAccessToken(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
 
-  refreshPromise = (async () => {
-    let response: Response;
-    try {
-      response = await fetch(apiUrl('/auth/session/refresh'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          Accept: 'application/json',
-          'X-API-Version': 'v1',
-        },
-      });
-    } catch {
-      return false;
-    }
-
-    if (!response.ok) {
-      if (response.status === 401) clearAccessToken();
-      return false;
-    }
-
-    try {
-      const payload = (await response.json()) as {
-        data?: { token?: { access_token?: string; expires_in?: number } };
-      };
-      const accessToken = payload.data?.token?.access_token?.trim();
-      if (!accessToken) return false;
-      setAuthToken(accessToken, payload.data?.token?.expires_in);
-      return true;
-    } catch {
-      return false;
-    }
-  })().finally(() => {
+  refreshPromise = performRefreshWithBrowserLock().finally(() => {
     refreshPromise = null;
   });
-
   return refreshPromise;
 }
 
