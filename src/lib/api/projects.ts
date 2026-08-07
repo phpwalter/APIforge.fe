@@ -33,6 +33,17 @@ function readString(record: ProjectRecord, ...keys: string[]): string | undefine
   return undefined;
 }
 
+function readBoolean(record: ProjectRecord, ...keys: string[]): boolean | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'boolean') return value;
+    if (value === 1 || value === '1' || value === 'true') return true;
+    if (value === 0 || value === '0' || value === 'false') return false;
+  }
+
+  return undefined;
+}
+
 function normalizeProject(value: unknown): ServerProjectSummary | null {
   if (!isRecord(value)) return null;
 
@@ -45,7 +56,7 @@ function normalizeProject(value: unknown): ServerProjectSummary | null {
   return {
     id,
     name,
-    status: readString(value, 'status', 'projectStatus', 'project_status') ?? 'Active',
+    status: readString(value, 'status', 'projectStatus', 'project_status', 'status_code') ?? 'Active',
     updatedAt,
   };
 }
@@ -67,6 +78,78 @@ function projectArrayFromResponse(response: unknown): unknown[] {
   return [];
 }
 
+function unwrapData(response: unknown): unknown {
+  return isRecord(response) && 'data' in response ? response.data : response;
+}
+
+function documentArrayFromResponse(response: unknown): unknown[] {
+  const value = unwrapData(response);
+  if (Array.isArray(value)) return value;
+  if (!isRecord(value)) return [];
+
+  if (Array.isArray(value.documents)) return value.documents;
+  if (Array.isArray(value.items)) return value.items;
+
+  return [];
+}
+
+function serializeDocument(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim() !== '') return value;
+  if (isRecord(value) || Array.isArray(value)) return JSON.stringify(value);
+  return undefined;
+}
+
+function readDocumentPayload(record: ProjectRecord): string | undefined {
+  for (const key of ['document', 'specJson', 'spec_json', 'specification']) {
+    if (key in record) {
+      const serialized = serializeDocument(record[key]);
+      if (serialized !== undefined) return serialized;
+    }
+  }
+
+  return undefined;
+}
+
+function selectCurrentDocument(records: unknown[]): ProjectRecord | null {
+  const documents = records.filter(isRecord);
+  if (documents.length === 0) return null;
+
+  return documents.find((record) => readBoolean(record, 'is_current', 'isCurrent') === true) ?? documents[0];
+}
+
+async function getProjectSpecJson(projectId: string): Promise<string> {
+  const documentsResponse = await apiGet<unknown>(
+    `/projects/${encodeURIComponent(projectId)}/documents`,
+    { apiVersion: 'v1' },
+  );
+  const current = selectCurrentDocument(documentArrayFromResponse(documentsResponse));
+
+  if (!current) {
+    throw new ApiError('This project does not have a saved API document.');
+  }
+
+  const embeddedDocument = readDocumentPayload(current);
+  if (embeddedDocument !== undefined) return embeddedDocument;
+
+  const documentId = readString(current, 'id', 'documentId', 'document_id');
+  if (!documentId) {
+    throw new ApiError('The project document list did not include a document identifier.');
+  }
+
+  const documentResponse = await apiGet<unknown>(`/documents/${encodeURIComponent(documentId)}`, { apiVersion: 'v1' });
+  const documentValue = unwrapData(documentResponse);
+  if (!isRecord(documentValue)) {
+    throw new ApiError('The document endpoint returned an unsupported document format.');
+  }
+
+  const specJson = readDocumentPayload(documentValue);
+  if (specJson === undefined) {
+    throw new ApiError('The document endpoint returned an incomplete API document.');
+  }
+
+  return specJson;
+}
+
 export async function listServerProjects(): Promise<ServerProjectSummary[]> {
   const response = await apiGet<unknown>('/projects', { apiVersion: 'v1' });
   const source = projectArrayFromResponse(response);
@@ -81,18 +164,17 @@ export async function listServerProjects(): Promise<ServerProjectSummary[]> {
 
 export async function getServerProject(id: string): Promise<ServerProjectDocument> {
   const response = await apiGet<unknown>(`/projects/${encodeURIComponent(id)}`, { apiVersion: 'v1' });
-  const value = isRecord(response) && isRecord(response.data) ? response.data : response;
+  const value = unwrapData(response);
 
   if (!isRecord(value)) {
     throw new ApiError('The project endpoint returned an unsupported project format.');
   }
 
   const summary = normalizeProject(value);
-  const specJson = readString(value, 'specJson', 'spec_json', 'document', 'specification');
-
-  if (!summary || specJson === undefined) {
-    throw new ApiError('The project endpoint returned an incomplete project document.');
+  if (!summary) {
+    throw new ApiError('The project endpoint returned incomplete project metadata.');
   }
 
+  const specJson = await getProjectSpecJson(summary.id);
   return { ...summary, specJson };
 }
