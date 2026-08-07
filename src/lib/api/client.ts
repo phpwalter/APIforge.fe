@@ -1,8 +1,8 @@
 import {
-  clearAuthToken,
+  clearAccessToken,
   getAuthToken,
-  markAuthExpired,
-  SESSION_EXPIRED_EVENT,
+  getAuthTokenExpiresAt,
+  setAuthToken,
 } from './authToken';
 
 export interface ApiRequestOptions {
@@ -44,6 +44,9 @@ export class ApiError extends Error {
     this.problem = problem;
   }
 }
+
+const REFRESH_WINDOW_MS = 60_000;
+let refreshPromise: Promise<boolean> | null = null;
 
 function baseUrl(): string {
   const url = import.meta.env.VITE_API_SERVER;
@@ -101,17 +104,65 @@ async function newApiError(res: Response, path: string): Promise<ApiError> {
   return new ApiError(message, res.status, problem);
 }
 
-function handleExpiredSession(res: Response, options: ApiRequestOptions): void {
-  if (res.status !== 401 || options.authenticated === false || !getAuthToken()) return;
+function accessTokenNeedsRefresh(): boolean {
+  if (!getAuthToken()) return false;
+  const expiresAt = getAuthTokenExpiresAt();
+  return expiresAt !== null && expiresAt - Date.now() <= REFRESH_WINDOW_MS;
+}
 
-  // Token expiry is recoverable. Clear only the invalid credential; do not mutate
-  // application/project state or perform the explicit-signout cleanup path.
-  markAuthExpired();
-  clearAuthToken();
+export async function refreshAccessToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
 
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
-  }
+  refreshPromise = (async () => {
+    let response: Response;
+    try {
+      response = await fetch(apiUrl('/auth/session/refresh'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          'X-API-Version': 'v1',
+        },
+      });
+    } catch {
+      return false;
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) clearAccessToken();
+      return false;
+    }
+
+    try {
+      const payload = (await response.json()) as {
+        data?: { token?: { access_token?: string; expires_in?: number } };
+      };
+      const accessToken = payload.data?.token?.access_token?.trim();
+      if (!accessToken) return false;
+      setAuthToken(accessToken, payload.data?.token?.expires_in);
+      return true;
+    } catch {
+      return false;
+    }
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+async function fetchRequest(
+  method: 'GET' | 'HEAD' | 'POST' | 'PATCH',
+  path: string,
+  options: ApiRequestOptions,
+  body?: unknown,
+): Promise<Response> {
+  return fetch(apiUrl(path), {
+    method,
+    credentials: 'include',
+    headers: requestHeaders(body === undefined ? {} : { 'Content-Type': 'application/json' }, options),
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
 }
 
 async function executeRequest(
@@ -120,15 +171,23 @@ async function executeRequest(
   options: ApiRequestOptions,
   body?: unknown,
 ): Promise<Response> {
+  const authenticated = options.authenticated !== false;
   const url = apiUrl(path);
 
   try {
-    const response = await fetch(url, {
-      method,
-      headers: requestHeaders(body === undefined ? {} : { 'Content-Type': 'application/json' }, options),
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    handleExpiredSession(response, options);
+    if (authenticated && accessTokenNeedsRefresh()) {
+      await refreshAccessToken();
+    }
+
+    let response = await fetchRequest(method, path, options, body);
+
+    // The proactive refresh is an optimization. A 401 remains authoritative and
+    // gets exactly one refresh + one retry to cover expiry races and clock skew.
+    if (authenticated && response.status === 401 && getAuthToken()) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) response = await fetchRequest(method, path, options, body);
+    }
+
     return response;
   } catch (err) {
     throw new ApiError(`Could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
