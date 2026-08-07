@@ -90,7 +90,7 @@ export function OAuthCallbackPage() {
           throw new Error('The authorization exchange returned no access token.');
         }
 
-        setAuthToken(accessToken);
+        setAuthToken(accessToken, session.token?.expires_in);
         setAuthProvider(provider);
         const me = await fetchMe();
         if (!Number.isInteger(me.record_version) || (me.record_version ?? 0) < 1) {
@@ -110,7 +110,6 @@ export function OAuthCallbackPage() {
             avatarUrl: linked?.avatar_url,
           });
         }
-
       })
       .catch((reason: unknown) => {
         clearAuthToken();
