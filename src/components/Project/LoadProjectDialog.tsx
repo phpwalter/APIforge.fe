@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, LoaderCircle } from 'lucide-react';
 import { useAppStore } from '../../state/useAppStore';
-import { useSpecStore } from '../../state/useSpecStore';
 import { listServerProjects, type ServerProjectSummary } from '../../lib/api/projects';
 import { openServerProjectIntoSettings } from '../../lib/loadServerProject';
 import { importOpenApiFile, IMPORT_ACCEPT } from '../../lib/importHandler';
+import { ImportPolicyDialog } from './ImportPolicyDialog';
 import styles from './LoadProjectDialog.module.css';
 
 type AsyncState<T> = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: T };
@@ -37,6 +37,8 @@ export function LoadProjectDialog() {
   const [sortColumn, setSortColumn] = useState<SortColumn>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [page, setPage] = useState(1);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -91,108 +93,126 @@ export function LoadProjectDialog() {
   };
 
   return (
-    <section className={styles.page} aria-labelledby="project-list-title">
-      <header className={styles.pageHeader}>
-        <div>
-          <p className={styles.eyebrow}>Projects</p>
-          <h1 id="project-list-title" className={styles.title}>Open a project</h1>
-          <p className={styles.subtitle}>Select a project below, then open it or double-click its row.</p>
-        </div>
-        <button type="button" className={styles.closeButton} onClick={closeProjectList}>Back to editor</button>
-      </header>
-
-      <div className={styles.content}>
-        <div className={styles.tableCard}>
-          <div className={styles.tableHeader} role="row">
-            <button type="button" className={styles.sortHeader} onClick={() => toggleSort('name')}>
-              Name
-              {sortColumn === 'name' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-            </button>
-            <span>Status</span>
-            <button type="button" className={styles.sortHeader} onClick={() => toggleSort('updatedAt')}>
-              Updated date
-              {sortColumn === 'updatedAt' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-            </button>
+    <>
+      <section className={styles.page} aria-labelledby="project-list-title">
+        <header className={styles.pageHeader}>
+          <div>
+            <p className={styles.eyebrow}>Projects</p>
+            <h1 id="project-list-title" className={styles.title}>Open a project</h1>
+            <p className={styles.subtitle}>Select a project below, then open it or double-click its row.</p>
           </div>
+          <button type="button" className={styles.closeButton} onClick={closeProjectList}>Back to editor</button>
+        </header>
 
-          <div className={styles.tableBody}>
-            {projects.status === 'loading' && (
-              <div className={styles.stateMessage}><LoaderCircle size={18} className={styles.spin} /> Loading projects…</div>
-            )}
-            {projects.status === 'error' && <div className={styles.errorMessage}>{projects.message}</div>}
-            {projects.status === 'ready' && projects.data.length === 0 && (
-              <div className={styles.stateMessage}>No projects are available yet.</div>
-            )}
-            {projects.status === 'ready' && visibleProjects.map((project) => (
-              <button
-                key={project.id}
-                type="button"
-                className={styles.projectRow}
-                data-selected={project.id === selectedId}
-                aria-pressed={project.id === selectedId}
-                onClick={() => setSelectedId(project.id)}
-                onDoubleClick={() => void openProject(project.id)}
-              >
-                <span className={styles.projectName}>{project.name}</span>
-                <span className={styles.statusBadge}>{statusLabel(project)}</span>
-                <time className={styles.updatedDate} dateTime={project.updatedAt}>{formatDate(project.updatedAt)}</time>
+        <div className={styles.content}>
+          <div className={styles.tableCard}>
+            <div className={styles.tableHeader} role="row">
+              <button type="button" className={styles.sortHeader} onClick={() => toggleSort('name')}>
+                Name
+                {sortColumn === 'name' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
               </button>
-            ))}
-          </div>
+              <span>Status</span>
+              <button type="button" className={styles.sortHeader} onClick={() => toggleSort('updatedAt')}>
+                Updated date
+                {sortColumn === 'updatedAt' && (sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+              </button>
+            </div>
 
-          <nav className={styles.pagination} aria-label="Project list pagination">
-            <button type="button" disabled={currentPage === 1} onClick={() => setPage(1)}>First</button>
-            <button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</button>
-            <div className={styles.pageNumbers}>
-              {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
+            <div className={styles.tableBody}>
+              {projects.status === 'loading' && (
+                <div className={styles.stateMessage}><LoaderCircle size={18} className={styles.spin} /> Loading projects…</div>
+              )}
+              {projects.status === 'error' && <div className={styles.errorMessage}>{projects.message}</div>}
+              {projects.status === 'ready' && projects.data.length === 0 && (
+                <div className={styles.stateMessage}>No projects are available yet.</div>
+              )}
+              {projects.status === 'ready' && visibleProjects.map((project) => (
                 <button
-                  key={pageNumber}
+                  key={project.id}
                   type="button"
-                  data-current={pageNumber === currentPage}
-                  aria-current={pageNumber === currentPage ? 'page' : undefined}
-                  onClick={() => setPage(pageNumber)}
+                  className={styles.projectRow}
+                  data-selected={project.id === selectedId}
+                  aria-pressed={project.id === selectedId}
+                  onClick={() => setSelectedId(project.id)}
+                  onDoubleClick={() => void openProject(project.id)}
                 >
-                  {pageNumber}
+                  <span className={styles.projectName}>{project.name}</span>
+                  <span className={styles.statusBadge}>{statusLabel(project)}</span>
+                  <time className={styles.updatedDate} dateTime={project.updatedAt}>{formatDate(project.updatedAt)}</time>
                 </button>
               ))}
             </div>
-            <button type="button" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Next</button>
-            <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(pageCount)}>Last</button>
-          </nav>
-        </div>
-      </div>
 
-      <footer className={styles.actions}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={IMPORT_ACCEPT}
-          hidden
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (!file) return;
-            void importOpenApiFile(file).then(() => {
-              if (useSpecStore.getState().importStatus?.type === 'success') closeProjectList();
-            });
+            <nav className={styles.pagination} aria-label="Project list pagination">
+              <button type="button" disabled={currentPage === 1} onClick={() => setPage(1)}>First</button>
+              <button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</button>
+              <div className={styles.pageNumbers}>
+                {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    data-current={pageNumber === currentPage}
+                    aria-current={pageNumber === currentPage ? 'page' : undefined}
+                    onClick={() => setPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              </div>
+              <button type="button" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Next</button>
+              <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(pageCount)}>Last</button>
+            </nav>
+          </div>
+        </div>
+
+        <footer className={styles.actions}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={IMPORT_ACCEPT}
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              event.target.value = '';
+              if (file) setPendingFile(file);
+            }}
+          />
+          <button type="button" className={styles.secondaryAction} onClick={() => fileInputRef.current?.click()}>
+            Import OpenAPI document
+          </button>
+          <button type="button" className={styles.secondaryAction} onClick={loadFromVersionControl}>
+            Load from version control
+          </button>
+          <span className={styles.actionSpacer} />
+          <button
+            type="button"
+            className={styles.primaryAction}
+            disabled={!selectedId || opening}
+            onClick={() => selectedId && void openProject(selectedId)}
+          >
+            {opening ? 'OPENING…' : 'OPEN PROJECT'}
+          </button>
+        </footer>
+      </section>
+
+      {pendingFile && (
+        <ImportPolicyDialog
+          fileName={pendingFile.name}
+          busy={importing}
+          onCancel={() => setPendingFile(null)}
+          onImport={(mode) => {
+            setImporting(true);
+            void importOpenApiFile(pendingFile, mode)
+              .then((success) => {
+                if (success) closeProjectList();
+              })
+              .finally(() => {
+                setImporting(false);
+                setPendingFile(null);
+              });
           }}
         />
-        <button type="button" className={styles.secondaryAction} onClick={() => fileInputRef.current?.click()}>
-          Import OpenAPI document
-        </button>
-        <button type="button" className={styles.secondaryAction} onClick={loadFromVersionControl}>
-          Load from version control
-        </button>
-        <span className={styles.actionSpacer} />
-        <button
-          type="button"
-          className={styles.primaryAction}
-          disabled={!selectedId || opening}
-          onClick={() => selectedId && void openProject(selectedId)}
-        >
-          {opening ? 'OPENING…' : 'OPEN PROJECT'}
-        </button>
-      </footer>
-    </section>
+      )}
+    </>
   );
 }
