@@ -1,7 +1,11 @@
+import { useEffect, useMemo, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import type { ProjectSettingsDraft } from '../Project/projectSettingsDraft';
+import { listLicenses, type LicenseCatalogEntry } from '../../lib/api/licenses';
 import styles from './GeneralSettingsPanel.module.css';
 
 const OPENAPI_VERSIONS = ['3.1.0', '3.1.1', '3.0.3', '3.0.2', '3.0.1', '3.0.0'];
+const PROPRIETARY_VALUE = '__proprietary__';
 
 interface GeneralSettingsPanelProps {
   draft: ProjectSettingsDraft;
@@ -9,6 +13,63 @@ interface GeneralSettingsPanelProps {
 }
 
 export function GeneralSettingsPanel({ draft, onChange }: GeneralSettingsPanelProps) {
+  const [licenses, setLicenses] = useState<LicenseCatalogEntry[]>([]);
+  const [licensesLoading, setLicensesLoading] = useState(true);
+  const [licensesError, setLicensesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLicensesLoading(true);
+    setLicensesError(null);
+
+    void listLicenses()
+      .then((entries) => {
+        if (!cancelled) setLicenses(entries);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setLicensesError(error instanceof Error ? error.message : String(error));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLicensesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedLicenseValue = useMemo(() => {
+    if (!draft.apiLicense.name || draft.apiLicense.name === 'Proprietary') return PROPRIETARY_VALUE;
+    if (draft.apiLicense.id && licenses.some((license) => license.id === draft.apiLicense.id)) {
+      return draft.apiLicense.id;
+    }
+
+    const match = licenses.find(
+      (license) => license.spdx_id === draft.apiLicense.spdxId || license.name === draft.apiLicense.name,
+    );
+    return match?.id ?? PROPRIETARY_VALUE;
+  }, [draft.apiLicense, licenses]);
+
+  const handleLicenseChange = (value: string) => {
+    if (value === PROPRIETARY_VALUE) {
+      onChange({ apiLicense: { id: '', name: 'Proprietary', spdxId: '', url: '' } });
+      return;
+    }
+
+    const selected = licenses.find((license) => license.id === value);
+    if (!selected) return;
+    onChange({
+      apiLicense: {
+        id: selected.id,
+        name: selected.name,
+        spdxId: selected.spdx_id,
+        url: selected.url,
+      },
+    });
+  };
+
   return (
     <>
       <div>
@@ -101,20 +162,35 @@ export function GeneralSettingsPanel({ draft, onChange }: GeneralSettingsPanelPr
 
       <div>
         <div className={styles.sectionLabel}>License</div>
-        <div className={styles.twoCol}>
-          <input
-            className={styles.textInputSmall}
-            value={draft.apiLicense.name}
-            placeholder="Name (e.g. Apache 2.0)"
-            onChange={(e) => onChange({ apiLicense: { ...draft.apiLicense, name: e.target.value } })}
-          />
-          <input
-            className={styles.monoInputSmall}
-            value={draft.apiLicense.url}
-            placeholder="License URL"
-            onChange={(e) => onChange({ apiLicense: { ...draft.apiLicense, url: e.target.value } })}
-          />
-        </div>
+        <select
+          className={styles.licenseSelect}
+          value={selectedLicenseValue}
+          disabled={licensesLoading && licenses.length === 0}
+          onChange={(event) => handleLicenseChange(event.target.value)}
+          aria-label="License"
+        >
+          <option value={PROPRIETARY_VALUE}>Proprietary</option>
+          {licenses.map((license) => (
+            <option key={license.id} value={license.id}>
+              {license.name}
+            </option>
+          ))}
+        </select>
+        {draft.apiLicense.url ? (
+          <div className={styles.licenseUrlRow}>
+            <span className={styles.licenseUrlLabel}>License URL</span>
+            <a
+              className={styles.licenseUrlLink}
+              href={draft.apiLicense.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {draft.apiLicense.url}
+              <ExternalLink size={13} aria-hidden="true" />
+            </a>
+          </div>
+        ) : null}
+        {licensesError ? <div className={styles.catalogError}>License catalog unavailable.</div> : null}
       </div>
     </>
   );
