@@ -1,4 +1,9 @@
-import { getAuthToken } from './authToken';
+import {
+  clearAuthToken,
+  getAuthToken,
+  markAuthExpired,
+  SESSION_EXPIRED_EVENT,
+} from './authToken';
 
 export interface ApiRequestOptions {
   /** API engine version required by this specific endpoint. */
@@ -96,6 +101,19 @@ async function newApiError(res: Response, path: string): Promise<ApiError> {
   return new ApiError(message, res.status, problem);
 }
 
+function handleExpiredSession(res: Response, options: ApiRequestOptions): void {
+  if (res.status !== 401 || options.authenticated === false || !getAuthToken()) return;
+
+  // Token expiry is recoverable. Clear only the invalid credential; do not mutate
+  // application/project state or perform the explicit-signout cleanup path.
+  markAuthExpired();
+  clearAuthToken();
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  }
+}
+
 async function executeRequest(
   method: 'GET' | 'HEAD' | 'POST' | 'PATCH',
   path: string,
@@ -105,11 +123,13 @@ async function executeRequest(
   const url = apiUrl(path);
 
   try {
-    return await fetch(url, {
+    const response = await fetch(url, {
       method,
       headers: requestHeaders(body === undefined ? {} : { 'Content-Type': 'application/json' }, options),
       body: body === undefined ? undefined : JSON.stringify(body),
     });
+    handleExpiredSession(response, options);
+    return response;
   } catch (err) {
     throw new ApiError(`Could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
   }
