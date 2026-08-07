@@ -28,6 +28,18 @@ export type ProjectSettingsDraft = Pick<
 
 const PROPRIETARY_LICENSE = { id: '', name: 'Proprietary', spdxId: '', url: '' } as const;
 
+function projectContactFromStore(app: AppState): AppState['apiContact'] {
+  const current = app.apiContact;
+  const creatorName = app.userProfile.name?.trim() ?? '';
+  const creatorEmail = app.userProfile.email?.trim() ?? '';
+
+  return {
+    name: current.name.trim() || creatorName,
+    email: current.email.trim() || creatorEmail,
+    url: current.url,
+  };
+}
+
 export function snapshotFromStore(): ProjectSettingsDraft {
   const app = useAppStore.getState();
   const spec = useSpecStore.getState();
@@ -38,7 +50,7 @@ export function snapshotFromStore(): ProjectSettingsDraft {
     apiVersion: app.apiVersion,
     apiDescription: app.apiDescription,
     apiTermsOfService: app.apiTermsOfService,
-    apiContact: app.apiContact,
+    apiContact: projectContactFromStore(app),
     apiLicense: app.apiLicense.name ? app.apiLicense : { ...PROPRIETARY_LICENSE },
     apiServers: app.apiServers,
     apiExternalDocs: app.apiExternalDocs,
