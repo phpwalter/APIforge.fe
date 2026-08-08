@@ -27,6 +27,7 @@ describe('openServerProjectIntoSettings', () => {
     vi.mocked(getServerProject).mockResolvedValue({
       id: 'ws-1',
       name: 'Saved API',
+      status: 'Active',
       updatedAt: '2026-07-18T00:00:00Z',
       specJson: VALID_SPEC_JSON,
     });
@@ -61,6 +62,7 @@ describe('openServerProjectIntoSettings', () => {
     vi.mocked(getServerProject).mockResolvedValue({
       id: 'ws-1',
       name: 'Broken',
+      status: 'Active',
       updatedAt: '2026-07-18T00:00:00Z',
       specJson: 'not json',
     });
