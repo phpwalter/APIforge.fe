@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getGravatar } from "../lib/auth";
+import { gravatarUrl } from "../lib/gravatar";
 import { clearAuthSession, readAuthSession, writeAuthSession, type AuthSession } from "../domains/auth/authSession";
 import type { AuthenticatedProfile } from "../domains/auth/authProfile";
 
@@ -28,6 +28,12 @@ interface AuthState {
 
 const initialSession = typeof window === "undefined" ? null : readAuthSession();
 
+function resolveAvatar(email: string | undefined, avatarUrl: string | undefined): string | undefined {
+  const provided = avatarUrl?.trim();
+  if (provided) return provided;
+  return email ? gravatarUrl(email) : undefined;
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   status: initialSession ? "unknown" : "anonymous",
   isAuthenticated: false,
@@ -48,8 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }),
 
   setProfile: (name, email, avatarUrl) => {
-    const avatarSrc = email ? getGravatar(email, avatarUrl) : avatarUrl;
-    set({ profileName: name, profileEmail: email, avatarSrc });
+    set({ profileName: name, profileEmail: email, avatarSrc: resolveAvatar(email, avatarUrl) });
   },
 
   setSession: (session) => {
@@ -60,13 +65,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   beginRestoration: () => set({ status: "restoring", isAuthenticated: false, restorationError: null }),
 
   hydrateAuthenticatedProfile: (profile) => {
-    const avatarSrc = profile.email ? getGravatar(profile.email, profile.avatarUrl) : profile.avatarUrl;
     set({
       status: "authenticated",
       isAuthenticated: true,
       profileName: profile.displayName,
       profileEmail: profile.email,
-      avatarSrc,
+      avatarSrc: resolveAvatar(profile.email, profile.avatarUrl),
       companyId: profile.companyId,
       companyName: profile.companyName,
       roles: profile.roles,
