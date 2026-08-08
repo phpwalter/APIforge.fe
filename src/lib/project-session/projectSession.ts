@@ -1,6 +1,7 @@
 import { useAppStore } from '../../state/useAppStore';
 import { useSpecStore } from '../../state/useSpecStore';
-import type { UserProfile } from '../../types/ui';
+import type { ApiContact, ApiExternalDocs, ApiLicense } from '../../types/spec';
+import type { CanvasTabId, UserProfile } from '../../types/ui';
 
 const STORAGE_PREFIX = 'apiforge.project-session.v1';
 const SNAPSHOT_VERSION = 1;
@@ -14,11 +15,11 @@ type ProjectIdentitySnapshot = {
   apiOpenapiVersion: string;
   apiDescription: string;
   apiTermsOfService: string;
-  apiContact: unknown;
-  apiLicense: unknown;
+  apiContact: ApiContact;
+  apiLicense: ApiLicense;
   apiServers: string[];
-  apiExternalDocs: unknown;
-  canvasTab: unknown;
+  apiExternalDocs: ApiExternalDocs;
+  canvasTab: CanvasTabId;
 };
 
 type PersistedProjectSession = {
@@ -77,7 +78,7 @@ function reviver(_key: string, value: unknown): unknown {
 }
 
 function serializableSpecState(): Record<string, unknown> {
-  const source = useSpecStore.getState() as Record<string, unknown>;
+  const source = useSpecStore.getState() as unknown as Record<string, unknown>;
   const snapshot: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(source)) {
