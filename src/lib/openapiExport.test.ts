@@ -41,7 +41,7 @@ function baseParams(overrides: Partial<BuildExportDocumentParams> = {}): BuildEx
       description: '',
       termsOfService: '',
       contact: { name: '', email: '', url: '' },
-      license: { name: '', url: '' },
+      license: { id: '', name: '', spdxId: '', url: '' },
       servers: [],
       externalDocs: { description: '', url: '' },
     },
@@ -62,6 +62,44 @@ describe('buildOpenApiDocument', () => {
     expect(doc.info).toEqual({ title: 'Test API', version: '1.0.0' });
   });
 
+  it('emits SPDX license.identifier for OpenAPI 3.2', () => {
+    const doc = buildOpenApiDocument(
+      baseParams({
+        info: {
+          ...baseParams().info,
+          openapiVersion: '3.2.0',
+          license: {
+            id: 'mit-id',
+            name: 'MIT License',
+            spdxId: 'MIT',
+            url: 'https://spdx.org/licenses/MIT.html',
+          },
+        },
+      }),
+    ) as { info: { license: Record<string, unknown> } };
+
+    expect(doc.info.license).toEqual({ name: 'MIT License', identifier: 'MIT' });
+  });
+
+  it('uses license.url for OpenAPI 3.0', () => {
+    const doc = buildOpenApiDocument(
+      baseParams({
+        info: {
+          ...baseParams().info,
+          openapiVersion: '3.0.3',
+          license: {
+            id: 'mit-id',
+            name: 'MIT License',
+            spdxId: 'MIT',
+            url: 'https://spdx.org/licenses/MIT.html',
+          },
+        },
+      }),
+    ) as { info: { license: Record<string, unknown> } };
+
+    expect(doc.info.license).toEqual({ name: 'MIT License', url: 'https://spdx.org/licenses/MIT.html' });
+  });
+
   it('includes optional info fields only when present', () => {
     const doc = buildOpenApiDocument(
       baseParams({
@@ -72,7 +110,7 @@ describe('buildOpenApiDocument', () => {
           description: 'A test API',
           termsOfService: 'https://example.com/terms',
           contact: { name: 'Ada', email: '', url: '' },
-          license: { name: '', url: '' },
+          license: { id: '', name: '', spdxId: '', url: '' },
           servers: ['https://api.example.com', ''],
           externalDocs: { description: 'Docs', url: 'https://docs.example.com' },
         },
@@ -322,7 +360,6 @@ describe('serialization', () => {
     const doc = buildOpenApiDocument(baseParams());
     expect(JSON.parse(documentToJson(doc))).toEqual(doc);
   });
-
 });
 
 describe('slugifyFilename', () => {
