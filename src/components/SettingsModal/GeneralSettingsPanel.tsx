@@ -15,6 +15,17 @@ interface GeneralSettingsPanelProps {
   onChange: (patch: Partial<ProjectSettingsDraft>) => void;
 }
 
+function isVersionSelectable(entry: OpenApiVersionCatalogEntry): boolean {
+  return entry.supports_visual_editor && entry.supports_export;
+}
+
+function versionOptionLabel(entry: OpenApiVersionCatalogEntry): string {
+  if (entry.supports_visual_editor && !entry.supports_export) {
+    return `${entry.display_name} — editor preview`;
+  }
+  return entry.display_name;
+}
+
 export function GeneralSettingsPanel({ draft, onChange }: GeneralSettingsPanelProps) {
   const [licenses, setLicenses] = useState<LicenseCatalogEntry[]>([]);
   const [licensesLoading, setLicensesLoading] = useState(true);
@@ -143,8 +154,12 @@ export function GeneralSettingsPanel({ draft, onChange }: GeneralSettingsPanelPr
           onChange={(e) => onChange({ apiOpenapiVersion: e.target.value })}
         >
           {versionOptions.map((entry) => (
-            <option key={entry.id} value={entry.version}>
-              {entry.display_name}
+            <option
+              key={entry.id}
+              value={entry.version}
+              disabled={!isVersionSelectable(entry)}
+            >
+              {versionOptionLabel(entry)}
             </option>
           ))}
         </select>
