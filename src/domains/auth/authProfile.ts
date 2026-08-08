@@ -24,7 +24,7 @@ export async function fetchAuthenticatedProfile(signal?: AbortSignal): Promise<A
 }
 
 export function normalizeAuthenticatedProfile(payload: unknown): AuthenticatedProfile {
-  const root = asRecord(payload);
+  const root = asRecord(payload) ?? {};
   const data = asRecord(root.data) ?? root;
   const user = asRecord(data.user) ?? data;
   const company = asRecord(data.company) ?? asRecord(user.company);
