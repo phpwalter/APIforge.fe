@@ -38,12 +38,21 @@ function schemaObjWithVariant(schema: Schema, variant: ExportVariant): Record<st
   return obj;
 }
 
+function supportsLicenseIdentifier(openapiVersion: string): boolean {
+  const match = /^(\d+)\.(\d+)(?:\.\d+)?/.exec(openapiVersion.trim());
+  if (!match) return false;
+
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  return major > 3 || (major === 3 && minor >= 1);
+}
+
 function openApiLicenseObject(license: ApiLicense, openapiVersion: string): Record<string, string> | null {
   const name = license.name.trim();
   if (!name) return null;
 
   const value: Record<string, string> = { name };
-  if (openapiVersion.startsWith('3.1') && license.spdxId?.trim()) {
+  if (supportsLicenseIdentifier(openapiVersion) && license.spdxId?.trim()) {
     value.identifier = license.spdxId.trim();
   } else if (license.url.trim()) {
     value.url = license.url.trim();
@@ -260,35 +269,19 @@ export function buildOpenApiDocument(params: BuildExportDocumentParams): Record<
   return doc;
 }
 
-/** `indent` is either a space count or a literal string (e.g. `'\t'`) — same as `JSON.stringify`'s own third argument. */
-export function documentToJson(doc: unknown, indent: string | number = 2): string {
-  return JSON.stringify(doc, null, indent);
+export function documentToYaml(doc: Record<string, unknown>): string {
+  return dumpYaml(doc, { noRefs: true, lineWidth: 120, noCompatMode: true });
 }
 
-/** `indentSize` is spaces per nesting level — YAML has no valid tab-indentation form, so unlike JSON this only ever varies by width. */
-export function documentToYaml(doc: unknown, indentSize = 2): string {
-  return dumpYaml(doc, { noRefs: true, lineWidth: -1, indent: indentSize });
+export function documentToJson(doc: Record<string, unknown>): string {
+  return JSON.stringify(doc, null, 2);
 }
 
-/** Slugifies a project title into a safe filename stem (e.g. "My API!" -> "my-api"). */
 export function slugifyFilename(title: string): string {
   const slug = title
-    .trim()
     .toLowerCase()
+    .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
   return slug || 'openapi';
-}
-
-/** Triggers a browser download of text content as a file. */
-export function downloadTextFile(filename: string, content: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
