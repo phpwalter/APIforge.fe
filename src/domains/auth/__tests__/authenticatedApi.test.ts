@@ -8,7 +8,9 @@ describe("authenticatedApiRequest", () => {
     vi.restoreAllMocks();
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("adds APIForge authentication headers", async () => {
     writeAuthSession({ accessToken: "token-1" });
