@@ -3,12 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { GeneralSettingsPanel } from './GeneralSettingsPanel';
 import type { ProjectSettingsDraft } from '../Project/projectSettingsDraft';
 import { listLicenses } from '../../lib/api/licenses';
+import { listOpenApiVersions } from '../../lib/api/openApiVersions';
 
 vi.mock('../../lib/api/licenses', () => ({
   listLicenses: vi.fn(),
 }));
 
+vi.mock('../../lib/api/openApiVersions', () => ({
+  listOpenApiVersions: vi.fn(),
+}));
+
 const mockedListLicenses = vi.mocked(listLicenses);
+const mockedListOpenApiVersions = vi.mocked(listOpenApiVersions);
 
 function makeDraft(overrides: Partial<ProjectSettingsDraft> = {}): ProjectSettingsDraft {
   return {
@@ -42,6 +48,45 @@ beforeEach(() => {
       name: 'MIT License',
       spdx_id: 'MIT',
       url: 'https://spdx.org/licenses/MIT.html',
+    },
+  ]);
+
+  mockedListOpenApiVersions.mockResolvedValue([
+    {
+      id: 'oas-320',
+      version: '3.2.0',
+      display_name: 'OpenAPI 3.2.0',
+      is_default: false,
+      supports_import: true,
+      supports_export: true,
+      supports_validation: true,
+      supports_visual_editor: true,
+      released_at: null,
+      deprecated_at: null,
+    },
+    {
+      id: 'oas-311',
+      version: '3.1.1',
+      display_name: 'OpenAPI 3.1.1',
+      is_default: false,
+      supports_import: true,
+      supports_export: true,
+      supports_validation: true,
+      supports_visual_editor: true,
+      released_at: null,
+      deprecated_at: null,
+    },
+    {
+      id: 'oas-310',
+      version: '3.1.0',
+      display_name: 'OpenAPI 3.1.0',
+      is_default: true,
+      supports_import: true,
+      supports_export: true,
+      supports_validation: true,
+      supports_visual_editor: true,
+      released_at: null,
+      deprecated_at: null,
     },
   ]);
 });
@@ -119,6 +164,37 @@ describe('GeneralSettingsPanel — existing fields', () => {
     await user.type(screen.getByPlaceholderText('Name'), 'J');
 
     expect(onChange).toHaveBeenLastCalledWith({ apiContact: { name: 'J', email: 'a@b.com', url: 'https://x' } });
+  });
+});
+
+describe('GeneralSettingsPanel — governed OpenAPI version catalog', () => {
+  it('renders the backend catalog in backend-defined order', async () => {
+    render(<GeneralSettingsPanel draft={makeDraft()} onChange={vi.fn()} />);
+
+    const select = await screen.findByRole('combobox', { name: 'OpenAPI Version' });
+    const options = Array.from((select as HTMLSelectElement).options).map((option) => option.text);
+
+    expect(options).toEqual(['OpenAPI 3.2.0', 'OpenAPI 3.1.1', 'OpenAPI 3.1.0']);
+    expect(mockedListOpenApiVersions).toHaveBeenCalledTimes(1);
+  });
+
+  it('patches the selected OpenAPI version', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<GeneralSettingsPanel draft={makeDraft()} onChange={onChange} />);
+
+    const select = await screen.findByRole('combobox', { name: 'OpenAPI Version' });
+    await user.selectOptions(select, '3.2.0');
+
+    expect(onChange).toHaveBeenLastCalledWith({ apiOpenapiVersion: '3.2.0' });
+  });
+
+  it('preserves an existing project version that is absent from the current catalog', async () => {
+    render(<GeneralSettingsPanel draft={makeDraft({ apiOpenapiVersion: '2.0.0' })} onChange={vi.fn()} />);
+
+    const select = await screen.findByRole('combobox', { name: 'OpenAPI Version' });
+    expect(select).toHaveValue('2.0.0');
+    expect((select as HTMLSelectElement).options[0]?.text).toBe('2.0.0 (Current project)');
   });
 });
 
