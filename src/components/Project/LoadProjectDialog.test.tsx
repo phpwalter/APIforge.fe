@@ -25,11 +25,16 @@ const VALID_SPEC_JSON = JSON.stringify({
   paths: { '/things': { get: { responses: { '200': { description: 'OK' } } } } },
 });
 
+const SERVER_PROJECT = {
+  id: 'ws-1',
+  name: 'Saved API',
+  status: 'Active',
+  updatedAt: '2026-07-18T00:00:00Z',
+};
+
 describe('LoadProjectDialog', () => {
   it('shows a loading state, then the fetched project list', async () => {
-    vi.mocked(listServerProjects).mockResolvedValue([
-      { id: 'ws-1', name: 'Saved API', updatedAt: new Date().toISOString() },
-    ]);
+    vi.mocked(listServerProjects).mockResolvedValue([SERVER_PROJECT]);
     render(<LoadProjectDialog />);
 
     expect(screen.getByText(/Loading your projects/)).toBeInTheDocument();
@@ -52,9 +57,7 @@ describe('LoadProjectDialog', () => {
 
   it('Open is disabled until a project is selected', async () => {
     const user = userEvent.setup();
-    vi.mocked(listServerProjects).mockResolvedValue([
-      { id: 'ws-1', name: 'Saved API', updatedAt: new Date().toISOString() },
-    ]);
+    vi.mocked(listServerProjects).mockResolvedValue([SERVER_PROJECT]);
     render(<LoadProjectDialog />);
     await waitFor(() => expect(screen.getByText('Saved API')).toBeInTheDocument());
 
@@ -66,15 +69,8 @@ describe('LoadProjectDialog', () => {
 
   it('Open fetches the full document and loads it into Project Settings', async () => {
     const user = userEvent.setup();
-    vi.mocked(listServerProjects).mockResolvedValue([
-      { id: 'ws-1', name: 'Saved API', updatedAt: new Date().toISOString() },
-    ]);
-    vi.mocked(getServerProject).mockResolvedValue({
-      id: 'ws-1',
-      name: 'Saved API',
-      updatedAt: new Date().toISOString(),
-      specJson: VALID_SPEC_JSON,
-    });
+    vi.mocked(listServerProjects).mockResolvedValue([SERVER_PROJECT]);
+    vi.mocked(getServerProject).mockResolvedValue({ ...SERVER_PROJECT, specJson: VALID_SPEC_JSON });
     render(<LoadProjectDialog />);
     await waitFor(() => expect(screen.getByText('Saved API')).toBeInTheDocument());
 
@@ -88,15 +84,8 @@ describe('LoadProjectDialog', () => {
 
   it('double-clicking a project opens it directly', async () => {
     const user = userEvent.setup();
-    vi.mocked(listServerProjects).mockResolvedValue([
-      { id: 'ws-1', name: 'Saved API', updatedAt: new Date().toISOString() },
-    ]);
-    vi.mocked(getServerProject).mockResolvedValue({
-      id: 'ws-1',
-      name: 'Saved API',
-      updatedAt: new Date().toISOString(),
-      specJson: VALID_SPEC_JSON,
-    });
+    vi.mocked(listServerProjects).mockResolvedValue([SERVER_PROJECT]);
+    vi.mocked(getServerProject).mockResolvedValue({ ...SERVER_PROJECT, specJson: VALID_SPEC_JSON });
     render(<LoadProjectDialog />);
     await waitFor(() => expect(screen.getByText('Saved API')).toBeInTheDocument());
 
@@ -131,7 +120,6 @@ describe('LoadProjectDialog', () => {
     const app = useAppStore.getState();
     expect(useSpecStore.getState().hasDocument).toBe(true);
     expect(app.currentProjectName).toBe('Imported API');
-    // No detour through Project Settings — lands directly in the editor, same as the splash Import link.
     expect(app.projectSettingsOpen).toBe(false);
   });
 
