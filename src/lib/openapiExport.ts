@@ -269,19 +269,35 @@ export function buildOpenApiDocument(params: BuildExportDocumentParams): Record<
   return doc;
 }
 
-export function documentToYaml(doc: Record<string, unknown>): string {
-  return dumpYaml(doc, { noRefs: true, lineWidth: 120, noCompatMode: true });
+/** `indent` is either a space count or a literal string (for example, a tab). */
+export function documentToJson(doc: unknown, indent: string | number = 2): string {
+  return JSON.stringify(doc, null, indent);
 }
 
-export function documentToJson(doc: Record<string, unknown>): string {
-  return JSON.stringify(doc, null, 2);
+/** YAML indentation is expressed as spaces per nesting level. */
+export function documentToYaml(doc: unknown, indentSize = 2): string {
+  return dumpYaml(doc, { noRefs: true, lineWidth: -1, indent: indentSize });
 }
 
+/** Slugifies a project title into a safe filename stem. */
 export function slugifyFilename(title: string): string {
   const slug = title
-    .toLowerCase()
     .trim()
+    .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
   return slug || 'openapi';
+}
+
+/** Triggers a browser download of text content as a file. */
+export function downloadTextFile(filename: string, content: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
 }
