@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchOAuthProviders } from "./oauthProviders";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("fetchOAuthProviders", () => {
   it("accepts the single data envelope and sorts by display order", async () => {
