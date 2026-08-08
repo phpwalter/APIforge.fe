@@ -57,9 +57,9 @@ beforeEach(() => {
       version: '3.2.0',
       display_name: 'OpenAPI 3.2.0',
       is_default: false,
-      supports_import: true,
-      supports_export: true,
-      supports_validation: true,
+      supports_import: false,
+      supports_export: false,
+      supports_validation: false,
       supports_visual_editor: true,
       released_at: null,
       deprecated_at: null,
@@ -168,25 +168,32 @@ describe('GeneralSettingsPanel — existing fields', () => {
 });
 
 describe('GeneralSettingsPanel — governed OpenAPI version catalog', () => {
-  it('renders the backend catalog in backend-defined order', async () => {
+  it('renders the backend catalog in backend-defined order and labels preview-only versions', async () => {
     render(<GeneralSettingsPanel draft={makeDraft()} onChange={vi.fn()} />);
 
     const select = await screen.findByRole('combobox', { name: 'OpenAPI Version' });
-    const options = Array.from((select as HTMLSelectElement).options).map((option) => option.text);
+    const options = Array.from((select as HTMLSelectElement).options);
 
-    expect(options).toEqual(['OpenAPI 3.2.0', 'OpenAPI 3.1.1', 'OpenAPI 3.1.0']);
+    expect(options.map((option) => option.text)).toEqual([
+      'OpenAPI 3.2.0 — editor preview',
+      'OpenAPI 3.1.1',
+      'OpenAPI 3.1.0',
+    ]);
+    expect(options[0]?.disabled).toBe(true);
+    expect(options[1]?.disabled).toBe(false);
+    expect(options[2]?.disabled).toBe(false);
     expect(mockedListOpenApiVersions).toHaveBeenCalledTimes(1);
   });
 
-  it('patches the selected OpenAPI version', async () => {
+  it('patches a selectable OpenAPI version', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<GeneralSettingsPanel draft={makeDraft()} onChange={onChange} />);
 
     const select = await screen.findByRole('combobox', { name: 'OpenAPI Version' });
-    await user.selectOptions(select, '3.2.0');
+    await user.selectOptions(select, '3.1.1');
 
-    expect(onChange).toHaveBeenLastCalledWith({ apiOpenapiVersion: '3.2.0' });
+    expect(onChange).toHaveBeenLastCalledWith({ apiOpenapiVersion: '3.1.1' });
   });
 
   it('preserves an existing project version that is absent from the current catalog', async () => {
@@ -195,6 +202,17 @@ describe('GeneralSettingsPanel — governed OpenAPI version catalog', () => {
     const select = await screen.findByRole('combobox', { name: 'OpenAPI Version' });
     expect(select).toHaveValue('2.0.0');
     expect((select as HTMLSelectElement).options[0]?.text).toBe('2.0.0 (Current project)');
+  });
+
+  it('preserves an existing preview-only catalog version while preventing new selection', async () => {
+    render(<GeneralSettingsPanel draft={makeDraft({ apiOpenapiVersion: '3.2.0' })} onChange={vi.fn()} />);
+
+    const select = await screen.findByRole('combobox', { name: 'OpenAPI Version' });
+    const preview = Array.from((select as HTMLSelectElement).options).find((option) => option.value === '3.2.0');
+
+    expect(select).toHaveValue('3.2.0');
+    expect(preview?.text).toBe('OpenAPI 3.2.0 — editor preview');
+    expect(preview?.disabled).toBe(true);
   });
 });
 
