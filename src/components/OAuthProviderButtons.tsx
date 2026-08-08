@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { beginOAuthSignin, type OAuthProvider } from "../domains/auth/oauthProviders";
+import { beginOAuthSignin } from "../domains/auth/oauthProviders";
 import { useOAuthProviders } from "../domains/auth/useOAuthProviders";
 
 export interface OAuthProviderButtonsProps {
