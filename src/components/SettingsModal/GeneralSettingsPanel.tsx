@@ -4,7 +4,7 @@ import type { ProjectSettingsDraft } from '../Project/projectSettingsDraft';
 import { listLicenses, type LicenseCatalogEntry } from '../../lib/api/licenses';
 import styles from './GeneralSettingsPanel.module.css';
 
-const OPENAPI_VERSIONS = ['3.1.0', '3.1.1', '3.0.3', '3.0.2', '3.0.1', '3.0.0'];
+const OPENAPI_VERSIONS = ['3.2.0', '3.1.0', '3.1.1', '3.0.3', '3.0.2', '3.0.1', '3.0.0'];
 const PROPRIETARY_VALUE = '__proprietary__';
 
 interface GeneralSettingsPanelProps {
