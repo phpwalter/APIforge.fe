@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import type { ProjectSettingsDraft } from '../Project/projectSettingsDraft';
 import { listLicenses, type LicenseCatalogEntry } from '../../lib/api/licenses';
+import {
+  listOpenApiVersions,
+  type OpenApiVersionCatalogEntry,
+} from '../../lib/api/openApiVersions';
 import styles from './GeneralSettingsPanel.module.css';
 
-const OPENAPI_VERSIONS = ['3.2.0', '3.1.0', '3.1.1', '3.0.3', '3.0.2', '3.0.1', '3.0.0'];
 const PROPRIETARY_VALUE = '__proprietary__';
 
 interface GeneralSettingsPanelProps {
@@ -16,6 +19,9 @@ export function GeneralSettingsPanel({ draft, onChange }: GeneralSettingsPanelPr
   const [licenses, setLicenses] = useState<LicenseCatalogEntry[]>([]);
   const [licensesLoading, setLicensesLoading] = useState(true);
   const [licensesError, setLicensesError] = useState<string | null>(null);
+  const [openApiVersions, setOpenApiVersions] = useState<OpenApiVersionCatalogEntry[]>([]);
+  const [openApiVersionsLoading, setOpenApiVersionsLoading] = useState(true);
+  const [openApiVersionsError, setOpenApiVersionsError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +45,51 @@ export function GeneralSettingsPanel({ draft, onChange }: GeneralSettingsPanelPr
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setOpenApiVersionsLoading(true);
+    setOpenApiVersionsError(null);
+
+    void listOpenApiVersions()
+      .then((entries) => {
+        if (!cancelled) setOpenApiVersions(entries);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setOpenApiVersionsError(error instanceof Error ? error.message : String(error));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setOpenApiVersionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const versionOptions = useMemo(() => {
+    if (!draft.apiOpenapiVersion || openApiVersions.some((entry) => entry.version === draft.apiOpenapiVersion)) {
+      return openApiVersions;
+    }
+
+    return [
+      {
+        id: `current:${draft.apiOpenapiVersion}`,
+        version: draft.apiOpenapiVersion,
+        display_name: `${draft.apiOpenapiVersion} (Current project)`,
+        is_default: false,
+        supports_import: false,
+        supports_export: false,
+        supports_validation: false,
+        supports_visual_editor: false,
+        released_at: null,
+        deprecated_at: null,
+      },
+      ...openApiVersions,
+    ];
+  }, [draft.apiOpenapiVersion, openApiVersions]);
 
   const selectedLicenseValue = useMemo(() => {
     if (!draft.apiLicense.name || draft.apiLicense.name === 'Proprietary') return PROPRIETARY_VALUE;
@@ -87,14 +138,19 @@ export function GeneralSettingsPanel({ draft, onChange }: GeneralSettingsPanelPr
         <select
           className={styles.versionSelect}
           value={draft.apiOpenapiVersion}
+          disabled={openApiVersionsLoading && versionOptions.length === 0}
+          aria-label="OpenAPI Version"
           onChange={(e) => onChange({ apiOpenapiVersion: e.target.value })}
         >
-          {OPENAPI_VERSIONS.map((v) => (
-            <option key={v} value={v}>
-              {v}
+          {versionOptions.map((entry) => (
+            <option key={entry.id} value={entry.version}>
+              {entry.display_name}
             </option>
           ))}
         </select>
+        {openApiVersionsError ? (
+          <div className={styles.catalogError}>OpenAPI version catalog unavailable.</div>
+        ) : null}
       </div>
 
       <div className={styles.titleVersionRow}>
